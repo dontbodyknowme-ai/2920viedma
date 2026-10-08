@@ -1,14 +1,20 @@
 # AGENTS.md
 
 ## Comandos de configuracion
-- Instalar dependencias: `pnpm install`
-- Iniciar servidor de desarrollo: `pnpm dev`
-- Ejecutar pruebas: `pnpm test`
+- Instalar dependencias: `npm install`
+- Iniciar servidor de desarrollo: `npm run dev`
+- Compilar para produccion: `npm run build`
+- Ejecutar pruebas: `npm test`
+- Ejecutar linter: `npm run lint`
+- Chequear tipos sin emitir: `npx tsc --noEmit`
 
 ## Estilo de codigo
 - Modo estricto de TypeScript (TypeScript strict mode)
 - Comillas simples, sin puntos y comas
 - Usar patrones funcionales siempre que sea posible
+- Cero colores hexadecimales en los componentes: los colores salen de las utilidades de `tailwind.config.js` (`bg-wine-700`, `text-gold-400`, `bg-charcoal-950`, etc.), nunca de estilos en linea
+- Tests de componentes: importar `act` desde `react` (nunca desde `react-dom/test-utils`, que esta deprecado), declarar `IS_REACT_ACT_ENVIRONMENT` en `globalThis`, y envolver **todo** `.click()` en `act`
+- Las suites viven en `test/**/*.test.ts` y no en `.test.tsx`: `vitest.config.ts` solo recolecta esos archivos, asi que un `.test.tsx` pasaria sin ejecutarse. Por eso se monta con `createElement(App)` y no con JSX
 
 ## Especificacion del Proyecto: E-Commerce Vinoteca de Alta Gama
 
@@ -23,6 +29,7 @@ Construir una aplicacion web interactiva, responsiva y visualmente atractiva par
 ### Estructura de la Pagina y Funcionalidades Clave
 1. **Encabezado / Barra de Navegacion:**
    - Logo de la marca, enlaces de navegacion, barra de busqueda e icono de carrito con contador en tiempo real.
+   - El buscador es visible tambien en movil: por debajo de 768 px baja a su propia fila, y desde 768 px vuelve a la fila unica con el resto de la barra.
 2. **Seccion Principal (Hero Section):**
    - Banner a pantalla completa con efecto parallax, titular impactante, boton de accion ("Explorar Cava") y exhibicion de botellas destacadas.
 3. **Catalogo de Productos (Cuadricula E-commerce):**
@@ -40,15 +47,30 @@ Construir una aplicacion web interactiva, responsiva y visualmente atractiva par
 7. **Pie de Pagina (Footer):**
    - Horarios de atencion, ubicacion, enlaces a redes sociales y aviso legal obligatorio de restriccion de edad (+18).
 
+### Estado de la Implementacion (2026-10-06)
+
+Los **siete bloques** de arriba estan implementados y verificados en navegador: la barra de navegacion con buscador y contador, el hero con su botella 3D, el catalogo con filtro por categoria y busqueda por texto, el formulario de carga de vinos, la vista rapida de producto, el carrito lateral y el pie de pagina. El estado vive en el componente raiz (`src/App.tsx`) con hooks funcionales y se persiste en `localStorage` en las claves `vinoteca_wines` y `vinoteca_cart`, con `try`/`catch` para que un dato corrupto no rompa el arranque. Hay **cobertura automatizada** de los validadores, de la integridad de los datos de vino y de la logica de estado del orquestador (carrito y persistencia), en `test/`.
+
+Lo de esta lista que **todavia no esta implementado**, y que la spec `002-app-que-compile` dejo explicitamente fuera de alcance (§3.2) para que la promesa de §1 sea cumplible:
+
+| Pendiente | Nota |
+|---|---|
+| Filtro por rango de precio y por cepa | Hoy solo hay filtro por categoria y busqueda por texto |
+| Subida de imagen arrastrando un archivo | El formulario solo acepta la URL de la imagen |
+| Enlaces de navegacion entre secciones | La barra solo tiene el logo como enlace |
+| Edicion de productos existentes | El formulario solo crea vinos nuevos |
+| Animaciones de revelado al hacer scroll y efecto parallax del hero | Requieren el componente `AnimatedSection`, que no existe en el repositorio |
+| Exhibicion de botellas destacadas en el hero | La botella 3D de `herocanvas3d.tsx` cubre el requisito visual |
+
 ### Arquitectura Tecnica
 - **Framework:** Next.js o React + Vite con TypeScript.
 - **Estilos:** Tailwind CSS para maquetacion, tipografia y clases de utilidad.
 - **Animaciones:** Framer Motion (o GSAP) para animaciones activadas por scroll y transiciones de paneles.
 - **Gestion de Estado:** Hooks funcionales de React o Zustand para el manejo del estado local (carrito y catalogo dinamico de productos).
-- **Organizacion del Codigo:** Division en componentes modulares y reutilizables (`ProductCard`, `ProductForm`, `CartDrawer`, `AnimatedSection`, `QuickViewModal`).
+- **Organizacion del Codigo:** Division en componentes modulares y reutilizables (`ProductCard`, `ProductForm`, `CartDrawer`, `VistaRapidaProducto`, `PieDePagina`). Cada componente vive en `src/components/` con nombre de archivo en espanol y `snake_case`, que **no** coincide con el nombre del componente que exporta (por ejemplo, `carta_de_productos.tsx` exporta `ProductCard`).
 
 ## Reglas y Gobernanza
-- Las directrices de arquitectura, UI/UX y calidad se encuentran especificadas en [`docs/constitution.md`](./docs/constitution.md).
+- Las directrices de arquitectura, UI/UX y calidad se encuentran especificadas en [`docs/CONSTITUCION.md`](./docs/CONSTITUCION.md).
 
 ## Protocolo de Actualizacion Continua (AGENTS.md & MEMORY.md)
 

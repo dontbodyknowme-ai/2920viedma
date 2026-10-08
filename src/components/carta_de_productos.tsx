@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Wine } from '../types/wine'
+import { Wine } from '../types/vino'
 
 interface ProductCardProps {
   wine: Wine

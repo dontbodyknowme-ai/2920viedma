@@ -39,6 +39,6 @@
 - **Evolucion del Backend:** La interfaz debe estar preparada para conectar APIs o bases de datos (ej. Supabase) en el futuro sin reestructurar el componente UI.
 
 ## 5. Criterios de Aceptacion y Testing
-- La aplicacion debe compilar sin advertencias ni errores de TypeScript (`pnpm dev`).
+- La aplicacion debe compilar sin advertencias ni errores de TypeScript (`npm run dev`).
 - El flujo de compra (agregar al carrito, modificar cantidades, eliminar item y checkout) debe ser 100% funcional sin recargar la pagina.
 - El modulo de carga debe agregar nuevos vinos al catalogo en tiempo real con persistencia inmediata.

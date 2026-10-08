@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { CartItem } from '../types/wine'
+import { CartItem } from '../types/vino'
 
 interface CartDrawerProps {
   isOpen: boolean
@@ -78,7 +78,6 @@ export const CartDrawer = ({
                 items.map(({ product, quantity }) => (
                   <motion.div
                     key={product.id}
-                    layout
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -20 }}

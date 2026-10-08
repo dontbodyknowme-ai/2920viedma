@@ -1,4 +1,4 @@
-import { Wine } from '../types/wine'
+import { Wine } from '../types/vino'
 
 export const INITIAL_WINES: Wine[] = [
   {
@@ -25,6 +25,6 @@ export const INITIAL_WINES: Wine[] = [
     description: 'Elegante blanco con gran acidez, mineralidad y paso por barrica.',
     tastingNotes: 'Manzana verde, manteca, notas cítricas y minerales.',
     foodPairing: 'Pescados grasos, mariscos y pastas con salsas blancas.',
-    imageUrl: 'https://images.unsplash.com/photo-1558001373-7b9fbd4830e1?auto=format&fit=crop&q=80&w=800'
+    imageUrl: 'https://images.unsplash.com/photo-1599113656124-b96bf21e30d3?auto=format&fit=crop&q=80&w=800'
   }
 ]

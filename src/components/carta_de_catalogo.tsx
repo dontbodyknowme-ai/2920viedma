@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Wine, WineCategory } from '../types/wine'
-import { ProductCard } from './ProductCard'
+import { Wine, WineCategory } from '../types/vino'
+import { ProductCard } from './carta_de_productos'
 
 interface ProductCatalogProps {
   wines: Wine[]
@@ -21,19 +21,21 @@ export const ProductCatalog = ({
   const [selectedCategory, setSelectedCategory] = useState<WineCategory | 'Todos'>('Todos')
 
   const filteredWines = useMemo(() => {
+    const consulta = searchQuery.trim().toLowerCase()
+
     return wines.filter((wine) => {
       const matchesCategory = selectedCategory === 'Todos' || wine.category === selectedCategory
       const matchesSearch =
-        wine.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        wine.winery.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        wine.varietal.toLowerCase().includes(searchQuery.toLowerCase())
+        wine.name.toLowerCase().includes(consulta) ||
+        wine.winery.toLowerCase().includes(consulta) ||
+        wine.varietal.toLowerCase().includes(consulta)
 
       return matchesCategory && matchesSearch
     })
   }, [wines, selectedCategory, searchQuery])
 
   return (
-    <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
+    <section id='catalogo' className='scroll-mt-28 md:scroll-mt-24 py-20 px-6 max-w-7xl mx-auto'>
       <div className='text-center mb-12'>
         <p className='text-gold-500 uppercase tracking-[0.25em] text-xs font-semibold mb-2'>
           Nuestra Colección
