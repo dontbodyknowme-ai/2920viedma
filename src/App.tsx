@@ -1,143 +1,165 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { Wine, CartItem } from './types/vino'
+import { INITIAL_WINES } from './datos/vino'
 import { Navbar } from './components/barra_de_navegacion'
 import { Hero } from './components/hero'
 import { ProductCatalog } from './components/carta_de_catalogo'
 import { CartDrawer } from './components/carrito_de_compras'
 import { ProductForm } from './components/editor_formador_productos'
-import { VistaRapidaProducto } from './components/vista_rapida_producto'
-import { PieDePagina } from './components/pie_de_pagina'
-import { INITIAL_WINES } from './datos/vino'
-import type { CartItem, Wine } from './types/vino'
+import { Footer } from './components/pie_de_pagina'
+import { AnimatedSection } from './components/animated_section'
 
-const CLAVE_VINOS = 'vinoteca_wines'
-const CLAVE_CARRITO = 'vinoteca_cart'
+const STORAGE_KEY_WINES = 'vinoteca_wines'
+const STORAGE_KEY_CART = 'vinoteca_cart'
 
-const leer = <T,>(clave: string): T | null => {
+function loadWines(): Wine[] {
   try {
-    const crudo = window.localStorage.getItem(clave)
-    return crudo === null ? null : (JSON.parse(crudo) as T)
+    const stored = localStorage.getItem(STORAGE_KEY_WINES)
+    if (stored) return JSON.parse(stored)
   } catch {
-    return null
+    // ignore
   }
+  return INITIAL_WINES
 }
 
-const guardar = <T,>(clave: string, valor: T): void => {
+function saveWines(wines: Wine[]) {
+  localStorage.setItem(STORAGE_KEY_WINES, JSON.stringify(wines))
+}
+
+function loadCart(): CartItem[] {
   try {
-    window.localStorage.setItem(clave, JSON.stringify(valor))
+    const stored = localStorage.getItem(STORAGE_KEY_CART)
+    if (stored) return JSON.parse(stored)
   } catch {
-    // RF-34: si el almacenamiento falla, la app sigue usable en memoria.
+    // ignore
   }
+  return []
+}
+
+function saveCart(cart: CartItem[]) {
+  localStorage.setItem(STORAGE_KEY_CART, JSON.stringify(cart))
 }
 
 export default function App() {
-  const [wines, setWines] = useState<Wine[]>(() => {
-    const guardados = leer<Wine[]>(CLAVE_VINOS)
-    return Array.isArray(guardados) && guardados.length > 0 ? guardados : INITIAL_WINES
-  })
-  const [carrito, setCarrito] = useState<CartItem[]>(() => {
-    const guardados = leer<CartItem[]>(CLAVE_CARRITO)
-    return Array.isArray(guardados) ? guardados : []
-  })
+  const [wines, setWines] = useState<Wine[]>(() => loadWines())
+  const [cart, setCart] = useState<CartItem[]>(() => loadCart())
   const [searchQuery, setSearchQuery] = useState('')
-  const [carritoAbierto, setCarritoAbierto] = useState(false)
-  const [adminAbierto, setAdminAbierto] = useState(false)
-  const [vinoSeleccionado, setVinoSeleccionado] = useState<Wine | null>(null)
-  const [pedidoConfirmado, setPedidoConfirmado] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
+  const [adminOpen, setAdminOpen] = useState(false)
+  const [vinoAEditar, setVinoAEditar] = useState<Wine | null>(null)
+  const [_selectedWine, setSelectedWine] = useState<Wine | null>(null)
+  const [minPrice, setMinPrice] = useState<number | ''>('')
+  const [maxPrice, setMaxPrice] = useState<number | ''>('')
+  const [selectedVarietals, setSelectedVarietals] = useState<string[]>([])
 
-  useEffect(() => guardar(CLAVE_VINOS, wines), [wines])
-  useEffect(() => guardar(CLAVE_CARRITO, carrito), [carrito])
+  useEffect(() => {
+    saveWines(wines)
+  }, [wines])
 
-  const unidades = useMemo(
-    () => carrito.reduce((total, item) => total + item.quantity, 0),
-    [carrito]
-  )
+  useEffect(() => {
+    saveCart(cart)
+  }, [cart])
 
   const agregarAlCarrito = useCallback((wine: Wine) => {
-    setCarrito((previo) => {
-      const existente = previo.find((item) => item.product.id === wine.id)
-      if (existente) {
-        return previo.map((item) =>
+    setCart((prev) => {
+      const existing = prev.find((item) => item.product.id === wine.id)
+      if (existing) {
+        return prev.map((item) =>
           item.product.id === wine.id ? { ...item, quantity: item.quantity + 1 } : item
         )
       }
-      return [...previo, { product: wine, quantity: 1 }]
+      return [...prev, { product: wine, quantity: 1 }]
     })
   }, [])
 
   const actualizarCantidad = useCallback((wineId: string, delta: number) => {
-    setCarrito((previo) =>
-      previo
+    setCart((prev) =>
+      prev
         .map((item) =>
           item.product.id === wineId ? { ...item, quantity: item.quantity + delta } : item
         )
-        // RF-23: decrementar en 1 elimina la línea en vez de dejarla en 0.
         .filter((item) => item.quantity > 0)
     )
   }, [])
 
-  const eliminarItem = useCallback((wineId: string) => {
-    setCarrito((previo) => previo.filter((item) => item.product.id !== wineId))
+  const eliminarDelCarrito = useCallback((wineId: string) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== wineId))
   }, [])
 
-  const finalizarPedido = useCallback(() => {
-    if (carrito.length === 0) return
-    setPedidoConfirmado(true)
-    setCarrito([])
-    setCarritoAbierto(false)
-  }, [carrito.length])
+  const finalizarCompra = useCallback(() => {
+    setCart([])
+    setCartOpen(false)
+    alert('¡Gracias por tu compra!')
+  }, [])
 
   const agregarWine = useCallback((wine: Wine) => {
-    setWines((previo) => [...previo, wine])
+    setWines((prev) => [...prev, wine])
   }, [])
+
+  const actualizarWine = useCallback((wine: Wine) => {
+    setWines((previo) =>
+      previo.map((w) => (w.id === wine.id ? wine : w))
+    )
+  }, [])
+
+  const editarWine = useCallback((wine: Wine) => {
+    setVinoAEditar(wine)
+    setAdminOpen(true)
+  }, [])
+
+  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0)
 
   return (
     <>
       <Navbar
-        cartCount={unidades}
-        onOpenCart={() => setCarritoAbierto(true)}
-        onOpenAdmin={() => setAdminAbierto(true)}
+        cartCount={cartCount}
+        onOpenCart={() => setCartOpen(true)}
+        onOpenAdmin={() => setAdminOpen(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
-      <main>
-        <Hero />
+      <AnimatedSection>
+        <Hero
+          wines={wines}
+          onSelectWine={setSelectedWine}
+        />
+      </AnimatedSection>
+      <AnimatedSection>
         <ProductCatalog
           wines={wines}
           searchQuery={searchQuery}
           onAddToCart={agregarAlCarrito}
-          onSelectWine={setVinoSeleccionado}
+          onSelectWine={setSelectedWine}
+          onEditWine={editarWine}
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          selectedVarietals={selectedVarietals}
+          onMinPriceChange={setMinPrice}
+          onMaxPriceChange={setMaxPrice}
+          onVarietalsChange={setSelectedVarietals}
         />
-      </main>
-      <PieDePagina />
+      </AnimatedSection>
       <CartDrawer
-        isOpen={carritoAbierto}
-        onClose={() => setCarritoAbierto(false)}
-        items={carrito}
+        isOpen={cartOpen}
+        onClose={() => setCartOpen(false)}
+        items={cart}
         onUpdateQuantity={actualizarCantidad}
-        onRemoveItem={eliminarItem}
-        onCheckout={finalizarPedido}
+        onRemoveItem={eliminarDelCarrito}
+        onCheckout={finalizarCompra}
       />
       <ProductForm
-        isOpen={adminAbierto}
-        onClose={() => setAdminAbierto(false)}
+        isOpen={adminOpen}
+        onClose={() => {
+          setAdminOpen(false)
+          setVinoAEditar(null)
+        }}
         onAddWine={agregarWine}
+        onUpdateWine={actualizarWine}
+        wineToEdit={vinoAEditar}
       />
-      {/* Se monta siempre, sin condicionar por `vinoSeleccionado !== null`: el
-          `AnimatePresence` interno de `VistaRapidaProducto` necesita seguir
-          montado en el render siguiente al del cierre para animar la salida.
-          Montarlo condicionalmente lo desmontaria de golpe. */}
-      <VistaRapidaProducto
-        wine={vinoSeleccionado}
-        onClose={() => setVinoSeleccionado(null)}
-      />
-      {pedidoConfirmado && (
-        <p
-          role='status'
-          className='pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-gold-500/40 bg-charcoal-900/95 px-6 py-4 text-center text-sm font-semibold tracking-wider text-gold-400 shadow-2xl'
-        >
-          Pedido confirmado. Gracias por tu compra.
-        </p>
-      )}
+      <AnimatedSection>
+        <Footer />
+      </AnimatedSection>
     </>
   )
 }

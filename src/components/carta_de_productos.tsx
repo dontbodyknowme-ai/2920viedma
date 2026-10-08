@@ -5,9 +5,10 @@ interface ProductCardProps {
   wine: Wine
   onAddToCart: (wine: Wine) => void
   onSelectWine: (wine: Wine) => void
+  onEditWine?: (wine: Wine) => void
 }
 
-export const ProductCard = ({ wine, onAddToCart, onSelectWine }: ProductCardProps) => {
+export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: ProductCardProps) => {
   const formattedPrice = new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
@@ -61,12 +62,26 @@ export const ProductCard = ({ wine, onAddToCart, onSelectWine }: ProductCardProp
           <span className='text-cream-100 text-xl font-bold font-serif'>
             {formattedPrice}
           </span>
-          <button
-            onClick={() => onAddToCart(wine)}
-            className='bg-wine-700 hover:bg-wine-500 text-cream-100 text-xs uppercase tracking-wider font-bold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-wine-900/40 border border-wine-500/20 active:scale-95'
-          >
-            Agregar
-          </button>
+          <div className='flex items-center gap-2'>
+            {onEditWine && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEditWine(wine)
+                }}
+                className='bg-neutral-700 hover:bg-neutral-600 text-cream-200 text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 border border-neutral-600'
+                aria-label={`Editar ${wine.name}`}
+              >
+                Editar
+              </button>
+            )}
+            <button
+              onClick={() => onAddToCart(wine)}
+              className='bg-wine-700 hover:bg-wine-500 text-cream-100 text-xs uppercase tracking-wider font-bold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-wine-900/40 border border-wine-500/20 active:scale-95'
+            >
+              Agregar
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>

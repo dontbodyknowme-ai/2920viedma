@@ -1,134 +1,103 @@
-import { Clock, Facebook, Instagram, MapPin, Twitter } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { motion } from 'framer-motion'
 
-// RF-14 y D-O: texto estatico, sin props ni estado, en un `footer` semantico.
-// No lleva `AnimatePresence` porque no es panel ni modal.
-//
-// Los horarios, la direccion y las cuentas son contenido de ejemplo, igual que
-// los dos vinos de `src/datos/vino.ts`. No son datos de contacto reales: si el
-// usuario quiere datos reales, es una tarea aparte.
-interface Horario {
-  dia: string
-  horas: string
-}
-
-const HORARIOS: Horario[] = [
-  { dia: 'Lunes a viernes', horas: '10:00 a 20:00' },
-  { dia: 'Sábados', horas: '10:00 a 21:00' },
-  { dia: 'Domingos y feriados', horas: 'Cerrado' }
-]
-
-interface RedSocial {
-  nombre: string
-  usuario: string
-  href: string
-  Icono: LucideIcon
-}
-
-const REDES: RedSocial[] = [
-  { nombre: 'Instagram', usuario: '@cavayco', href: 'https://instagram.com/cavayco', Icono: Instagram },
-  { nombre: 'Facebook', usuario: '/cavayco', href: 'https://facebook.com/cavayco', Icono: Facebook },
-  { nombre: 'Twitter', usuario: '@cavayco', href: 'https://twitter.com/cavayco', Icono: Twitter }
-]
-
-export const PieDePagina = () => {
+export const Footer = () => {
   return (
-    <footer className='bg-charcoal-950 text-cream-100 border-t border-wine-900/50'>
-      <div className='max-w-7xl mx-auto px-4 md:px-6 py-14'>
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10'>
-          {/* Bloque 1: horarios de atención. */}
-          <section aria-labelledby='pie-horarios'>
-            <h2
-              id='pie-horarios'
-              className='flex items-center gap-2 font-serif text-lg font-bold text-gold-400'
-            >
-              <Clock className='w-5 h-5 shrink-0' aria-hidden='true' />
+    <footer id='contacto' className='bg-charcoal-950 border-t border-wine-900/30'>
+      <div className='max-w-7xl mx-auto px-6 py-16'>
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-12 mb-12'>
+          <div>
+            <p className='text-gold-500 font-serif text-2xl font-bold tracking-wider mb-4'>
+              CAVA & CO.
+            </p>
+            <p className='text-neutral-400 text-sm leading-relaxed mb-6'>
+              Seleccion exclusiva de vinos de alta gama para los paladares mas exigentes.
+              Curamos cada etiqueta con pasion y dedicacion.
+            </p>
+            <div className='flex items-center gap-4'>
+              <a href='#' className='text-neutral-400 hover:text-gold-500 transition-colors' aria-label='Instagram'>
+                <svg className='w-6 h-6' fill='currentColor' viewBox='0 0 24 24'>
+                  <path d='M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z' />
+                </svg>
+              </a>
+              <a href='#' className='text-neutral-400 hover:text-gold-500 transition-colors' aria-label='Facebook'>
+                <svg className='w-6 h-6' fill='currentColor' viewBox='0 0 24 24'>
+                  <path d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z' />
+                </svg>
+              </a>
+              <a href='#' className='text-neutral-400 hover:text-gold-500 transition-colors' aria-label='Twitter'>
+                <svg className='w-6 h-6' fill='currentColor' viewBox='0 0 24 24'>
+                  <path d='M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z' />
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <h3 className='text-cream-100 font-serif text-lg font-bold mb-4'>
               Horarios
-            </h2>
-            <ul className='mt-4 flex flex-col gap-2 text-base text-cream-200'>
-              {HORARIOS.map((horario) => (
-                <li key={horario.dia} className='flex flex-wrap justify-between gap-x-4'>
-                  <span>{horario.dia}</span>
-                  <span className='text-gold-500/90'>{horario.horas}</span>
-                </li>
-              ))}
-            </ul>
-            <p className='mt-4 text-sm text-neutral-400'>
-              Muestras y asesoría de cata con cita previa.
-            </p>
-          </section>
+            </h3>
+            <dl className='space-y-3 text-sm'>
+              <div className='flex justify-between'>
+                <dt className='text-neutral-400'>Lunes - Viernes</dt>
+                <dd className='text-cream-200'>10:00 - 21:00</dd>
+              </div>
+              <div className='flex justify-between'>
+                <dt className='text-neutral-400'>Sábados</dt>
+                <dd className='text-cream-200'>10:00 - 22:00</dd>
+              </div>
+              <div className='flex justify-between'>
+                <dt className='text-neutral-400'>Domingos</dt>
+                <dd className='text-cream-200'>11:00 - 20:00</dd>
+              </div>
+            </dl>
+          </div>
 
-          {/* Bloque 2: ubicación. */}
-          <section aria-labelledby='pie-ubicacion'>
-            <h2
-              id='pie-ubicacion'
-              className='flex items-center gap-2 font-serif text-lg font-bold text-gold-400'
-            >
-              <MapPin className='w-5 h-5 shrink-0' aria-hidden='true' />
+          <div>
+            <h3 className='text-cream-100 font-serif text-lg font-bold mb-4'>
               Ubicación
-            </h2>
-            <address className='mt-4 not-italic text-base text-cream-200 leading-relaxed break-words'>
-              Avenida del Puerto 1280, Bodega Norte
-              <br />
-              Barrio Histórico
-              <br />
-              Ciudad de Mendoza
+            </h3>
+            <address className='text-neutral-400 text-sm not-italic leading-relaxed'>
+              <p>Av. del Libertador 1234</p>
+              <p>Buenos Aires, Argentina</p>
+              <p className='mt-2'>
+                <a href='tel:+541145678900' className='hover:text-gold-500 transition-colors'>
+                  +54 11 4567 8900
+                </a>
+              </p>
+              <p>
+                <a href='mailto:hola@cava-co.com' className='hover:text-gold-500 transition-colors'>
+                  hola@cava-co.com
+                </a>
+              </p>
             </address>
-            <p className='mt-4 text-sm text-neutral-400'>
-              Estacionamiento propio a dos cuadras.
-            </p>
-          </section>
-
-          {/* Bloque 3: redes sociales, con íconos de `lucide-react` (D-O). */}
-          <section aria-labelledby='pie-redes'>
-            <h2
-              id='pie-redes'
-              className='flex items-center gap-2 font-serif text-lg font-bold text-gold-400'
-            >
-              <Instagram className='w-5 h-5 shrink-0' aria-hidden='true' />
-              Redes
-            </h2>
-            <ul className='mt-4 flex flex-col gap-3'>
-              {REDES.map((red) => (
-                <li key={red.nombre}>
-                  <a
-                    href={red.href}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='inline-flex items-center gap-3 text-base text-cream-200 hover:text-gold-400 transition-colors'
-                  >
-                    <red.Icono className='w-5 h-5 shrink-0 text-gold-500' aria-hidden='true' />
-                    <span className='font-semibold'>{red.nombre}</span>
-                    <span className='text-neutral-400'>{red.usuario}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* Bloque 4: aviso legal de restricción de edad. */}
-          <section aria-labelledby='pie-aviso'>
-            <h2 id='pie-aviso' className='font-serif text-lg font-bold text-gold-400'>
-              Aviso legal
-            </h2>
-            <p className='mt-4 text-base text-cream-200 leading-relaxed'>
-              La venta de bebidas alcohólicas está prohibida para menores de 18 años.
-            </p>
-            <p className='mt-4 inline-block rounded-xl border border-gold-500/40 bg-wine-900/40 px-4 py-2 text-xl font-bold text-gold-400'>
-              +18
-            </p>
-            <p className='mt-4 text-sm text-neutral-400'>
-              La compra implica presentar documento de identidad al retirar.
-            </p>
-          </section>
+          </div>
         </div>
 
-        <div className='mt-12 pt-6 border-t border-neutral-800 flex flex-wrap items-center justify-between gap-4 text-sm text-neutral-400'>
-          <p className='font-serif text-base font-bold tracking-wider text-gold-500'>
-            CAVA &amp; CO.
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className='pt-8 border-t border-neutral-800/50 flex flex-col md:flex-row justify-between items-center gap-4'
+        >
+          <p className='text-neutral-500 text-sm'>
+            © 2024 CAVA & CO. Todos los derechos reservados.
           </p>
-          <p>Proyecto de demostración. Los datos de contacto son de ejemplo.</p>
-        </div>
+          <p className='text-wine-500/80 text-sm font-semibold'>
+            Prohibida la venta de alcohol a menores de 18 años. Beba con moderación.
+          </p>
+          <nav className='flex gap-6 text-sm'>
+            <a href='#' className='text-neutral-500 hover:text-gold-500 transition-colors'>
+              Aviso legal
+            </a>
+            <a href='#' className='text-neutral-500 hover:text-gold-500 transition-colors'>
+              Privacidad
+            </a>
+            <a href='#' className='text-neutral-500 hover:text-gold-500 transition-colors'>
+              Términos
+            </a>
+          </nav>
+        </motion.div>
       </div>
     </footer>
   )
