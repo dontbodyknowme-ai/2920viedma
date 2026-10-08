@@ -22,28 +22,28 @@ Construir una aplicacion web interactiva, responsiva y visualmente atractiva par
 
 ### Estructura de la Pagina y Funcionalidades Clave
 1. **Encabezado / Barra de Navegacion:**
-   - Logo de la marca, enlaces de navegacion, barra de busqueda e icono de carrito con contador en tiempo real.
+   - Logo de la marca, enlaces de navegacion (Inicio, Catálogo, Contacto), barra de busqueda e icono de carrito con contador en tiempo real. **Panel lateral en móvil implementado.**
 2. **Seccion Principal (Hero Section):**
-   - Banner a pantalla completa con efecto parallax, titular impactante, boton de accion ("Explorar Cava") y exhibicion de botellas destacadas.
+   - Banner a pantalla completa con efecto parallax, titular impactante, boton de accion ("Explorar Cava") y exhibicion de botellas destacadas (3 vinos más caros).
 3. **Catalogo de Productos (Cuadricula E-commerce):**
    - Tarjetas de producto con efecto de zoom sutil al pasar el cursor (hover).
    - Informacion por tarjeta: Imagen del producto, Nombre del vino, Bodega/Cepa, Cosecha/Año, Precio (formateado con moneda) y boton "Agregar al Carrito".
-   - Sistema de filtros: Por tipo de vino (Tinto, Blanco, Rosado, Espumante), rango de precio y cepa (Malbec, Cabernet Sauvignon, Chardonnay, etc.).
+   - Sistema de filtros: Por tipo de vino (Tinto, Blanco, Rosado, Espumante), **rango de precio** y **cepa** (Malbec, Cabernet Sauvignon, Chardonnay, etc.).
 4. **Modulo de Carga / Panel Admin:**
    - Modal o formulario para agregar o editar productos en tiempo real.
-   - Campos: Nombre, Categoria/Cepa, Precio, Descripcion, Cosecha/Año y Selector de Imagen (soporte para arrastrar archivo o ingresar URL).
+   - Campos: Nombre, Categoria/Cepa, Precio, Descripcion, Cosecha/Año y Selector de Imagen (**soporte para arrastrar archivo o ingresar URL**, prioridad a archivo).
 5. **Vista de Detalle del Producto (Modal Rapido):**
    - Modal detallado al hacer clic que muestra notas de cata, maridaje sugerido e imagen en alta resolucion.
 6. **Carrito de Compras (Panel Lateral / Drawer):**
    - Panel desplegable animado desde la derecha al hacer clic en el carrito.
    - Lista detallada de productos seleccionados, ajustador de cantidades, calculo automatico de subtotal/total y boton para finalizar compra.
 7. **Pie de Pagina (Footer):**
-   - Horarios de atencion, ubicacion, enlaces a redes sociales y aviso legal obligatorio de restriccion de edad (+18).
+   - Horarios de atencion, ubicacion, enlaces a redes sociales y aviso legal obligatorio de restriccion de edad (+18). **Con `id="contacto"` para navegación.**
 
 ### Arquitectura Tecnica
 - **Framework:** Next.js o React + Vite con TypeScript.
 - **Estilos:** Tailwind CSS para maquetacion, tipografia y clases de utilidad.
-- **Animaciones:** Framer Motion (o GSAP) para animaciones activadas por scroll y transiciones de paneles.
+- **Animaciones:** Framer Motion (o GSAP) para animaciones activadas por scroll y transiciones de paneles. **Scroll reveal (`AnimatedSection`), parallax en Hero, degradación en móvil (< 640px).**
 - **Gestion de Estado:** Hooks funcionales de React o Zustand para el manejo del estado local (carrito y catalogo dinamico de productos).
 - **Organizacion del Codigo:** Division en componentes modulares y reutilizables (`ProductCard`, `ProductForm`, `CartDrawer`, `AnimatedSection`, `QuickViewModal`).
 

@@ -1,4 +1,4 @@
-import { Wine } from '../types/wine'
+import { Wine } from '../types/vino'
 
 export const INITIAL_WINES: Wine[] = [
   {

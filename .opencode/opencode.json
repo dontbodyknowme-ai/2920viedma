@@ -9,16 +9,17 @@
       "chrome-devtools": {
         "type": "local",
         "command": [
-          "npx",
-          "-y",
-          "chrome-devtools-mcp@latest",
+          "node",
+          "./node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js",
           "--isolated",
           "--viewport=1280x800",
           "--no-usage-statistics",
           "--no-performance-crux",
           "--redact-network-headers",
           "--screenshot-format=webp",
-          "--screenshot-max-width=1280"
+          "--screenshot-max-width=1280",
+          "--executablePath",
+          "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
         ]
       }
     }
