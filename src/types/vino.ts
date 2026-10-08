@@ -21,6 +21,8 @@ export interface CartItem {
 
 export interface WineFilterState {
   category: WineCategory | 'Todos'
-  maxPrice: number
+  maxPrice: number | ''
   searchQuery: string
+  minPrice: number | ''
+  selectedVarietals: string[]
 }

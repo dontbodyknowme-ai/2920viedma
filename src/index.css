@@ -1,20 +1,136 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@tailwind base
+@tailwind components
+@tailwind utilities
 
-@layer base {
-  html {
-    scroll-behavior: smooth;
-    background-color: #121212;
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif
+  line-height: 1.5
+  font-weight: 400
+  color-scheme: dark
+  color: #fdfbf7
+  background-color: #121212
+  font-synthesis: none
+  text-rendering: optimizeLegibility
+  -webkit-font-smoothing: antialiased
+  -moz-osx-font-smoothing: grayscale
+}
+
+html {
+  scroll-behavior: smooth
+}
+
+body {
+  margin: 0
+  min-width: 320px
+  min-height: 100vh
+  background-color: #121212
+}
+
+#root {
+  min-height: 100vh
+}
+
+@layer utilities {
+  .text-cream-100 {
+    color: #fdfbf7
+  }
+  .text-cream-200 {
+    color: #f5f0e6
+  }
+  .text-gold-400 {
+    color: #d4af37
+  }
+  .text-gold-500 {
+    color: #c9a02e
+  }
+  .text-wine-500 {
+    color: #800020
+  }
+  .text-wine-700 {
+    color: #5b132b
+  }
+  .text-wine-900 {
+    color: #3d0a16
+  }
+  .text-charcoal-800 {
+    color: #1e1e1e
+  }
+  .text-charcoal-900 {
+    color: #121212
+  }
+  .text-charcoal-950 {
+    color: #0a0a0a
+  }
+  .text-neutral-400 {
+    color: #a3a3a3
+  }
+  .text-neutral-500 {
+    color: #737373
+  }
+  .text-neutral-800 {
+    color: #262626
   }
 
-  body {
-    @apply bg-charcoal-900 text-cream-100 font-sans antialiased;
+  .bg-cream-100 {
+    background-color: #fdfbf7
+  }
+  .bg-gold-400 {
+    background-color: #d4af37
+  }
+  .bg-gold-500 {
+    background-color: #c9a02e
+  }
+  .bg-wine-500 {
+    background-color: #800020
+  }
+  .bg-wine-700 {
+    background-color: #5b132b
+  }
+  .bg-wine-900 {
+    background-color: #3d0a16
+  }
+  .bg-charcoal-800 {
+    background-color: #1e1e1e
+  }
+  .bg-charcoal-900 {
+    background-color: #121212
+  }
+  .bg-charcoal-950 {
+    background-color: #0a0a0a
+  }
+  .bg-neutral-800 {
+    background-color: #262626
+  }
+  .bg-neutral-900 {
+    background-color: #171717
   }
 
-  h1,
-  h2,
-  h3 {
-    @apply font-serif;
+  .border-wine-500 {
+    border-color: #800020
+  }
+  .border-wine-900 {
+    border-color: #3d0a16
+  }
+  .border-gold-500 {
+    border-color: #c9a02e
+  }
+  .border-neutral-700 {
+    border-color: #404040
+  }
+  .border-neutral-800 {
+    border-color: #262626
+  }
+  .border-neutral-900 {
+    border-color: #171717
+  }
+
+  .shadow-wine-900\/20 {
+    box-shadow: 0 10px 15px -3px rgb(61 10 22 / 0.2), 0 4px 6px -4px rgb(61 10 22 / 0.2)
+  }
+  .shadow-wine-900\/40 {
+    box-shadow: 0 20px 25px -5px rgb(61 10 22 / 0.4), 0 8px 10px -6px rgb(61 10 22 / 0.4)
+  }
+  .shadow-wine-900\/50 {
+    box-shadow: 0 25px 50px -12px rgb(61 10 22 / 0.5)
   }
 }
