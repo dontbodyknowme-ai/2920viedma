@@ -527,16 +527,16 @@ descarga.
 
 ## T4 — Dashboard
 
-**RF cubiertos:** RF-05 a RF-09
+**RF cubiertos:** RF-05, RF-06, RF-07, RF-08, RF-09
 **Depende de:** T3
-**Estado:** `pendiente`
+**Estado:** `hecha` — 117/117 tests en verde, verificado en navegador
 
 ### Qué hacer
 
 **1. `src/pages/admin/dashboard.tsx` (NUEVO)**
 
 Página completa:
-- Grid 2x2 / 3x2 MetricCards: Ventas hoy/semana/mes, Carritos abandonados, Ticket prom., Conversión
+- Grid de MetricCards: Ventas hoy/semana/mes, Carritos abandonados, Ticket prom., Conversión
 - Sección gráfico: `ResponsiveContainer` + `LineChart` (Recharts) — ventas 30 días
 - Sección Top 5: cards horizontales con imagen, nombre, unidades, revenue
 - Sección Actividad reciente: lista 5 items (tipo, descripción, timestamp)
@@ -595,13 +595,77 @@ En navegador:
 
 ### Hecho cuando
 
-- [ ] `dashboard.tsx` existe y renderiza completo
-- [ ] MetricCards usan componente compartido
-- [ ] Gráfico Recharts renderiza sin errores
-- [ ] Top 5 y actividad reciente cargan de MSW
-- [ ] Skeletons durante carga
-- [ ] `npx tsc --noEmit` sale 0
-- [ ] `npm run build` sale 0
+- [x] `dashboard.tsx` existe y renderiza completo
+- [x] `dashboard_grafico.tsx` existe, separado y con carga diferida
+- [x] `src/hooks/useApi.ts` existe
+- [x] `src/utils/metricas.ts` existe con `tendenciaDe`
+- [x] MetricCards usan el componente compartido
+- [x] Gráfico Recharts renderiza sin errores, en su propio chunk
+- [x] Top 5 y actividad reciente cargan de MSW
+- [x] Skeletons durante carga
+- [x] `npx tsc --noEmit` sale 0
+- [x] `npm run build` sale 0
+- [x] **117/117 tests en verde** (7 nuevos de la tendencia)
+
+### Notas de implementación (2026-10-09)
+
+**1. Recharts va en un archivo aparte con `import()` diferido.** Queda un chunk
+de **376 kB separado** del principal, que sube solo de 1.271 a 1.295 kB. Sin la
+division de codigo, los 376 kB los pagaria cualquiera que entre a cualquier
+pagina de la tienda, incluido un visitante que solo quiere ver el catalogo.
+Ademas el `Suspense` deja pintar las metricas mientras el grafico descarga, en
+vez de esperar a que cargue todo junto.
+
+**2. `tendenciaDe` quedo en `src/utils/metricas.ts`, no en la pagina.** Es logica
+pura y se testea sin montar nada. Lo que la dejaba adentro de `dashboard.tsx`:
+importarla arrastraba el arbol de componentes y **Recharts** al archivo de test,
+y el primer intento de testearla desde ahi fallo por eso.
+
+**3. `tendenciaDe` devuelve `undefined` cuando no hay con que comparar, nunca `0`.**
+Un `0%` en la tarjeta afirma "no cambio". Con menos de cuatro dias con ventas
+la verdad es que no hay dato, y son dos cosas distintas. La tarjeta no muestra
+tendencia en vez de mostrar un cero falso. Hay test para el caso.
+
+**4. La tendencia descarta los dias sin ventas antes de comparar.** Sin eso, una
+semana en la que estuvo caido el sistema contaria como caida de ventas. El test
+usa `[100, 100, 0, 0, 100]`: descartando los ceros quedan 3 dias y no hay
+tendencia; **sin** descartarlos la serie seria de 5, la primera mitad sumaria
+200, la segunda 100, y saldria un `-50%` alucinatorio.
+
+**5. `useApi` evita el estado obsoleto con un bandera `vigente`.** Si la url
+cambia mientras la peticion anterior sigue en vuelo, la respuesta vieja llega
+despues y pisa la nueva. El cleanup del `useEffect` pone `vigente = false`, y
+los tres handlers lo chequean antes de escribir estado. El refetch usa un
+contador y no un booleano, porque pedir dos veces seguidas tiene que relanzar
+las dos.
+
+**6. El panel hace una sola peticion, no tres.** El enunciado de T4 pedia
+`/api/metrics` + `/api/orders` + `/api/customers`. **Se hizo solo
+`/api/metrics`**, porque `Metrics` ya trae `topProducts` y `recentActivity`: las
+dos otras peticiones serian la misma informacion dos veces, con dos esperas de
+300-800 ms de MSW en paralelo. cuando los datos del panel Necesiten update, se
+agrega el campo a `Metrics`.
+
+**7. "Ventas de hoy" da `$0` con los datos mock, y es correcto.** Los 25 pedidos
+se reparten en 60 dias con `restarDias(HOY, enteroEntre(0, 59))`, asi que la
+probabilidad de que caiga alguno exactamente hoy es de menos de una unidad, y en
+esta corrida no cayo ninguno. Poner una venta hoy a proposito para que la card
+se vea mejor seria inventar un dato. El valor real aparece solo cuando hay
+ventas del dia.
+
+### Verificación en navegador (2026-10-09)
+
+Puerto 5199, `npm run dev`, con `isAdmin` activo.
+
+| Qué | Resultado |
+|---|---|
+| 5 MetricCards | Ventas de hoy `$ 0`, Ventas del mes `$ 395.000` con tendencia `▲ 5.3%`, Ticket promedio `$ 126.765`, Carritos abandonados `0`, Conversion `0.0%` |
+| Gráfico Recharts | `svg.recharts-surface` presente, 1 trazo dibujado, dentro de su propio chunk |
+| Secciones | "Ventas de los ultimos 30 dias", "Actividad reciente", "Productos mas vendidos" |
+| Top 5 productos | 5 items con imagen, unidades y revenue: Cabernet Franc 10 un / $335.000, Pinot Noir 7 / $276.500, Malbec 6 / $270.000, Cabernet Sauvignon 4 / $248.000, Riesling 6 / $186.000 |
+| Actividad reciente | 5 items con tipo, descripcion y fecha ("Pedido CAVA-1022 - Miguel Torres / 05-oct, 11:03 p. m.") |
+| Consola | **0 errores, 0 avisos** |
+| Bundle | Principal 1.265 kB + chunk `dashboard_grafico` 376 kB |
 
 ---
 
