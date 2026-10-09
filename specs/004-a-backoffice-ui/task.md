@@ -243,9 +243,9 @@ Los dos stubs se agregaron en `test/andamiaje.ts`, que es el harness compartido 
 
 ## T2 — Layout: AdminLayout, Sidebar, Protección rutas
 
-**RF cubiertos:** RF-01 a RF-04
+**RF cubiertos:** RF-01, RF-02, RF-03, RF-04
 **Depende de:** T1
-**Estado:** `pendiente`
+**Estado:** `hecha` — verificado en navegador a 1280 px y 501 px, 0 errores de consola
 
 ### Qué hacer
 
@@ -294,13 +294,52 @@ En navegador:
 
 ### Hecho cuando
 
-- [ ] `admin_layout.tsx`, `admin_sidebar.tsx`, `admin_header.tsx` existen
-- [ ] Protección rutas funciona
-- [ ] Responsive: desktop sidebar fija, móvil drawer
-- [ ] Sidebar colapsible (iconos only + tooltips)
-- [ ] Navegación entre 5 páginas admin funciona
-- [ ] `npx tsc --noEmit` sale 0
-- [ ] `npm run build` sale 0
+- [x] `admin_layout.tsx`, `admin_sidebar.tsx`, `admin_header.tsx` existen
+- [x] `src/hooks/useMediaQuery.ts` existe
+- [x] Protección rutas funciona
+- [x] Responsive: desktop sidebar fija, móvil drawer
+- [x] Sidebar colapsible (solo iconos + `title`)
+- [x] Navegación entre 5 páginas admin funciona
+- [x] `npx tsc --noEmit` sale 0
+- [x] `npm run build` sale 0
+- [x] 68/68 tests en verde
+
+### Notas de implementación (2026-10-09)
+
+**1. La protección vive en `AdminLayout`, no en `router.tsx`.** `router.tsx` declara las cinco rutas hijas y proteger cada una por separado serían cinco chequeos que pueden desincronizarse. `AdminLayout` es el único ancestro común, así que un solo chequeo cubre las cinco. Por eso la nota del plan que decía "el sidebar fijo en desktop y drawer en móvil" se cumple sin duplicar lógica.
+
+**2. `useMediaQuery` relee el valor al montar.** Entre el render inicial y el efecto, el usuario puede haber redimensionado la ventana. El efecto vuelve a leer `mediaQueryList.matches` para no arrancar con un valor viejo. El `removeEventListener` del cleanup es obligatorio: sin él cada resize acumularía un listener.
+
+**3. El colapso del sidebar usa `onAlternarColapso?: () => void`, opcional a propósito.** En móvil el sidebar es un drawer de ancho completo y colapsarlo no tiene sentido, así que el layout no le pasa el handler y el botón no se renderiza. Verificado: en 501 px el botón "Colapsar" no existe; en 1280 px sí.
+
+**4. El `NavLink` de `/admin` lleva `end`.** `/admin` y `/admin/pedidos` comparten prefijo, y sin `end` los dos filtros se verían encendidos a la vez. Verificado: en `/admin` solo "Dashboard" queda activo, y al navegar a `/admin/pedidos` solo "Pedidos".
+
+**5. El drawer se cierra solo al cambiar de sección.** Un `useEffect` sobre `location.pathname` pone `menuAbierto` en `false`. Sin eso, en móvil el menú seguiría tapando el contenido después de navegar. Verificado: drawer en `-288 px` (fuera de pantalla) tras navegar.
+
+**6. El header deriva el título de la ruta, no de un prop.** Cada página podría mostrar un título distinto al suyo y desincronizarse del sidebar. Un `Record<string, string>` con los cinco títulos evita las dos fuentes de verdad.
+
+**7. `AdminLayout` importa `loadIsAdmin` y `saveIsAdmin` de `App.tsx`.** Los dos viven en el modulo raiz porque la bandera es compartida entre las dos ramas del router: el navbar de `/` la escribe y este layout la lee. Cuando se pulse "Cerrar modo admin", `saveIsAdmin(false)` limpia la bandera y el `navigate('/', { replace: true })` manda al sitio publico. La protección se vuelve a activar en la proxima carga de `/admin`.
+
+**8. El boton que cierra el menu de usuario es un `<button>` a pantalla completa, no un `<div>`.** Un `div` no responde a teclado. El `button` cierra al pulsar fuera y es alcanzable con Tab.
+
+### Verificación en navegador (2026-10-09)
+
+Puerto 5199, `npm run dev`.
+
+| Qué | Resultado |
+|---|---|
+| `/admin` sin `isAdmin` | Redirige a `/`, sin sidebar, aviso "Acceso denegado" |
+| `/admin` con `isAdmin=true` | Sidebar de **288 px**, título "Dashboard", 5 enlaces, `Dashboard` activo |
+| Colapsar (1280 px) | Sidebar a **72 px**, `main` a 72 px, 5 enlaces solo con icono y `title`, botón pasa a "Expandir" |
+| Expandir | Vuelve a **288 px**, `main` a 288 px, textos visibles |
+| Navegar a `/admin/pedidos` | Título "Pedidos", Outlet renderiza, solo "Pedidos" activo |
+| Menú de usuario | Abre con "Administrador / admin@vinoteca.local / Cerrar modo admin" |
+| "Cerrar modo admin" | `localStorage.isAdmin = "false"`, vuelve a `/`, sitio público presente, sidebar admin desmontado |
+| Drawer en 501 px, cerrado | `left: -288 px` (fuera de pantalla), botón hamburguesa presente, botón colapsar **ausente**, `main` en 0 |
+| Drawer en 501 px, abierto | `left: 0`, 288 px, fondo oscurecido y botón de cerrar presentes |
+| Navegar en móvil | Drawer se cierra solo (`left: -288 px`), fondo oscurecido desmontado |
+| Scroll horizontal en móvil | **Ninguno** |
+| Consola | **0 errores, 0 avisos** |
 
 ---
 
