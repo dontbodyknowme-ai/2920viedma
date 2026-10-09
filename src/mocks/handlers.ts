@@ -2,13 +2,13 @@
 import type {
   AdminWine,
   Customer,
-  ImportResult,
   Metrics,
   Order,
   OrderStatus,
-  Paginated,
-  Wine
+  Paginated
 } from '../types/admin'
+import { importarVinos } from './importar_vinos'
+import { vinoDesdeCuerpo } from './vino_schema'
 import { mockCustomers, mockMetrics, mockOrders, mockWines } from './data'
 
 // Latencia aleatoria entre 300 y 800 ms. Existe para que los estados de carga
@@ -77,36 +77,6 @@ const filtrarVinos = (url: URL): AdminWine[] => {
   })
 }
 
-const vinoCreateSchema = (cuerpo: Record<string, unknown>): AdminWine | null => {
-  const nombre = typeof cuerpo.name === 'string' ? cuerpo.name.trim() : ''
-  const bodega = typeof cuerpo.winery === 'string' ? cuerpo.winery.trim() : ''
-  const precio = Number(cuerpo.price)
-  const cosecha = Number(cuerpo.vintage)
-
-  if (nombre === '' || bodega === '') return null
-  if (!Number.isFinite(precio) || precio <= 0) return null
-  if (!Number.isInteger(cosecha) || cosecha < 1850) return null
-
-  return {
-    id: typeof cuerpo.id === 'string' && cuerpo.id !== '' ? cuerpo.id : crypto.randomUUID(),
-    name: nombre,
-    winery: bodega,
-    varietal: typeof cuerpo.varietal === 'string' && cuerpo.varietal !== '' ? cuerpo.varietal : 'Blend',
-    category: (cuerpo.category as Wine['category']) ?? 'Tinto',
-    vintage: cosecha,
-    price: precio,
-    description: typeof cuerpo.description === 'string' ? cuerpo.description : '',
-    tastingNotes: typeof cuerpo.tastingNotes === 'string' ? cuerpo.tastingNotes : undefined,
-    foodPairing: typeof cuerpo.foodPairing === 'string' ? cuerpo.foodPairing : undefined,
-    imageUrl:
-      typeof cuerpo.imageUrl === 'string' && cuerpo.imageUrl !== ''
-        ? cuerpo.imageUrl
-        : 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=800',
-    stock: Number.isFinite(Number(cuerpo.stock)) ? Math.max(0, Number(cuerpo.stock)) : 0,
-    activo: cuerpo.activo === undefined ? true : Boolean(cuerpo.activo)
-  }
-}
-
 // ---------------------------------------------------------------------------
 // PEDIDOS
 // ---------------------------------------------------------------------------
@@ -149,71 +119,9 @@ const filtrarClientes = (url: URL): Customer[] => {
     return coincideBusqueda && coincideTags
   })
 }
-
 // ---------------------------------------------------------------------------
-// Importacion de CSV: validacion por fila, upsert por id, reporte de errores.
+// Importacion de CSV. La logica vive en su propio modulo: es negocio, no transporte.
 // ---------------------------------------------------------------------------
-const parsearCsv = (texto: string): string[][] => {
-  const lineas = texto.split(/\r?\n/).filter((linea) => linea.trim() !== '')
-  return lineas.map((linea) =>
-    linea.split(',').map((celda) => celda.trim().replace(/^"|"$/g, ''))
-  )
-}
-
-const importarVinos = (texto: string): ImportResult => {
-  const resultado: ImportResult = { created: 0, updated: 0, errors: [] }
-  const [encabezado, ...filas] = parsearCsv(texto)
-
-  if (encabezado === undefined) {
-    resultado.errors.push({ row: 0, field: 'archivo', message: 'El archivo esta vacio' })
-    return resultado
-  }
-
-  const columna = (nombre: string): number =>
-    encabezado.findIndex((h) => h.toLowerCase() === nombre.toLowerCase())
-
-  const indiceNombre = columna('name')
-  const indiceBodega = columna('winery')
-  const indicePrecio = columna('price')
-
-  if (indiceNombre === -1 || indiceBodega === -1 || indicePrecio === -1) {
-    resultado.errors.push({
-      row: 1,
-      field: 'encabezado',
-      message: 'Faltan las columnas obligatorias: name, winery, price'
-    })
-    return resultado
-  }
-
-  filas.forEach((fila, indice) => {
-    const numeroFila = indice + 2
-    const candidato = vinoCreateSchema({
-      name: fila[indiceNombre],
-      winery: fila[indiceBodega],
-      price: fila[indicePrecio]
-    })
-
-    if (candidato === null) {
-      resultado.errors.push({
-        row: numeroFila,
-        field: 'price',
-        message: 'Nombre, bodega y precio mayor que cero son obligatorios'
-      })
-      return
-    }
-
-    const existente = mockWines.find((vino) => vino.id === candidato.id)
-    if (existente !== undefined) {
-      Object.assign(existente, candidato)
-      resultado.updated += 1
-    } else {
-      mockWines.push(candidato)
-      resultado.created += 1
-    }
-  })
-
-  return resultado
-}
 
 // ---------------------------------------------------------------------------
 // HANDLERS
@@ -230,7 +138,7 @@ export const handlers = [
   http.post('/api/wines', async ({ request }) => {
     await esperar(300, 800)
     const cuerpo = (await request.json()) as Record<string, unknown>
-    const vino = vinoCreateSchema(cuerpo)
+    const vino = vinoDesdeCuerpo(cuerpo)
     if (vino === null) {
       return ERRORES.validacion('Nombre, bodega, precio mayor que cero y cosecha valida son obligatorios')
     }
@@ -245,7 +153,7 @@ export const handlers = [
     if (vino === undefined) return ERRORES.noEncontrado('Vino')
 
     const cuerpo = (await request.json()) as Partial<AdminWine>
-    const combinado = vinoCreateSchema({ ...vino, ...cuerpo })
+    const combinado = vinoDesdeCuerpo({ ...vino, ...cuerpo })
     if (combinado === null) return ERRORES.validacion('Los datos actualizados no son validos')
 
     Object.assign(vino, combinado, { id: vino.id })

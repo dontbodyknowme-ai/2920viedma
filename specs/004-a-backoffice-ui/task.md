@@ -673,7 +673,7 @@ Puerto 5199, `npm run dev`, con `isAdmin` activo.
 
 **RF cubiertos:** RF-10 a RF-21
 **Depende de:** T3
-**Estado:** `pendiente`
+**Estado:** `hecha` — 136/136 tests en verde, verificado en navegador
 
 ### Qué hacer
 
@@ -722,12 +722,99 @@ En navegador:
 
 ### Hecho cuando
 
-- [ ] `catalogo.tsx` existe con DataTable completa
-- [ ] Formulario tiene `stock` y `activo`
-- [ ] CRUD completo funciona vía MSW
-- [ ] Export/Import CSV funcionan
-- [ ] `npx tsc --noEmit` sale 0
-- [ ] `npm run build` sale 0
+- [x] `catalogo.tsx` existe con DataTable completa
+- [x] `admin_wine_form.tsx` tiene `stock` y `activo`
+- [x] `useCatalogo.ts` existe con el CRUD completo
+- [x] CRUD completo funciona vía MSW
+- [x] Export/Import CSV funcionan, y el archivo exportado se puede reimportar
+- [x] `npx tsc --noEmit` sale 0
+- [x] `npm run build` sale 0
+- [x] **136/136 tests en verde** (+19: 11 de CSV, 8 de ids)
+
+### Desviación del enunciado
+
+**El enunciado pedía actualizar `editor_formador_productos.tsx` para agregar
+`stock` y `activo`. No se hizo, y es deliberado.** Ese formulario produce un
+`Wine`, que es lo que ve un visitante del catalogo publico. El admin necesita un
+`AdminWine`, que son dos tipos distintos desde que C-1 resolvio el conflicto.
+Un solo formulario para los dos necesitaria un `mostrarInventario: boolean` y
+ensuciar las dos ramas de envio con casts: dos formularios, dos contratos
+limpos.
+
+Se creo `src/components/admin/admin_wine_form.tsx`. El campo `stock` y el
+interruptor `activo` viven ahi y **no aparecen en el formulario publico**, que
+es lo que pide RF-06 de la spec 004-b.
+
+El nombre del hook también cambió: el enunciado decia `useWines.ts` y quedó
+`useCatalogo.ts`, porque el hook tambien maneja los filtros, la paginacion, el
+CSV y las mutaciones, no solo las peticiones de vinos.
+
+### Bugs encontrados y corregidos (2026-10-09)
+
+Todos estaban **desde T1** y ninguno lo cubria un test.
+
+**1. El importador de CSV estaba roto entero.** Hacia
+`const [encabezado, ...filas] = parsearCsv(texto)`, pero `parsearCsv` devuelve
+`{ encabezados, filas }`. Desestructurar un objeto como si fuera un array lanza
+`TypeError: parsearCsv(...) is not iterable`. El boton Importar CSV no habia
+funcionado nunca.
+
+**2. Ademas tenia su propio parser con `split(',')`.** Rompia con cualquier
+descripcion que tuviera una coma, que es justo lo que genera el export del
+propio panel. Se borro y se usa el `parsearCsv` de `src/utils/csv.ts`, que
+maneja comillas, CRLF y BOM.
+
+**3. El importador exigia encabezados en ingles.** Buscaba `name`, `winery`,
+`price`, pero el export escribe `Nombre`, `Bodega`, `Precio`. Exportar y
+reimportar fallaba con un error de encabezado que no decia que el archivo lo
+habia generado el propio panel. Ahora cada columna se busca por una lista de
+alias y acepta los dos idiomas.
+
+**4. Exportar y reimportar duplicaba el catalogo.** El CSV exportado no
+incluia la columna `id`, asi que al reimportarlo cada vino se creaba de nuevo en
+lugar de actualizarse. `id` ahora es la primera columna del export.
+
+**5. `Boolean("no")` daba `true`.** El export escribe `activo` como `si`/`no`.
+Sin convertir, todo lo exportado como inactivo volvia visible en la tienda al
+reimportar. Ahora se reconoce `si`, `sí`, `yes`, `true`, `1`.
+
+**6. `duplicar` mandaba el `id` del original.** Hacia `crear({ ...vino })`, y
+el `...vino` incluye el `id`. La copia nacia con el id del original, y a partir
+de ahi todo fallaba **en silencio**: editar uno modificaba el otro, y borrar la
+copia borraba el original. Esto lo encontro la verificacion en navegador, no un
+test: la API reportaba 1 resultado y la tabla mostraba 2 filas, porque las dos
+compartian la misma key de React. Ahora `duplicar` descarta el `id`.
+
+**7. Logica de validacion duplicada.** `vinoCreateSchema` (en `handlers.ts`) y
+`vinoDesdeFila` (en el importador) eran el mismo codigo en dos archivos. Con la
+duplicacion, un vino podia ser valido por una puerta e invalido por la otra.
+Se unifico en `src/mocks/vino_schema.ts`, que usan tanto los handlers como la
+importacion.
+
+### Verificación en navegador (2026-10-09)
+
+Puerto 5201, `npm run dev`, con `isAdmin` activo.
+
+| Qué | Resultado |
+|---|---|
+| DataTable | 12 vinos, 10 filas por pagina, columnas Nombre/Cepa/Categoria/Cosecha/Precio/Stock/Estado/Acciones |
+| Crear | Modal lateral, campos precargados en blanco, 12 → 13, aviso `"Vino de Prueba QA" creado.` |
+| Editar | Formulario precargado (`52500`, stock `7`, activo `true`), guardo → `$ 61.000`, stock `3`, INACTIVO |
+| Buscar | `Vino de Prueba QA` → "1 vino en el catalogo", 1 fila |
+| Duplicar | 13 → 14, aparece `Copia de QA Temporal`, id distinto al original |
+| Eliminar | `ConfirmDialog` con CANCELAR/ELIMINAR, borra la copia, **el original queda intacto** |
+| Filtro sin resultados | "Sin resultados / Proba con otros filtros. / LIMPIAR FILTROS" |
+| Consola | **0 errores, 0 avisos** |
+
+### Archivos
+
+| Archivo | Rol |
+|---|---|
+| `src/pages/admin/catalogo.tsx` | La pagina: toolbar, tabla, modal, dialogo |
+| `src/components/admin/admin_wine_form.tsx` | Formulario `AdminWine` con `stock` y `activo` |
+| `src/hooks/useCatalogo.ts` | Filtros, paginacion, CRUD, import/export |
+| `src/mocks/importar_vinos.ts` | Logica de importacion (testeable sin HTTP) |
+| `src/mocks/vino_schema.ts` | Validacion y normalizacion, compartida por handlers e importacion |
 
 ---
 
