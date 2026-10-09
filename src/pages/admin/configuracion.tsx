@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react'
+﻿import { useRef, useState } from 'react'
 import { AlertTriangle, Download, FolderTree, Lock, Store, Upload, Workflow } from 'lucide-react'
 import { useApi } from '../../hooks/useApi'
 import { csvCatalogo, csvClientes, csvPedidos, descargarComo } from '../../utils/csv_export'
+import { exigirConexion } from '../../utils/offline'
 import { TIENDA, zonaHorariaLocal } from '../../utils/tienda'
 import type { AdminWine, Customer, ImportResult, Order, Paginated } from '../../types/admin'
 
@@ -97,9 +98,9 @@ const BotonExportar = ({ etiqueta, total, onClick, ocupado }: BotonExportarProps
 export const ConfiguracionAdmin = () => {
   // Se piden con `limit=100` porque los tres generadores necesitan las filas
   // completas para armar el archivo, no solo un conteo.
-  const vinos = useApi<Paginated<AdminWine>>('/api/wines?page=1&limit=100')
-  const clientes = useApi<Paginated<Customer>>('/api/customers?page=1&limit=100')
-  const pedidos = useApi<Paginated<Order>>('/api/orders?page=1&limit=100')
+  const vinos = useApi<Paginated<AdminWine>>('/api/wines?page=1&limit=100', { respaldo: 'vinos' })
+  const clientes = useApi<Paginated<Customer>>('/api/customers?page=1&limit=100', { respaldo: 'clientes' })
+  const pedidos = useApi<Paginated<Order>>('/api/orders?page=1&limit=100', { respaldo: 'pedidos' })
 
   const [mensaje, setMensaje] = useState<{ texto: string; ok: boolean } | null>(null)
   const [ocupado, setOcupado] = useState<string | null>(null)
@@ -133,6 +134,8 @@ export const ConfiguracionAdmin = () => {
   const importarCatalogo = async (archivo: File): Promise<void> => {
     setOcupado('Importar catalogo')
     try {
+      exigirConexion()
+
       const res = await fetch('/api/wines/import', {
         method: 'POST',
         headers: { 'Content-Type': 'text/csv' },

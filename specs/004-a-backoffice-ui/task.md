@@ -1364,37 +1364,79 @@ encontro 4 archivos con problemas:
 directa: funcionaba **solo por hoisting**, que es casualidad, no garantia.
 RNF-04 la aprobaba, asi que ahora es dependencia directa.
 
-### CA-37 / CE-05: fallback offline — QUEDO SIN IMPLEMENTAR
+### CA-37 / CE-05: fallback offline — IMPLEMENTADO
 
-**No esta hecho y no se hizo en esta tarea.** Queda documentado para que no se
-pierda.
+Se implemento en una tanda aparte, a pedido del usuario ("cerra todo lo que
+falta").
 
-CE-05 pide: *"MSW falla o no esta registrado → Fallback a localStorage directo,
-`alert('Modo offline')`"*. No hay ningun codigo que lo haga. `grep` de
-`Modo offline` y `offline` no devuelve nada en `src/`.
+**Archivos:**
+- `src/utils/offline.ts` — respaldo en `localStorage`, estado global y
+  suscriptores.
+- `src/components/admin/aviso_offline.tsx` — banner permanente con "Reintentar".
+- `src/hooks/useApi.ts` — opcion `respaldo`.
+- `exigirConexion()` en las 5 mutaciones (catalogo, pedidos, clientes, import).
 
-**Por que no se hizo en T10:** no es una tarea de verificacion, es una
-funcionalidad, y no es chica. Habria que decidir **que datos** se respaldan:
+#### La decision que CE-05 no toma
 
-- **Vinos**: ya se persisten en `localStorage` (clave `vinoteca_wines`), porque
-  los carga la tienda publica. Habria que leerlos si falla el fetch.
-- **Pedidos y clientes**: no tienen respaldo. Habria que empezar a guardarlos,
-  lo que es comportamiento nuevo, no un fallback.
+CE-05 dice *"fallback a localStorage directo, `alert('Modo offline')`"* y nada
+mas. Un fallback que muestra datos viejos **como si fueran actuales** es peor
+que un error: el admin edita sobre datos que el servidor ya no tiene y no se
+entera. Por eso hay dos cosas y no una:
 
-Ademas hay una pregunta de diseno sin responder: **un fallback que muestra datos
-viejos sin avisar es peor que un error**. Si el panel muestra el catalogo de
-ayer sin marcarlo como viejo, el admin podria editar sobre datos que ya no son
-los reales y no se enteraria. El `alert('Modo offline')` que pide CE-05 intenta
-resolverlo, pero es un `alert` que corta la pantalla.
+1. Los datos se muestran **marcados como desactualizados** con un banner
+   permanente en el header del panel. No se puede usar el panel creyendo que se
+   ve la verdad.
+2. El `alert` de CE-05 se dispara **una vez por paso a offline**, no en cada
+   `fetch` que falla. Con cinco paginas cargando, habria que confirmar cinco
+   veces lo mismo.
 
-**Lo que si hace hoy:** si MSW no esta registrado, los `fetch` fallan, `useApi`
-pasa `error` y cada pagina muestra su mensaje de error. No hay datos viejos
-mostrados como frescos. El comportamiento es **degradar visiblemente**, que es
-distinto de lo que pide CE-05 pero no enganoso.
+#### El respaldo esta indexado por URL, y no por recurso
 
-**Recomendacion:** decidir antes de implementarlo. Si se implementa, que el
-fallback **muestre los datos marcados como desactualizados**, no como si fueran
-reales.
+Las tablas piden URLs distintas segun filtro y pagina. **Con una sola clave por
+recurso, el fallback miente:** si el admin filtra por "Tinto" y se queda sin red,
+se le muestra la ultima respuesta guardada, que puede ser la pagina 3 sin
+filtro, y la tabla ostensibly muestra "Tinto" con datos que no son de Tinto. Sin
+error, sin aviso.
+
+Indexado por URL, offline sirve **exactamente la misma consulta** que se pidio.
+Si no hay respaldo para esa URL, se muestra el error.
+
+Tope de 40 entradas por recurso: sin tope, un admin que recorre filtros y
+paginas durante dias llenaria el `localStorage`.
+
+#### Las escrituras NO se encolan
+
+Offline, crear o editar **falla** con un mensaje explicito. Encolar para mandar
+cuando vuelva la red parece gratis, pero entre que se guarda y que se manda el
+servidor pudo cambiar: el vino se creo, otro lo elimino, y el `PATCH` lo pisa.
+Resolver ese conflicto no esta decidido en ninguna spec.
+
+Fallo con mensaje claro es preferible: el admin sabe que no se guardo y
+reintenta cuando vuelva la red, en vez de creer que quedo aplicado.
+
+#### Bug encontrado al implementarlo
+
+`useApi` **dejaba los datos viejos en pantalla cuando el fetch fallaba sin
+respaldo.** Con un filtro nuevo, la tabla mostraba las filas del filtro anterior
+**debajo** del mensaje de error, como si fueran el resultado de la busqueda. Se
+agrego `setData(undefined)` en la rama de error. Hay test.
+
+#### Verificacion
+
+| Qué | Resultado |
+|---|---|
+| Tests | **224 de 224** (15 del store + 9 del hook) |
+| `tsc` / `lint` / `build` | 0 / 0 / OK |
+| `guardarRespaldo` guarda por URL | `admin_respaldo_vinos` con la clave `"/api/wines?page=1&limit=10"` |
+| Banner offline | "Modo offline. Se muestran los ultimos datos guardados en este navegador..." con boton REINTENTAR, **por encima del header** |
+| `alert` de CE-05 | Se dispara **una vez**, con el texto que pide la CE |
+| Volver a online | El banner desaparece |
+| Escritura offline | "Sin conexion con el servidor: los cambios no se pueden guardar." y el formulario **sigue abierto**, sin perder lo escrito |
+
+La emulacion de red Offline del DevTools **no sirve** para esto: corta tambien
+el HTML y los modulos, asi que la pagina no carga. Se verifico el banner
+importando `/src/utils/offline.ts` por la ruta de Vite, que devuelve la misma
+instancia del modulo que usa la app.
 
 ### Verificacion en navegador (2026-10-09)
 
@@ -1414,7 +1456,7 @@ Puerto 5213, `npm run dev`.
 | CA-21 | Pedidos | 25 pedidos, 6 columnas |
 | CA-29 | Clientes | 15 clientes, 8 columnas |
 | CA-36 | Sesion sobrevive recarga | `sessionStorage: 'abierta'` tras recargar |
-| **CA-37** | **Fallback offline** | **NO IMPLEMENTADO** |
+| CA-37 | Fallback offline | Banner "Modo offline" con Reintentar, `alert` una sola vez, escritura rechazada. Ver la seccion de CE-05 |
 | — | Consola | **0 errores, 0 avisos** en todas las paginas |
 
 Los CA de interaccion (CA-10 a CA-20, CA-22 a CA-28, CA-30 a CA-33) se
@@ -1450,7 +1492,12 @@ saldada: la bitacora cubre las 10 tareas de la 004-a, no solo la ultima.
 - [x] `MEMORY.md` con las 10 tareas de la 004-a
 - [x] `AGENTS.md` con comandos reales y la seccion Back-Office
 - [x] Dependencias declaradas y dentro de RNF-04
-- [ ] **CA-37 / CE-05 fallback offline — pendiente, documentado arriba**
+- [x] CA-37 / CE-05 fallback offline implementado
+
+**Las 10 tareas de la 004-a estan completas.** Queda fuera del alcance de esta
+spec, y anotado en `specs/003-mejoras-ux/spec.md`, el problema del hero: el titulo
+tapa la animacion 3D y las botellas destacadas cargan el diseño. El usuario
+decidio **anotarlo y dejarlo para después**, sin tocar la interfaz.
 
 ### Hecho cuando
 

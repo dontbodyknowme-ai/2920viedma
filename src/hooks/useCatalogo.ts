@@ -1,6 +1,7 @@
 ﻿import { useCallback, useMemo, useState } from 'react'
 import { useApi } from './useApi'
 import { csvCatalogo, descargarComo } from '../utils/csv_export'
+import { exigirConexion } from '../utils/offline'
 import type { AdminWine, ImportResult, Paginated } from '../types/admin'
 
 /**
@@ -90,7 +91,7 @@ export const useCatalogo = (): EstadoCatalogo => {
   const [filtros, setFiltros] = useState<FiltrosCatalogo>(FILTROS_VACIOS)
 
   const url = useMemo(() => construirUrl(filtros, page, limit), [filtros, page, limit])
-  const { data, isLoading, error, refetch } = useApi<Paginated<AdminWine>>(url)
+  const { data, isLoading, error, refetch } = useApi<Paginated<AdminWine>>(url, { respaldo: 'vinos' })
 
   // Las cepas salen de los datos mock cargados, no de una constante: si el
   // admin agrega un vino con una cepa nueva, el filtro tiene que ofrecerla sin
@@ -127,6 +128,11 @@ export const useCatalogo = (): EstadoCatalogo => {
    */
   const conError = useCallback(
     async <T,>(operacion: () => Promise<T>): Promise<T> => {
+      // Se verifica **antes** de la operacion: si el panel esta sin servidor, un
+      // `fetch` tardaria hasta 30 s en fallar y el usuario veria un boton
+      // trabado sin explicacion.
+      exigirConexion()
+
       const respuesta = await operacion()
       refrescar()
       return respuesta

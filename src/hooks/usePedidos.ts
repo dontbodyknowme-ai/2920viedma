@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+﻿import { useCallback, useMemo, useState } from 'react'
 import { useApi } from './useApi'
 import { csvPedidos, descargarComo } from '../utils/csv_export'
+import { exigirConexion } from '../utils/offline'
 import type { Order, OrderStatus, Paginated } from '../types/admin'
 
 /**
@@ -93,7 +94,7 @@ export const usePedidos = (): EstadoPedidos => {
   const [filtros, setFiltros] = useState<FiltrosPedidos>(FILTROS_VACIOS)
 
   const url = useMemo(() => construirUrl(filtros, page, limit), [filtros, page, limit])
-  const { data, isLoading, error, refetch } = useApi<Paginated<Order>>(url)
+  const { data, isLoading, error, refetch } = useApi<Paginated<Order>>(url, { respaldo: 'pedidos' })
 
   const refrescar = useCallback(() => {
     refetch()
@@ -111,6 +112,8 @@ export const usePedidos = (): EstadoPedidos => {
 
   const alternarEstado = useCallback(
     async (pedido: Order, estado: OrderStatus): Promise<Order> => {
+      exigirConexion()
+
       const res = await fetch(`/api/orders/${encodeURIComponent(pedido.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

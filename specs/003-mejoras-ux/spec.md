@@ -128,6 +128,38 @@ La aplicación compila, arranca y es usable de punta a punta (spec 002). Esta sp
 - **RF-23** — CUANDO el usuario pulsa una botella destacada, EL SISTEMA abre la vista rápida de ese vino
 - **RF-24** — SI no hay botellas destacadas (catálogo vacío), ENTONCES EL SISTEMA no muestra la sección de destacados
 
+#### Pendiente: el hero quedó cargado (anotado 2026-10-09, NO se toca)
+
+**Motivo del usuario: "el título (nombre de la empresa) tapa la animación 3D, y queda tosco. Quiero volver a la interfaz anterior, sin botellas destacadas."**
+
+Decisión tomada en esa fecha: **anotarlo y dejarlo para después.** No se
+modifica el hero hasta que el usuario lo pida.
+
+**Lo que molesta, en concreto.** `src/components/hero.tsx` tiene tres capas
+compitiendo por el mismo espacio de un `min-h-screen`:
+
+1. `<HeroCanvas3D />` en `absolute inset-0` — la botella 3D, ocupa todo el hero.
+2. El título "CAVA & CO." centrado, con `text-8xl` en pantallas grandes.
+3. La fila "Botellas Destacadas" en `absolute bottom-24`, por encima del canvas.
+
+Con las tres, el titulo tapa la animacion 3D y el conjunto se ve apinado. Sin
+la fila de destacadas (como estaba antes de esta spec), quedaban dos capas y el
+hero respiraba.
+
+**Si se encara, las opciones son:**
+
+- Sacar la fila de destacadas del hero. Contradice **RF-22, RF-23 y RF-24** de
+  esta misma seccion, asi que hay que decidir si se borran del RF o se
+  reinterpretan.
+- Sacar la animacion 3D y dejar el hero tipografico.
+- Repartir: 3D a un lado, texto al otro, sin superposición.
+
+**A tener en cuenta cuando se decida:** `Hero` recibe `wines` y `onSelectWine`
+solo para esta sección. Si se saca la fila, ambos props quedan sin uso y
+`onSelectWine` sigue siendo el camino hacia `VistaRapidaProducto`, que se
+perdería desde el hero. No hay ningun test que cubra las destacadas, asi que
+quitarlas no rompe la suite, pero si rompe RF-23.
+
 ---
 
 ## 5. Requisitos no funcionales

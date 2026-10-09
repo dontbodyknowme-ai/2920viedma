@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+﻿import { useCallback, useMemo, useState } from 'react'
 import { useApi } from './useApi'
 import { csvClientes, descargarComo } from '../utils/csv_export'
+import { exigirConexion } from '../utils/offline'
 import type { Customer, Order, Paginated } from '../types/admin'
 
 /**
@@ -72,7 +73,7 @@ export const useClientes = (): EstadoClientes => {
   const [cargandoCliente, setCargandoCliente] = useState(false)
 
   const url = useMemo(() => construirUrl(filtros, page, limit), [filtros, page, limit])
-  const { data, isLoading, error, refetch } = useApi<Paginated<Customer>>(url)
+  const { data, isLoading, error, refetch } = useApi<Paginated<Customer>>(url, { respaldo: 'clientes' })
 
   const refrescar = useCallback(() => {
     refetch()
@@ -141,6 +142,8 @@ export const useClientes = (): EstadoClientes => {
   /** El PATCH devuelve el cliente completo, que es el que se muestra. */
   const parcheando = useCallback(
     async (id: string, cuerpo: Record<string, unknown>): Promise<Customer> => {
+      exigirConexion()
+
       const res = await fetch(`/api/customers/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

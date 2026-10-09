@@ -2,6 +2,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { AdminGate } from './admin_gate'
+import { AvisoOffline } from './aviso_offline'
 import { AdminHeader } from './admin_header'
 import { AdminSidebar } from './admin_sidebar'
 import { useEsMovil } from '../../hooks/useMediaQuery'
@@ -124,6 +125,11 @@ export const AdminLayout = () => {
           esMovil ? '' : colapsado ? 'ml-[72px]' : 'ml-72'
         }`}
       >
+        {/* Va dentro de la columna de contenido, no en un `fixed`: asi hereda
+            el margen que ya calcula el sidebar y no hay que replicar el calculo
+            del colapso en dos lugares. */}
+        <AvisoOffline />
+
         <AdminHeader
           titulo={tituloDe(location.pathname)}
           esMovil={esMovil}

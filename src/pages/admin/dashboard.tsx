@@ -72,7 +72,7 @@ const ActividadReciente = ({ metricas }: { metricas: Metrics }) => {
 }
 
 export const Dashboard = () => {
-  const { data: metricas, isLoading, error } = useApi<Metrics>('/api/metrics')
+  const { data: metricas, isLoading, error } = useApi<Metrics>('/api/metrics', { respaldo: 'metricas' })
 
   if (error !== undefined) {
     return (
