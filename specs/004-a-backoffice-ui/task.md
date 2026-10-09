@@ -822,7 +822,7 @@ Puerto 5201, `npm run dev`, con `isAdmin` activo.
 
 **RF cubiertos:** RF-22 a RF-29
 **Depende de:** T3
-**Estado:** `pendiente`
+**Estado:** `hecha` — 159/159 tests en verde, verificado en navegador
 
 ### Qué hacer
 
@@ -873,12 +873,100 @@ En navegador:
 
 ### Hecho cuando
 
-- [ ] `pedidos.tsx` con DataTable funciona
-- [ ] `order_drawer.tsx` con detalle + timeline
-- [ ] Cambio estado persiste (MSW)
-- [ ] Generar etiqueta + devolución funcionan (mock)
-- [ ] `npx tsc --noEmit` sale 0
-- [ ] `npm run build` sale 0
+- [x] `pedidos.tsx` con DataTable funciona
+- [x] `order_drawer.tsx` con detalle + timeline
+- [x] `date_range_picker.tsx` con react-day-picker v9
+- [x] `usePedidos.ts` existe (el enunciado decia `useOrders.ts`)
+- [x] Cambio estado persiste (MSW) y el drawer se actualiza
+- [x] Generar etiqueta + devolucion funcionan (mock)
+- [x] `npx tsc --noEmit` sale 0
+- [x] `npm run build` sale 0
+- [x] **159/159 tests en verde** (+23: 10 de rango, 13 de pedidos)
+
+### Decision de version de `react-day-picker`
+
+**Se instalo v9.14, no v8.** El plan (D-G) decia v8. v8 exige `date-fns@^2 || ^3`
+como peer dependency, o sea dos dependencias mas para el panel. v9 trabaja con
+`Date` nativos y usa `date-fns@4` solo internamente (ya instalado como
+dependencia transitiva, no hay que declararla). La API que se usa
+(`mode='range'`, `selected: { from, to }`) es identica en las dos. Se importan
+los nombres de mes y dia de `date-fns/locale`, que es lo unico que hace falta
+de `date-fns`.
+
+### Bugs encontrados y corregidos (2026-10-09)
+
+**1. El filtro multi-estado no funcionaba.** El handler comparaba
+`pedido.status === estado` contra la cadena entera `"pendiente,enviado"`, que
+no es ningun estado. La tabla salia vacia **sin error visible**: el admin veia
+que no habia pedidos cuando si los habia. Ahora `status` se parte por coma y se
+compara con OR.
+
+**2. Las fechas se comparaban por el dia UTC.** `dateFrom`/`dateTo` viajan como
+`YYYY-MM-DD` **locales** (ver `aIsoLocal`), pero `createdAt` es un ISO en UTC, y
+se comparaba con `createdAt.slice(0,10)`. Un pedido hecho el 15 a las 23:30 en
+Buenos Aires es `2026-01-16T02:30:00Z`: con `slice` contaba como del 16 y caia
+fuera de un rango "del 1 al 15" que el usuario acababa de elegir. Sin error ni
+aviso: el admin veia un dia menos del que hay.
+
+El fix esta en los dos lados con la misma regla: `aIsoLocal(new Date(createdAt))`.
+La funcion vive en `src/utils/fechas.ts` y la usan tanto el componente como el
+filtro, porque son dos consumidores que no se conocen entre si y no pueden
+divergir.
+
+El test de esto **falla con el codigo viejo y pasa con el nuevo**: se comprobo
+revirtiendo `diaDe` a `slice(0,10)` y viendo que el suite se rompia.
+
+**3. El rango invertido no se corrigia.** El calendario entrega `from` mayor que
+`to` cuando el usuario arranca por el dia de la derecha. Se mandaba asi y el
+backend no devolvia nada: de nuevo, pareceria que no hay pedidos. `normalizarRango`
+lo invierte.
+
+**4. El calendario no se reabria en el mes correcto.** Se usaba
+`defaultMonth`, que en react-day-picker solo aplica en el primer montaje del
+componente. Como el calendario se abre y se cierra varias veces, en la segunda
+apertura seguia mostrando el mes en que se cargo la pagina. Ahora `month` y
+`onMonthChange` estan controlados y cada apertura arranca en el mes del filtro o
+en el mes actual.
+
+**5. El drawer mostraba el pedido viejo al cambiar el estado.** El `PATCH`
+devuelve el pedido completo con el timeline ya actualizado, pero el drawer
+seguia dibujando el `Order` del estado anterior: el `select` volvia a
+"pendiente" y el historial no mostraba el evento nuevo, al lado de un aviso que
+decia "ahora esta enviado". Ahora la respuesta del `PATCH` reemplaza el pedido
+abierto.
+
+**6. El drawer y el modal de devolucion compartian el estado de error.** Un
+fallo al cambiar el estado aparecia dentro del modal de devolucion, que no
+tenia nada que ver. Ahora son `error` y `errorDevolucion` separados.
+
+### Verificación en navegador (2026-10-09)
+
+Puerto 5205, `npm run dev`, con `isAdmin` activo.
+
+| Qué | Resultado |
+|---|---|
+| DataTable | 25 pedidos, "Mostrando 1-10 de 25 pedidos", columnas Pedido/Cliente/Fecha/Total/Estado/Acciones |
+| Filtro multi-estado | 6 checks. "Pendiente" → 3 pedidos, contador "Estado 1". + "Enviado" → 7 pedidos, contador "Estado 2" |
+| DateRangePicker | 2 meses visibles ("octubre 2026", "noviembre 2026"), dias en espanol, futuros deshabilitados |
+| Rango | 05/09 a 20/09 → 7 pedidos, ambos extremos incluidos, aviso "Mostrando del 2026-09-05 al 2026-09-20." |
+| Drawer | CAVA-1001, secciones Cliente / Envio / Productos (4 unidades) / Estado / Historial / Operaciones, 2 items con imagen |
+| Cambio de estado | select → "enviado", timeline de 1 a 2 eventos con "ESTADO ACTUAL" en el nuevo, badge coherente |
+| Generar etiqueta | Aviso "Etiqueta generada (mock) para CAVA-1001." |
+| Devolucion: sin items | "Elegi al menos un producto a devolver." |
+| Devolucion: sin motivo | "Escribi el motivo de la devolucion." |
+| Devolucion: completa | Estado → "devuelto", timeline con 2 eventos, badge DEVUELTO en la tabla |
+| Consola | **0 errores, 0 avisos** |
+
+### Archivos
+
+| Archivo | Rol |
+|---|---|
+| `src/pages/admin/pedidos.tsx` | La pagina: toolbar, tabla, multi-estado, drawer |
+| `src/components/admin/order_drawer.tsx` | Detalle + cambio de estado + etiqueta + devolucion |
+| `src/components/admin/date_range_picker.tsx` | Wrapper de react-day-picker v9 con tema oscuro |
+| `src/hooks/usePedidos.ts` | Filtros, paginacion, cambio de estado, export |
+| `src/utils/fechas.ts` | `aIsoLocal`, compartido por el componente y el filtro |
+| `src/mocks/filtros.ts` | Filtrado de los tres recursos (testeable sin HTTP) |
 
 ---
 

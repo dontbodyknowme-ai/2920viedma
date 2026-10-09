@@ -1,12 +1,11 @@
 ﻿import { http, HttpResponse, delay } from 'msw'
 import type {
   AdminWine,
-  Customer,
   Metrics,
-  Order,
   OrderStatus,
   Paginated
 } from '../types/admin'
+import { filtrarClientes, filtrarPedidos, filtrarVinos } from './filtros'
 import { importarVinos } from './importar_vinos'
 import { vinoDesdeCuerpo } from './vino_schema'
 import { mockCustomers, mockMetrics, mockOrders, mockWines } from './data'
@@ -52,73 +51,9 @@ const paginar = <T,>(lista: T[], { page, limit }: ParamsPaginacion): Paginated<T
   totalPages: Math.max(1, Math.ceil(lista.length / limit))
 })
 
-const normalizar = (texto: string | null): string => (texto ?? '').trim().toLowerCase()
+// El filtrado vive en ./filtros.ts: es logica de negocio y los tests la
+// llaman directo, porque bajo jsdom MSW v2 no intercepta el fetch de undici.
 
-// ---------------------------------------------------------------------------
-// VINOS
-// ---------------------------------------------------------------------------
-const filtrarVinos = (url: URL): AdminWine[] => {
-  const busqueda = normalizar(url.searchParams.get('search'))
-  const categoria = normalizar(url.searchParams.get('category'))
-  const varietal = normalizar(url.searchParams.get('varietal'))
-  const estado = normalizar(url.searchParams.get('status'))
-
-  return mockWines.filter((vino) => {
-    const coincideBusqueda =
-      busqueda === '' ||
-      vino.name.toLowerCase().includes(busqueda) ||
-      vino.winery.toLowerCase().includes(busqueda) ||
-      vino.varietal.toLowerCase().includes(busqueda)
-    const coincideCategoria = categoria === '' || vino.category.toLowerCase() === categoria
-    const coincideVarietal = varietal === '' || vino.varietal.toLowerCase() === varietal
-    const coincideEstado =
-      estado === '' || (estado === 'activo' ? vino.activo : !vino.activo)
-    return coincideBusqueda && coincideCategoria && coincideVarietal && coincideEstado
-  })
-}
-
-// ---------------------------------------------------------------------------
-// PEDIDOS
-// ---------------------------------------------------------------------------
-const filtrarPedidos = (url: URL): Order[] => {
-  const estado = normalizar(url.searchParams.get('status'))
-  const busqueda = normalizar(url.searchParams.get('search'))
-  const desde = url.searchParams.get('dateFrom')
-  const hasta = url.searchParams.get('dateTo')
-
-  return mockOrders.filter((pedido) => {
-    const coincideEstado = estado === '' || pedido.status === estado
-    const coincideBusqueda =
-      busqueda === '' ||
-      pedido.id.toLowerCase().includes(busqueda) ||
-      pedido.customerName.toLowerCase().includes(busqueda) ||
-      pedido.customerEmail.toLowerCase().includes(busqueda)
-    const coincideDesde = desde === null || pedido.createdAt >= desde
-    const coincideHasta = hasta === null || pedido.createdAt <= `${hasta}T23:59:59.999Z`
-    return coincideEstado && coincideBusqueda && coincideDesde && coincideHasta
-  })
-}
-
-// ---------------------------------------------------------------------------
-// CLIENTES
-// ---------------------------------------------------------------------------
-const filtrarClientes = (url: URL): Customer[] => {
-  const busqueda = normalizar(url.searchParams.get('search'))
-  const tags = (url.searchParams.get('tags') ?? '')
-    .split(',')
-    .map((tag) => normalizar(tag))
-    .filter((tag) => tag !== '')
-
-  return mockCustomers.filter((cliente) => {
-    const coincideBusqueda =
-      busqueda === '' ||
-      cliente.name.toLowerCase().includes(busqueda) ||
-      cliente.email.toLowerCase().includes(busqueda) ||
-      cliente.phone.toLowerCase().includes(busqueda)
-    const coincideTags = tags.length === 0 || tags.every((tag) => cliente.tags.includes(tag))
-    return coincideBusqueda && coincideTags
-  })
-}
 // ---------------------------------------------------------------------------
 // Importacion de CSV. La logica vive en su propio modulo: es negocio, no transporte.
 // ---------------------------------------------------------------------------
