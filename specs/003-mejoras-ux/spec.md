@@ -128,37 +128,41 @@ La aplicación compila, arranca y es usable de punta a punta (spec 002). Esta sp
 - **RF-23** — CUANDO el usuario pulsa una botella destacada, EL SISTEMA abre la vista rápida de ese vino
 - **RF-24** — SI no hay botellas destacadas (catálogo vacío), ENTONCES EL SISTEMA no muestra la sección de destacados
 
-#### Pendiente: el hero quedó cargado (anotado 2026-10-09, NO se toca)
+#### Pendiente: RESUELTO — el hero quedo cargado (2026-10-09)
 
-**Motivo del usuario: "el título (nombre de la empresa) tapa la animación 3D, y queda tosco. Quiero volver a la interfaz anterior, sin botellas destacadas."**
+**Motivo del usuario: "el titulo (nombre de la empresa) tapa la animacion 3D, y queda tosco."**
 
-Decisión tomada en esa fecha: **anotarlo y dejarlo para después.** No se
-modifica el hero hasta que el usuario lo pida.
+**Estado: resuelto.** El hero paso a disposicion partida y las botellas
+destacadas se movieron a su propia seccion, debajo.
 
-**Lo que molesta, en concreto.** `src/components/hero.tsx` tiene tres capas
-compitiendo por el mismo espacio de un `min-h-screen`:
+**Lo que se hizo:**
 
-1. `<HeroCanvas3D />` en `absolute inset-0` — la botella 3D, ocupa todo el hero.
-2. El título "CAVA & CO." centrado, con `text-8xl` en pantallas grandes.
-3. La fila "Botellas Destacadas" en `absolute bottom-24`, por encima del canvas.
+1. **Hero en dos columnas** (`lg:grid-cols-2`): texto a la izquierda, botella 3D
+   a la derecha. El canvas ya no esta en `absolute inset-0`, asi que no hay nada
+   que tapar. Se verifico en el navegador: el titulo ocupa `left 80 → 640` y el
+   canvas `left 712 → 1296`, sin interseccion.
+2. **El titulo bajo de `text-8xl` a `text-6xl`.** En una columna de la mitad del
+   ancho, un `text-8xl` obliga a que "CAVA & CO." baje de linea.
+3. **Las botellas destacadas salen del hero.** Estaban en `absolute bottom-24`
+   dentro de un `min-h-screen`; ahora van en su propia `<section>` en flujo
+   normal, debajo, renderizada desde `App.tsx`. `position: relative`, no absoluta.
+4. **La flecha de scroll bajo el boton.** Estaba en `absolute bottom-12`, centrada
+   en pantalla, justo encima de las botellas 3D.
+5. **El hero ya no recibe props.** `Hero` era `({ wines, onSelectWine })` solo
+   para las destacadas; ahora es `Hero()`. Las botellas viven en
+   `src/components/botellas_destacadas.tsx`.
+6. **El hero salio de su `AnimatedSection`.** Es la primera pantalla y tiene su
+   propia animacion de entrada; envolverlo hacia que el reveal por scroll lo
+   mantuviera fuera de vista al cargar.
 
-Con las tres, el titulo tapa la animacion 3D y el conjunto se ve apinado. Sin
-la fila de destacadas (como estaba antes de esta spec), quedaban dos capas y el
-hero respiraba.
+**RF-22 a RF-24 siguen cumplidas:** la seccion existe, con los vinos mas caros, y
+el click abre la vista rapida. Lo que cambio es **donde**, no **que**.
 
-**Si se encara, las opciones son:**
+**En movil** se apila: texto arriba (48px), canvas debajo, sin scroll horizontal.
 
-- Sacar la fila de destacadas del hero. Contradice **RF-22, RF-23 y RF-24** de
-  esta misma seccion, asi que hay que decidir si se borran del RF o se
-  reinterpretan.
-- Sacar la animacion 3D y dejar el hero tipografico.
-- Repartir: 3D a un lado, texto al otro, sin superposición.
-
-**A tener en cuenta cuando se decida:** `Hero` recibe `wines` y `onSelectWine`
-solo para esta sección. Si se saca la fila, ambos props quedan sin uso y
-`onSelectWine` sigue siendo el camino hacia `VistaRapidaProducto`, que se
-perdería desde el hero. No hay ningun test que cubra las destacadas, asi que
-quitarlas no rompe la suite, pero si rompe RF-23.
+**Nota sobre la cantidad de botellas:** se muestran 2, no 3, porque
+`INITIAL_WINES` tiene 2 vinos. Los 12 del panel son mock de MSW, no del catalogo
+publico. El componente toma `min(3, wines.length)`, asi que con 3 o mas muestra 3.
 
 ---
 

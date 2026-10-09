@@ -29,7 +29,8 @@
 
 ## Componentes y Estructura
 - [x] `Navbar` - Navegacion fija con efecto de vidrio/opacidad al hacer scroll y contador de carrito en vivo. **Enlaces de navegación (Inicio, Catálogo, Contacto) con panel lateral en móvil implementado.**
-- [x] `Hero` - Seccion principal con efecto parallax, titular impactante, boton 'Explorar Cava' y botellas destacadas.
+- [x] `Hero` - Seccion principal en **disposicion partida**: texto a la izquierda (parallax), botella 3D a la derecha. Titular, copy y boton 'Explorar Cava'. Sin props.
+- [x] `BotellasDestacadas` - Los 3 vinos mas caros, en **su propia seccion debajo del hero**, en flujo normal. Grid responsive, precio sobre la foto, entrada en cascada al hacer scroll.
 - [x] `ProductCatalog` - Grilla e-commerce responsiva con filtros por tipo (Tinto, Blanco, Rosado, Espumante), cepa y rango de precio.
 - [x] `ProductCard` - Tarjeta interactiva con zoom sutil en hover, detalles de bodega/cosecha, boton 'Agregar al Carrito' y boton 'Editar' (solo admin).
 - [x] `ProductForm` - Modal/Formulario de carga/edicion de productos con soporte para URLs e subida de archivos de imagen (drag & drop). Modo edicion con carga de datos, titulo dinamico y validacion de precio > 0.
@@ -103,6 +104,14 @@
   - **Bug encontrado al implementarlo:** `useApi` dejaba los datos viejos en pantalla cuando el fetch fallaba sin respaldo. Con un filtro nuevo, la tabla mostraba las filas del filtro anterior debajo del mensaje de error, como si fueran el resultado.
   - Tests: **224 de 224**, `tsc` 0, `lint` 0, `build` OK.
   - Anotado en `specs/003-mejoras-ux/spec.md` (sin tocar codigo): **el hero quedo cargado.** El titulo "CAVA & CO." tapa la animacion 3D y la fila de botellas destacadas compite por el mismo espacio de un `min-h-screen`. El usuario quiere volver a la interfaz anterior sin destacadas, pero decidio **anotarlo y dejarlo para despues**.
+- *2026-10-09 (tarde):* **Hero rediseñado a disposicion partida.** A pedido del usuario: "poné las botellas destacadas más abajo, que no queden encima de nada; el hero a la izquierda y el HeroCanvas3D a la derecha, como en las versiones anteriores".
+  - **No hay version previa que restaurar**: `hero.tsx` en el primer commit (6a45f39) esta truncado en 124 bytes, y `interfaz`, `main` y `spec-003` tienen la misma version de 4394 bytes que la de antes del cambio. La disposicion se reconstruyo desde cero.
+  - Hero en `lg:grid-cols-2`: texto a la izquierda, canvas a la derecha. El canvas ya no esta en `absolute inset-0`. Titulo de `text-8xl` a `text-6xl`.
+  - Las botellas destacadas se movieron a `src/components/botellas_destacadas.tsx`, en su propia seccion debajo, en flujo normal. `Hero` dejo de recibir props y ahora es `Hero()`. RF-22/23/24 siguen cumplidas: cambia **donde**, no **que**.
+  - La flecha de scroll estaba en `absolute bottom-12` centrada, encima de las botellas; ahora cuelga del boton.
+  - Se saco el hero de su `AnimatedSection`: es la primera pantalla y el reveal por scroll lo dejaba fuera de vista al cargar.
+  - Verificado en navegador: titulo `left 80→640`, canvas `left 712→1296`, sin interseccion. En movil se apila sin scroll horizontal.
+  - Se muestran 2 botellas y no 3 porque `INITIAL_WINES` tiene 2 vinos. Los 12 del panel son mock de MSW.
 - *2026-10-08:* Implementada Tarea 8 (T8) - Verificación integral y documentación. Todas las tareas de la spec 003 completadas: T1 (Filtros por precio y cepa), T2 (Edición de productos), T3 (Carga de imagen por archivo drag & drop), T4 (Enlaces de navegación), T5 (AnimatedSection scroll-reveal), T6 (Parallax en Hero), T7 (Botellas destacadas). Verificación: `npx tsc --noEmit` y `npm run build` pasan. No se instalaron dependencias nuevas. Se actualizó `MEMORY.md` y `AGENTS.md`.
 - *2026-10-08:* Implementada Tarea 4 (T4) - Enlaces de navegación. Se agregaron enlaces a la barra de navegación (Inicio, Catálogo, Contacto) con scroll suave y offset para no tapar el encabezado por la barra fija. En móvil se implementó panel lateral (drawer) con Framer Motion (`AnimatePresence` + `motion.aside`) que anima desde la derecha, se cierra al hacer click en enlace, en la X o en el fondo. Se creó componente `Footer` (`pie_de_pagina.tsx`) con `id="contacto"` como destino de navegación. Se actualizó `App.tsx` para incluir el Footer.
 - *2026-10-08:* Implementada Tarea 2 (T2) - Edicion de productos (solo admin). Se extendio `ProductForm` con props `onUpdateWine` y `wineToEdit`, agregado `useEffect` para cargar datos del vino a editar, titulo dinamico ('Editar Vino' / 'Cargar Nuevo Vino'), boton 'Guardar Cambios' en modo edicion, validacion de precio > 0. En `App.tsx` agregado estado `vinoAEditar` y funcion `actualizarWine`. En `ProductCard` agregado boton 'Editar' visible cuando se pasa `onEditWine`. Conectado flujo completo: click en 'Editar' en tarjeta -> abre formulario en modo edicion -> guarda con `actualizarWine` manteniendo mismo ID.
