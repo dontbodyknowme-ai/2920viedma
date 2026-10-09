@@ -1,4 +1,4 @@
-# Tareas 004 — Back-Office UI (Panel de Administración)
+﻿# Tareas 004 — Back-Office UI (Panel de Administración)
 
 **Spec:** `specs/004-backoffice-ui/spec.md`, estado `borrador`
 **Plan:** `specs/004-backoffice-ui/plan.md`
@@ -9,12 +9,13 @@
 
 - **Una tarea a la vez**, en el orden de dependencias.
 - **Ninguna tarea se marca hecha sin ejecutar su verificación.** El estado arranca en `pendiente` y solo pasa a `hecha` cuando la verificación pasa.
-- **Regla dura: solo dependencias aprobadas.** `recharts`, `@tanstack/react-table`, `msw`, `papa-parse`, `react-router-dom`.
+- **Regla dura: solo dependencias aprobadas.** `recharts`, `@tanstack/react-table`, `msw`, `react-router-dom`, `react-day-picker`, `date-fns`. PapaParse quedo fuera de la lista: da 404 en el registry de este proyecto.
+
 ## Cómo se usan estas tareas
 
 - **Una tarea a la vez**, en el orden de dependencias.
 - **Ninguna tarea se marca hecha sin ejecutar su verificación.** El estado arranca en `pendiente` y solo pasa a `hecha` cuando la verificación pasa.
-- **Regla dura: solo dependencias aprobadas.** `recharts`, `@tanstack/react-table`, `msw`, `papa-parse`, `react-router-dom`, `react-day-picker`, `date-fns`.
+- **Regla dura: solo dependencias aprobadas.** `recharts`, `@tanstack/react-table`, `msw`, `react-router-dom`, `react-day-picker`, `date-fns`. PapaParse quedo fuera: da 404 en el registry.
 - **Tests:** existen 4 suites en `test/` (`validadores`, `integridad_datos_vino`, `orquestador_carrito`, `orquestador_persistencia`) pero **`vitest` no está instalado en `node_modules`**, así que `npm test` falla con "vitest no se reconoce". Instalarlo es parte de T1: los tests nuevos de `test/admin/` no corren sin eso, y los 4 preexistentes tampoco.
 - **Si la implementación requiere cambiar la spec o el plan, pará y reportá** (skill SDD).
 - **Si la implementación requiere cambiar la spec o el plan, pará y reportá** (skill SDD).
@@ -347,7 +348,7 @@ Puerto 5199, `npm run dev`.
 
 **RF cubiertos:** Base para RF-10 a RF-34
 **Depende de:** T2
-**Estado:** `pendiente`
+**Estado:** `hecha` — 110/110 tests en verde
 
 ### Qué hacer
 
@@ -439,13 +440,88 @@ En navegador (storybook manual o página test temporal):
 
 ### Hecho cuando
 
-- [ ] 6 componentes compartidos existen en `src/components/admin/`
-- [ ] `src/utils/csv.ts` existe
-- [ ] `vitest` instalado: `npm test` corre (no "vitest no se reconoce")
-- [ ] DataTable funciona con datos mock (probar en página temporal)
-- [ ] Tests data_table y csv pasan
-- [ ] `npx tsc --noEmit` sale 0
-- [ ] `npm run build` sale 0
+- [x] 6 componentes compartidos existen en `src/components/admin/`
+- [x] `src/utils/csv.ts` existe
+- [x] `vitest` instalado: `npm test` corre
+- [x] `@tanstack/react-table` instalado
+- [x] Tests de `data_table` y `csv` pasan (42 nuevos)
+- [x] `npx tsc --noEmit` sale 0
+- [x] `npm run build` sale 0
+- [x] **110/110 tests en verde**, los 68 previos sin tocar
+
+### Notas de implementación (2026-10-09)
+
+**1. `papa-parse` no se pudo instalar: da 404 en el registry.** Se comprobo con
+`npm install papa-parse@^5.4.1` y la respuesta es `E404 Not Found`. Se aplico la
+alternativa que el plan D-12 ya preveia: escribir el CSV a mano con `Blob` y
+`URL.createObjectURL`. **La dependencia hay que sacarla de RNF-04** en una
+correccion de la spec, porque hoy nombra una libreria que no se puede bajar.
+
+**2. `DataTable` no pagina: la pagina la API.** El endpoint devuelve
+`{ data, total, page, limit, totalPages }`, asi que la tabla tiene una pagina de
+10 filas de un total de 240 y **no puede filtrar en el cliente**: si el usuario
+busca "Malbec" y la pagina actual no tiene ninguno, filtrar del lado del cliente
+dira "sin resultados" teniendo 24 en la base. Por eso TanStack corre en modo
+manual (`manualPagination`, `manualSorting`, `manualFiltering`) y toda la
+intencion sube por callbacks. El test de paginacion fija esta regla: con 240
+filas y pagina 2 de 25, el texto tiene que decir "Mostrando 26-50 de 240", no
+"1-25 de 25".
+
+**3. Dos bugs los encontraron los tests, no la revision a ojo.**
+
+*La clave del filtro salia con el indice de columna.* Los filtros se leian del
+`ColumnDef` crudo, pero `ColumnDef.id` es opcional y solo existe si se declaro a
+mano: con `accessor('categoria')` es `undefined`. El desplegable de categoria
+terminaba guardando bajo la clave `"2"`, asi que el backend recibia `?2=Tinto` y
+no filtraba nada. **Se lee de `tabla.getAllLeafColumns()`**, que ya tiene el id
+resuelto y el `meta` propagado. El sintoma era invisible mirando el codigo:
+todo parecia bien y el unico sintoma en pantalla era "el filtro no funciona".
+
+*El input de busqueda no emitia `onSearchChange` en el test.* React no lee
+`element.value` del evento: intercepta el setter del prototipo y compara contra
+el valor del render anterior. Asignar `campo.value` a mano deja ese registro
+desfasado y React descarta el evento como "sin cambios". El helper
+`escribirEnCampo` del test llama al setter del prototipo y despues dispara el
+evento.
+
+**4. `getRowId` recibe dos formas distintas segun el camino interno.** En unos
+puntos TanStack pasa la fila envuelta en un `Row` y en otros el dato crudo. Usar
+solo `fila.original` dejaba `undefined` en el camino que pasa el crudo y el
+crash era `Cannot read properties of undefined (reading 'id')` dentro de la
+funcion de id del consumidor. **Se aceptan las dos formas.** Ademas hizo falta
+fijar `useReactTable<TData>` de forma explicita: sin eso TS infiere el generico
+desde el `getRowId` y termina interpretando `TData = Row<TData>`, que no
+compila.
+
+**5. `meta.filtro` necesita augmentacion de tipos.** TanStack no tipa
+`ColumnMeta`, asi que `columna.meta?.filtro` es error de TypeScript sin un
+`declare module`. Va arriba del archivo, y `columnaConFiltro` /
+`columnaHelper` se exportan para que las tres paginas no importen de
+`@tanstack/react-table` ni recuerden la forma de `meta`.
+
+**6. El parser de CSV no usa `split(',')`.** Eso rompia justo con el dato del
+proyecto: una descripcion de vino con coma, `Vino tinto, con cuerpo`, son dos
+columnas para `split` y una para el parser. Hay test de ida y vuelta con valores
+que llevan coma y comillas dobles.
+
+**7. El CSV lleva BOM a proposito.** Sin el, Excel en Windows abre los acentos
+como caracteres raros, porque usa latin-1 por defecto.
+
+**8. `StatusBadge` usa cinco colores que no estan en `tailwind.config.js`.**
+`text-amber-300`, `text-emerald-300`, `text-sky-300`, `text-violet-300` y
+`text-teal-300`. La paleta del tema cubre las superficies de la tienda pero no
+tiene rampa para "estado del negocio", y extender el tema con cinco rampas
+semanticas es una tarea de diseno aparte que esta spec no pide. Queda anotado en
+el propio archivo cuales son las unicas clases a reemplazar cuando se haga.
+
+**9. `OrderTimeline` dibuja el historial, no lo recalcula.** Si el registro de un
+pedido dice tres eventos, muestra tres. CE-06 de la 004-b permite pasar de
+`pendiente` a `entregado` sin pasar por `enviado`, y ese salto tiene que quedar
+visible: recalcular desde el estado actual lo esconderia.
+
+**10. `descargarCsv` no hace nada sin DOM.** Los tests la invocan en jsdom, donde
+`URL.createObjectURL` no existe, y ahi interesa el texto generado, no la
+descarga.
 
 ---
 

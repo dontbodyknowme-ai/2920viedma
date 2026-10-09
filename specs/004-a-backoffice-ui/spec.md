@@ -149,7 +149,7 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 - **RNF-01 — Tipado estricto:** TypeScript strict, sin `any`
 - **RNF-02 — Estilo:** Comillas simples, sin punto y coma, patrones funcionales
 - **RNF-03 — Paleta:** Solo colores de `tailwind.config.js`
-- **RNF-04 — Sin dependencias nuevas no aprobadas:** Solo `recharts`, `@tanstack/react-table`, `msw`, `papa-parse`, `react-router-dom`, `react-day-picker`, `date-fns` (aprobadas para esta spec)
+- **RNF-04 — Sin dependencias nuevas no aprobadas:** Solo `recharts`, `@tanstack/react-table`, `msw`, `react-router-dom`, `react-day-picker`, `date-fns` (aprobadas para esta spec). **`papa-parse` queda excluida: devuelve 404 en el registry de este proyecto.** El CSV se implementa a mano en `src/utils/csv.ts`, que es la alternativa que D-12 ya preveia
 - **RNF-05 — Performance:** DataTable virtualizada si > 100 rows, lazy load drawers
 - **RNF-06 — Accesibilidad:** Tablas con `role="grid"`, `aria-sort`, focus management en drawers
 - **RNF-07 — Responsive:** Desktop-first, móvil usable (stack cards, drawer fullscreen)
