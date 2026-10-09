@@ -3,14 +3,24 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Float, Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
 
+/**
+ * Colores de la botella 3D.
+ *
+ * Three.js no lee clases de Tailwind: los materiales y las luces necesitan
+ * strings. Estos son los mismos hex de `tailwind.config.js`, y por eso estan
+ * duplicados. Si se cambia la paleta hay que cambiar los dos lugares.
+ *
+ * Mapeo: `vino*` sigue a `wine-*` y `charcoal-*` de la rampa, `oro*` a
+ * `gold-*`, y `blanco` es el blanco puro de la paleta.
+ */
 const PALETA = {
-  vino900: '#3a0a1a',
-  vino700: '#5b132b',
-  vino500: '#800020',
+  vino900: '#35030f',
+  vino700: '#7a0b25',
+  vino500: '#96092b',
   oro400: '#e5c158',
   oro500: '#d4af37',
   oro600: '#aa8c2c',
-  crema100: '#fdfbf7',
+  crema100: '#ffffff',
   crema200: '#f4efe6'
 } as const
 
