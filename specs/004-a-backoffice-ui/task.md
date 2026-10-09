@@ -1324,51 +1324,133 @@ Puerto 5209, `npm run dev`, con `sessionStorage` y `localStorage` limpios.
 
 **RF cubiertos:** RNF-01 a RNF-08
 **Depende de:** T9
-**Estado:** `pendiente`
+**Estado:** `hecha` con una salvedad — **CA-37 quedó sin implementar**
 
-### Qué hacer
+### Verificación automática
 
-**1. Verificación integral**
+| Qué | CA | Resultado |
+|---|---|---|
+| `npm test` | — | **200 de 200**, 14 archivos |
+| `npx tsc --noEmit` | CA-39 | **0 errores** |
+| `npm run lint` | CA-40 | **0 problemas** |
+| `npm run build` | CA-38 | **OK**, 25 s |
+| Dependencias | CA-41 | Solo las 6 aprobadas por RNF-04 |
 
-```bash
-npm test
-npx tsc --noEmit
-npm run build
-npm run lint  # si configurado
-```
+### Bugs encontrados en T10
 
-En navegador: recorrer **todos los CA** (CA-01 a CA-41) manualmente.
+**`npm run lint` no se habia corrido en ninguna de las 9 tareas anteriores**, y
+encontro 4 archivos con problemas:
 
-**2. Actualizar `MEMORY.md`**
+1. **`data_table.tsx` — genericos "sin usar" en `ColumnMeta`.** Es un falso
+   positivo: es una *augmentation de modulo* y TypeScript exige que los type
+   parameters coincidan con los de TanStack (`ColumnMeta<TData extends RowData,
+   TValue>`). Se discoverto porque **primero se sakaron** y el error fue TS2428.
+   Volvieron con un `eslint-disable` comentado.
 
-- Bitácora: entrada 2026-10-08 "Spec 004 Back-Office UI implementada"
-- Componentes: marcar admin components como completados
-- Decisiones: agregar D-01 a D-13
+2. **`csv.ts` — BOM invisible escrito como caracter literal.** El export escribe
+   `﻿` al principio del CSV para que Excel abra los acentos bien, y el parser lo
+   quita. Es correcto, pero invisible: no se distingue de un espacio. Ahora es
+   `﻿`, que ademas es lo unico que compila sin flag `u`.
 
-**3. Actualizar `AGENTS.md`**
+3. **`clientes.test.ts` — helper `url` sin uso.** Quedo de un test que se
+   reescribio en T7. Borrado.
 
-- Especificación: agregar sección Back-Office con 4 módulos
-- Comandos: si se agregaron scripts (dev:admin, etc.)
-- Pendientes: tachar "Panel de administración" si estaba listado
+4. **`public/mockServiceWorker.js` — `eslint-disable` sin efecto.** Lo genera
+   `npx msw init`, no es codigo del proyecto y se regenera con ese comando.
+   Excluido de lint.
 
-**4. (Opcional) Limpiar rama spec-003 si ya mergeada**
+**5. `date-fns` se importaba sin declararse.** `date_range_picker.tsx` hace
+`import { es } from 'date-fns/locale'`, pero `date-fns` no era dependencia
+directa: funcionaba **solo por hoisting**, que es casualidad, no garantia.
+RNF-04 la aprobaba, asi que ahora es dependencia directa.
 
-### Verificación
+### CA-37 / CE-05: fallback offline — QUEDO SIN IMPLEMENTAR
 
-```bash
-npm test
-npx tsc --noEmit
-npm run build
-```
+**No esta hecho y no se hizo en esta tarea.** Queda documentado para que no se
+pierda.
 
-| Qué | CA |
-|---|---|
-| `npm run build` sale 0 | CA-38 |
-| `npx tsc --noEmit` sale 0 | CA-39 |
-| `npm run lint` sale 0 | CA-40 |
-| Sin dependencias no aprobadas | CA-41 |
-| `MEMORY.md` actualizado | RNF-08 |
-| `AGENTS.md` actualizado | RNF-08 |
+CE-05 pide: *"MSW falla o no esta registrado → Fallback a localStorage directo,
+`alert('Modo offline')`"*. No hay ningun codigo que lo haga. `grep` de
+`Modo offline` y `offline` no devuelve nada en `src/`.
+
+**Por que no se hizo en T10:** no es una tarea de verificacion, es una
+funcionalidad, y no es chica. Habria que decidir **que datos** se respaldan:
+
+- **Vinos**: ya se persisten en `localStorage` (clave `vinoteca_wines`), porque
+  los carga la tienda publica. Habria que leerlos si falla el fetch.
+- **Pedidos y clientes**: no tienen respaldo. Habria que empezar a guardarlos,
+  lo que es comportamiento nuevo, no un fallback.
+
+Ademas hay una pregunta de diseno sin responder: **un fallback que muestra datos
+viejos sin avisar es peor que un error**. Si el panel muestra el catalogo de
+ayer sin marcarlo como viejo, el admin podria editar sobre datos que ya no son
+los reales y no se enteraria. El `alert('Modo offline')` que pide CE-05 intenta
+resolverlo, pero es un `alert` que corta la pantalla.
+
+**Lo que si hace hoy:** si MSW no esta registrado, los `fetch` fallan, `useApi`
+pasa `error` y cada pagina muestra su mensaje de error. No hay datos viejos
+mostrados como frescos. El comportamiento es **degradar visiblemente**, que es
+distinto de lo que pide CE-05 pero no enganoso.
+
+**Recomendacion:** decidir antes de implementarlo. Si se implementa, que el
+fallback **muestre los datos marcados como desactualizados**, no como si fueran
+reales.
+
+### Verificacion en navegador (2026-10-09)
+
+Puerto 5213, `npm run dev`.
+
+| CA | Qué | Resultado |
+|---|---|---|
+| CA-01 | Acceso con contrasena | `/admin` → clave → Dashboard |
+| CA-01b | Sin boton en la tienda | `/` con 0 enlaces y el HTML del `nav` sin la palabra "admin" |
+| CA-02 | Rutas protegidas | Las 5 hijas muestran el gate sin sesion |
+| CA-03 | Responsive | A 501 px: sidebar en `translateX(-288)`, boton de menu, main a ancho completo. Abierto muestra los 6 links, cierra con la X. A 1375 px: sidebar fija en `left: 0` |
+| CA-04 | MetricCards | 5 con valores |
+| CA-05 | Grafico Recharts | `svg.recharts-surface` presente |
+| CA-06 | Top 5 productos | 5 con imagen |
+| CA-07 | Actividad reciente | 5 items |
+| CA-09 | Catalogo | 12 vinos, "Mostrando 1-10 de 12", 8 columnas |
+| CA-21 | Pedidos | 25 pedidos, 6 columnas |
+| CA-29 | Clientes | 15 clientes, 8 columnas |
+| CA-36 | Sesion sobrevive recarga | `sessionStorage: 'abierta'` tras recargar |
+| **CA-37** | **Fallback offline** | **NO IMPLEMENTADO** |
+| — | Consola | **0 errores, 0 avisos** en todas las paginas |
+
+Los CA de interaccion (CA-10 a CA-20, CA-22 a CA-28, CA-30 a CA-33) se
+verificaron **durante la tarea que los implemento** (T5, T6, T7, T8), cada una
+con su tabla en la seccion correspondiente de este archivo. CA-34 y CA-35
+(MSW intercepta `fetch`, latencia 300-800 ms) se verifican por construccion:
+`esperar(300, 800)` esta en cada handler de `src/mocks/handlers.ts`.
+
+### Documentacion
+
+**`MEMORY.md`**
+- Componentes: 11 del panel + 11 utilidades/datos del back-office.
+- Decisiones: se reescribio la seccion de arquitectura con el stack real, y se
+  agregaron las 5 decisiones de la 004-a que conviene no olvidar.
+- Bitacora: entrada del 2026-10-09 con **las 10 tareas**, no solo la ultima.
+
+**`AGENTS.md`**
+- Comandos: **`pnpm` → `npm`** (el repo tiene `package-lock.json`; los comandos
+  de pnpm no funcionan), mas `npx tsc --noEmit`, `npm run lint`, el comando de
+  regenerar mocks y el de la clave.
+- Especificacion: seccion Back-Office con los 5 modulos y las reglas de acceso.
+
+### Deuda saldada
+
+El protocolo de `AGENTS.md` pide actualizar `MEMORY.md` y `AGENTS.md` despues de
+**cada** tarea. **No se habia hecho en ninguna de T1 a T9.** Con T10 queda
+saldada: la bitacora cubre las 10 tareas de la 004-a, no solo la ultima.
+
+### Hecho cuando
+
+- [x] `npm test`, `tsc`, `lint` y `build` en 0
+- [x] Recorrido de los CA en navegador, 0 errores de consola
+- [x] `MEMORY.md` con las 10 tareas de la 004-a
+- [x] `AGENTS.md` con comandos reales y la seccion Back-Office
+- [x] Dependencias declaradas y dentro de RNF-04
+- [ ] **CA-37 / CE-05 fallback offline — pendiente, documentado arriba**
 
 ### Hecho cuando
 

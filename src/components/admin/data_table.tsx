@@ -16,7 +16,14 @@ import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search, X }
  * un error de TypeScript y habria que castear en cada lectura.
  */
 declare module '@tanstack/react-table' {
-  interface ColumnMeta<TData extends RowData, TValue> {
+  // Los dos parametros de tipo parecen no usarse, y ESLint lo reporta. Se usan:
+// esta es una **augmentation de modulo**, y TypeScript exige que los type
+// parameters coincidan con los de la interface original de TanStack
+// (`types.d.ts`: `ColumnMeta<TData extends RowData, TValue>`). Si se sacaran,
+// el error seria TS2428 y no compilaria.
+//
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+interface ColumnMeta<TData extends RowData, TValue> {
     filtro?: { opciones: readonly { valor: string; etiqueta: string }[] }
   }
 }

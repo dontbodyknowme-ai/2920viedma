@@ -58,7 +58,7 @@ export const aTextoCsv = (filas: readonly FilaCsv[], encabezados: readonly strin
   ]
   // El BOM hace que Excel abra los acentos bien en Windows, que usa latin-1 por
   // defecto y si no convierte "Vino tinto" en "Vino tinto" con signos raros.
-  return `﻿${lineas.join('\r\n')}`
+  return `\u{FEFF}${lineas.join('\r\n')}`
 }
 
 /**
@@ -107,7 +107,7 @@ export const nombreArchivoConFecha = (base: string, hoy: Date): string =>
  * un filtro compararia contra `undefined`.
  */
 export const parsearCsv = (texto: string): TablaCsv => {
-  const limpio = texto.replace(/^﻿/, '')
+  const limpio = texto.replace(/^\uFEFF/, '')
   if (limpio.trim() === '') return { encabezados: [], filas: [] }
 
   const filas: FilaCsv[] = []

@@ -1,9 +1,16 @@
 # AGENTS.md
 
 ## Comandos de configuracion
-- Instalar dependencias: `pnpm install`
-- Iniciar servidor de desarrollo: `pnpm dev`
-- Ejecutar pruebas: `pnpm test`
+Gestor de paquetes: **npm** (el repo tiene `package-lock.json`; no usar pnpm).
+
+- Instalar dependencias: `npm install`
+- Iniciar servidor de desarrollo: `npm run dev`
+- Ejecutar pruebas: `npm test`
+- Verificar tipos: `npx tsc --noEmit`
+- Lint: `npm run lint`
+- Build de produccion: `npm run build`
+- Regenerar los datos mock: `node scripts/generar-mocks.mjs`
+- Clave del panel admin: `VITE_ADMIN_PASSWORD` (default `admin123`)
 
 ## Estilo de codigo
 - Modo estricto de TypeScript (TypeScript strict mode)
@@ -39,6 +46,16 @@ Construir una aplicacion web interactiva, responsiva y visualmente atractiva par
    - Lista detallada de productos seleccionados, ajustador de cantidades, calculo automatico de subtotal/total y boton para finalizar compra.
 7. **Pie de Pagina (Footer):**
    - Horarios de atencion, ubicacion, enlaces a redes sociales y aviso legal obligatorio de restriccion de edad (+18). **Con `id="contacto"` para navegación.**
+
+### Back-Office (`/admin`) - spec 004-a, implementada
+Panel de administracion con 5 modulos: Dashboard, Catalogo, Pedidos, Clientes CRM y Configuracion.
+
+- **Acceso: sin boton en la tienda publica.** Se entra escribiendo `/admin`, que pide una contrasena (`src/components/admin/admin_gate.tsx`). La sesion vive en `sessionStorage`, no en `localStorage`, para que el acceso no quede dado por semanas en una maquina compartida.
+- **La contrasena NO es autenticacion.** Se compara en el navegador contra `VITE_ADMIN_PASSWORD` y viaja en el bundle. No hay backend todavia; la spec 004-b (en `borrador`) define el reemplazo con token + 2FA.
+- **Sin sesion no hay redirect:** se muestra el prompt de clave en la misma URL, no un rebote a la tienda.
+- **No existe el flag `isAdmin` en `localStorage`** que hubo hasta la spec 004-a: era publico y cualquiera lo ponia en `true` desde la consola.
+- **Datos:** MSW v2 como API falsa (`src/mocks/`), con latencia de 300-800 ms. Regenerables con `node scripts/generar-mocks.mjs`.
+- **`stock` y `activo` viven en `AdminWine`, no en `Wine`:** el catalogo publico no los expone. El formulario del panel es `AdminWineForm`, separado del `ProductForm` publico.
 
 ### Arquitectura Tecnica
 - **Framework:** Next.js o React + Vite con TypeScript.

@@ -14,8 +14,6 @@ import type { Customer } from '../../src/types/admin'
  * cumple.
  */
 
-const url = (consulta: string): URL => new URL(`http://localhost/api/customers?${consulta}`)
-
 /**
  * Reimplementa la regla del filtro tal como la aplica `filtrarClientes`.
  *
