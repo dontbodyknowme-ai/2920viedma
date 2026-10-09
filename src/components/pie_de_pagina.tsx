@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { TIENDA } from '../utils/tienda'
 
 export const Footer = () => {
   return (
@@ -65,8 +66,8 @@ export const Footer = () => {
                 </a>
               </p>
               <p>
-                <a href='mailto:hola@cava-co.com' className='hover:text-gold-500 transition-colors'>
-                  hola@cava-co.com
+                <a href={`mailto:${TIENDA.email}`} className='hover:text-gold-500 transition-colors'>
+                  {TIENDA.email}
                 </a>
               </p>
             </address>

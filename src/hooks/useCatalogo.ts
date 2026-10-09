@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react'
+﻿import { useCallback, useMemo, useState } from 'react'
 import { useApi } from './useApi'
-import { aTextoCsv, descargarCsv, nombreArchivoConFecha } from '../utils/csv'
+import { csvCatalogo, descargarComo } from '../utils/csv_export'
 import type { AdminWine, ImportResult, Paginated } from '../types/admin'
 
 /**
@@ -224,7 +224,7 @@ export const useCatalogo = (): EstadoCatalogo => {
 
   const exportarCsv = useCallback(async (): Promise<void> => {
     // Se pide el **total filtrado**, no la pagina que se ve. Exportar solo las
-    // 10 filas de la pantalla cuando el filtro dice "240" seria peor que no
+    // 10 filas de la pantalla cuando el filtro dice 240 seria peor que no
     // exportar: el archivo tendria una fila y el usuario creeria que solo hay
     // una.
     const params = new URLSearchParams({ page: '1', limit: '100' })
@@ -238,36 +238,7 @@ export const useCatalogo = (): EstadoCatalogo => {
 
     const cuerpo = (await res.json()) as Paginated<AdminWine>
 
-    // El `id` va primero y es obligatorio en la practica: sin el, reimportar un
-    // archivo exportado crearia una copia nueva de cada vino en lugar de
-    // actualizar el existente, y el catalogo se duplicaria en cada ida y vuelta.
-    const encabezados = [
-      'Id',
-      'Nombre',
-      'Bodega',
-      'Cepa',
-      'Categoria',
-      'Cosecha',
-      'Precio',
-      'Stock',
-      'Activo',
-      'Descripcion'
-    ]
-
-    const filas = cuerpo.data.map((vino) => [
-      vino.id,
-      vino.name,
-      vino.winery,
-      vino.varietal,
-      vino.category,
-      String(vino.vintage),
-      String(vino.price),
-      String(vino.stock),
-      vino.activo ? 'si' : 'no',
-      vino.description
-    ])
-
-    descargarCsv(nombreArchivoConFecha('catalogo', new Date()), aTextoCsv(filas, encabezados))
+    descargarComo('catalogo', csvCatalogo(cuerpo.data))
   }, [filtros])
 
   return {

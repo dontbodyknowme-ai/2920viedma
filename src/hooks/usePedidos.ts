@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useApi } from './useApi'
-import { aTextoCsv, descargarCsv, nombreArchivoConFecha } from '../utils/csv'
+import { csvPedidos, descargarComo } from '../utils/csv_export'
 import type { Order, OrderStatus, Paginated } from '../types/admin'
 
 /**
@@ -145,29 +145,7 @@ export const usePedidos = (): EstadoPedidos => {
 
     const cuerpo = (await res.json()) as Paginated<Order>
 
-    const encabezados = [
-      'Id',
-      'Cliente',
-      'Email',
-      'Fecha',
-      'Total',
-      'Estado',
-      'Unidades',
-      'Ciudad'
-    ]
-
-    const filas = cuerpo.data.map((pedido) => [
-      pedido.id,
-      pedido.customerName,
-      pedido.customerEmail,
-      pedido.createdAt.slice(0, 10),
-      String(pedido.total),
-      pedido.status,
-      String(pedido.items.reduce((suma, item) => suma + item.quantity, 0)),
-      pedido.shippingAddress.city
-    ])
-
-    descargarCsv(nombreArchivoConFecha('pedidos', new Date()), aTextoCsv(filas, encabezados))
+    descargarComo('pedidos', csvPedidos(cuerpo.data))
   }, [filtros])
 
   return {

@@ -1110,44 +1110,110 @@ Puerto 5207, `npm run dev`, con `isAdmin` activo.
 
 ## T8 — Configuración + CSV Export/Import
 
-**RF cubiertos:** RF-19, RF-20, RF-33 (export/import catálogo, export clientes)
+**RF cubiertos:** RF-20, RF-21, RF-34 (los de CSV)
 **Depende de:** T3
-**Estado:** `pendiente`
+**Estado:** `hecha` — 200/200 tests en verde, verificado en navegador
 
-### Qué hacer
+### Corrección del encabezado de la tarea
 
-**1. `src/pages/admin/configuracion.tsx` (NUEVO)**
+El encabezado decia **"RF cubiertos: RF-19, RF-20, RF-33"**. Eso estaba mal:
 
-Página placeholder con secciones:
-- **General:** Nombre tienda, email contacto, moneda, zona horaria
-- **Estados de pedido:** Lista editable (placeholder para futura spec)
-- **Categorías/Cepas:** Gestión (placeholder)
-- **CSV Tools:** Botones "Exportar Catálogo", "Exportar Clientes", "Importar Catálogo"
+- **RF-19** es *"cambia estado activo/inactivo"*, que se hizo en T5.
+- **RF-20** es *"Exportar CSV"*, hecho en T5.
+- **RF-33** es *"agrega/quita tag del cliente"*, hecho en T7, y **no tiene nada que ver con CSV**.
+- Los RF reales de CSV son **RF-20** (exportar), **RF-21** (importar) y **RF-34** (exportar clientes).
 
-**2. Integrar CSV en páginas existentes**
+**Los tres ya estaban implementados en T5 y T7.** T8 no cubria ningun RF sin
+hacer: era la pagina de Configuracion y exponer los CSV desde ahi.
 
-- Catálogo: toolbar ya tiene export/import (T5)
-- Clientes: toolbar ya tiene export (T7)
-- Configuración: botones globales que usan mismos datos
+### Decisiones
 
-### Verificación
+**1. General, Estados y Categorias son de solo lectura, y no se van a volver
+editables sin backend.** El enunciado pedia "Lista editable" para los estados y
+"Gestion" para las categorias. No hay endpoint de configuracion y la 004-a no
+define ninguno. Poner inputs guardando en un `useState` seria un formulario que
+dice "Guardar" y no guarda nada: peor que mostrar el dato, porque el usuario
+cree que lo cambio.
 
-```bash
-npx tsc --noEmit
-npm run build
-```
+Los estados ademas son fijos por **D-15 de la propia spec**, que dice que no son
+configurables. La seccion lo dice explicitamente para que quede claro que no es
+una omision.
 
-En navegador:
-- Página configuración renderiza secciones
-- Export Catálogo/Clientes descargan CSV correctos
-- Import Catálogo en configuración funciona igual que en catálogo
+**2. La logica de CSV se extrajo a `src/utils/csv_export.ts`.** Estaba duplicada
+dentro de `useCatalogo`, `useClientes` y `usePedidos`. Con la pagina de
+Configuracion exponiendo los mismos botones, la copia habria sido una cuarta: las
+cuatro divergen en el primer cambio, y el archivo que baja el admin desde
+Configuracion dejaria de coincidir con el que baja desde el catalogo.
+
+Cada generador (`csvCatalogo`, `csvClientes`, `csvPedidos`) recibe los datos ya
+cargados y devuelve texto. **No piden nada**: pedir es responsabilidad de quien
+lo usa, porque cada pantalla pide con filtros distintos.
+
+**3. `src/utils/tienda.ts` creo para que la identidad no este en dos lugares.** El
+footer tenia `hola@cava-co.com` escrito dos veces en el mismo componente, una en
+el `mailto:` y otra en el texto. Configuracion lo necesitaba tambien. Con tres
+copias, el primer cambio de dominio deja alguna desactualizada y un `mailto:`
+que no coincide con lo que se ve manda el mensaje al lugar equivocado sin avisar.
+El footer ahora usa la constante.
+
+**4. Se muestran dos zonas horarias.** La de la tienda y la del navegador. No es
+redundancia: los filtros de fechas calculan los dias con la hora local de quien
+mira (`aIsoLocal`), no con la de la tienda. Mostrar solo una haria pensar que el
+filtro usa esa.
+
+**5. La exportacion de Configuracion es sin filtros.** Exporta todo. El boton de
+la tabla exporta lo filtrado. La seccion lo dice, para que no se descarte el
+boton de la tabla buscando un filtro global que no existe.
+
+### Bugs encontrados
+
+Ninguno de codigo. Los de T5 (import/export) ya estaban corregidos y los tests
+de T5 siguen en verde.
+
+Lo que si aparecio al escribir los tests: **ningun cliente de los mocks tiene
+`lastOrderAt: null`**. Con 25 pedidos sobre 15 clientes, todos compraron, asi
+que el caso "cliente que todavia no compro" no aparece nunca en el panel. El
+test de la celda vacia lo arma a mano en vez de buscarlo en los datos, porque el
+comportamiento hay que probarlo igual: un cliente recien registrado lo va a
+tener.
+
+### Verificación en navegador (2026-10-09)
+
+Puerto 5211, `npm run dev`, con sesion abierta.
+
+| Qué | Resultado |
+|---|---|
+| Secciones | General, Estados de pedido, Categorias y cepas, Datos |
+| General | Cava & Co, hola@cava-co.com, ARS (pesos argentinos), America/Argentina/Mendoza, **America/Buenos_Aires** (la del navegador) |
+| Estados | 6 chips: pendiente, preparando, enviado, entregado, cancelado, devuelto, con nota de D-15 |
+| Categorias y cepas | Derivadas del catalogo, con conteos |
+| Botones | `EXPORTAR CATALOGO 12`, `EXPORTAR CLIENTES 15`, `EXPORTAR PEDIDOS 25`, `IMPORTAR CATALOGO` |
+| Export catalogo | 13 lineas. Encabezado `Id,Nombre,Bodega,Cepa,Categoria,Cosecha,Precio,Stock,Activo,Descripcion`. 12 filas |
+| Export clientes | 16 lineas. `Id,Nombre,Email,Telefono,Pedidos,Total gastado,Ultimo pedido,Tags`. 15 filas |
+| Export pedidos | 26 lineas. `Id,Cliente,Email,Fecha,Total,Estado,Unidades,Ciudad`. 25 filas |
+| Aviso | "Exportar pedidos: listo." |
+| **Import con id** | Fila con `Id=1` **actualiza** el vino existente: 12 → 13, aviso "Importacion: 1 creados, 1 actualizados." |
+| **Import sin id** | Fila sin id **crea** uno nuevo con UUID propio |
+| `Activo: no` | El vino importado quedo con `activo: false`, no con `true` |
+| Consola | **0 errores, 0 avisos** |
+
+### Archivos
+
+| Archivo | Rol |
+|---|---|
+| `src/pages/admin/configuracion.tsx` | La pagina: 4 secciones, 3 exports y 1 import |
+| `src/utils/csv_export.ts` | `csvCatalogo`, `csvClientes`, `csvPedidos`, `descargarComo` |
+| `src/utils/tienda.ts` | Identidad de la tienda, fuente unica |
 
 ### Hecho cuando
 
-- [ ] `configuracion.tsx` existe
-- [ ] CSV export/import funcionan desde ambas ubicaciones
-- [ ] `npx tsc --noEmit` sale 0
-- [ ] `npm run build` sale 0
+- [x] `configuracion.tsx` existe con las 4 secciones
+- [x] CSV export/import funcionan desde Configuracion y desde las tablas
+- [x] El generador es el mismo en los dos lugares, no una copia
+- [x] La identidad de la tienda esta en un solo archivo
+- [x] `npx tsc --noEmit` sale 0
+- [x] `npm run build` sale 0
+- [x] **200/200 tests en verde** (+13 de CSV)
 
 ---
 
