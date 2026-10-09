@@ -1151,43 +1151,106 @@ En navegador:
 
 ---
 
-## T9 — Integración navbar "Modo Admin"
+## T9 — Acceso al panel por contraseña
 
-**RF cubiertos:** RF-01
+**RF cubiertos:** RF-01, RF-02
 **Depende de:** T2
-**Estado:** `pendiente`
+**Estado:** `hecha` — 187/187 tests en verde, verificado en navegador
 
-### Qué hacer
+### Desviación del enunciado, aprobada por el usuario
 
-**1. `src/components/barra_de_navegacion.tsx` — Agregar toggle**
+El enunciado pedía **agregar un botón "Modo Admin" a la navbar pública**, que
+cualquier visitante pudiera tocar para entrar al panel. **No se hizo, y no se
+hará.**
 
-En navbar (desktop + móvil):
-- Si `!isAdmin`: botón "Modo Admin" (icono Shield/UserCog) → `toggleAdmin()` → `localStorage.setItem('isAdmin', 'true')` → recarga o navega a `/admin`
-- Si `isAdmin`: badge "Admin" + enlace "Panel Admin" → `/admin` + botón "Salir modo admin" → `toggleAdmin()` → `localStorage.removeItem('isAdmin')`
+La razón que dio el usuario: no quiere un botón al que puedan entrar todos.
 
-**2. `src/App.tsx` — Pasar `isAdmin` + `toggleAdmin` a Navbar**
+Lo que había que resolver no era solo el botón. El flag `isAdmin` de T1 estaba en
+`localStorage` y cualquiera podía ponerlo en `true` desde la consola del
+navegador. O sea que ese botón no era una barrera: era una invitación.
 
-### Verificación
+Un botón "Modo Admin" en la navbar además le dice a cualquier visitante que hay
+una sección restringida y que está a un clic de entrar.
 
-```bash
-npx tsc --noEmit
-npm run build
-```
+### Qué quedó
 
-En navegador:
-- Navbar normal: botón "Modo Admin" visible
-- Click → `isAdmin=true` → aparece enlace "Panel Admin" + badge
-- Click "Panel Admin" → navega a Dashboard
-- Click "Salir modo admin" → `isAdmin=false` → UI pública normal
-- Sin `isAdmin` → `/admin` redirige a `/`
+**1. No hay ningún acceso al panel desde la tienda.** La navbar pública no se
+tocó. `src/components/barra_de_navegacion.tsx` sigue teniendo el botón
+"+ Cargar Vino" de la spec 003, que no tiene relación con admin.
+
+**2. Se entra escribiendo `/admin`.** Ahi se muestra `AdminGate`, que pide la
+contraseña.
+
+**3. Sin sesión no hay redirect, hay una pantalla de clave.** El enunciado
+pedía rebotar a `/` con `alert('Acceso denegado')`. Se muestra el prompt en la
+misma URL: quien escribió `/admin` a propósito está pidiendo entrar, y
+responderle "anda a la tienda" contesta otra cosa. El mensaje de error va debajo
+del campo, en `role='alert'`, no en un `alert()` que corta la pantalla.
+
+**4. La sesión va en `sessionStorage`, no en `localStorage`.** Dura lo que la
+pestaña. Con `localStorage`, en una máquina compartida el acceso quedaría dado
+por semanas sin que nadie volviera a pedir la clave.
+
+**5. La contraseña sale de `VITE_ADMIN_PASSWORD`, con default `admin123`.**
+Está en el bundle de JavaScript y cualquiera que abra la consola la lee. Está
+documentado en el propio archivo que **esto no es autenticación** y que la
+razón es que todavía no hay backend contra el cual validar.
+
+**6. `AdminHeader` dice "Cerrar sesión", no "Cerrar modo admin".** Con un modo
+que ya no existe, el nombre viejo mentía.
+
+**7. Se borró `loadIsAdmin` / `saveIsAdmin` de `src/App.tsx`.** El flag de
+`localStorage` quedó muerto. No se sustituyó por otro flag: si alguien tiene el
+`isAdmin: 'true'` pegado en el `localStorage` de una versión anterior, el test
+`un flag antiguo en localStorage no abre el panel` verifica que ya no abre nada.
+
+### Qué falta hacer de verdad
+
+Nada de lo de esta tarea es un control de acceso real. Cuando exista la API de
+la spec 004-b:
+
+1. `POST /api/auth/login` con usuario y contraseña → token.
+2. El token se manda en cada request y el backend lo valida. El bundle deja de
+   contener la contraseña.
+3. `sessionStorage` pasa a contener el token, con expiración.
+4. 2FA en el login, como pidió el usuario.
+
+`src/utils/admin_acceso.ts` tiene las cuatro cosas anotadas en el encabezado
+para que el reemplazo sea directo.
+
+### Archivos
+
+| Archivo | Rol |
+|---|---|
+| `src/utils/admin_acceso.ts` | Clave, sesión en `sessionStorage`, abrir/cerrar sesión |
+| `src/components/admin/admin_gate.tsx` | Pantalla de pedido de contraseña |
+
+### Verificación en navegador (2026-10-09)
+
+Puerto 5209, `npm run dev`, con `sessionStorage` y `localStorage` limpios.
+
+| Qué | Resultado |
+|---|---|
+| **Navbar pública** | 24 links y botones, **0** con la palabra "admin". El HTML del `nav` no contiene "admin" en ningún lugar |
+| `/admin` sin sesión | "Administracion" / "Esta seccion es restringida.", input `type=password`, botón "Entrar" deshabilitado, **sin sidebar y sin `main`** detrás |
+| Aviso del pie | "Acceso de prueba. La contrasena se valida en el navegador y no protege datos reales." |
+| Clave incorrecta | `role=alert`: "Contrasena incorrecta.", campo limpiado, `aria-invalid="true"`, `sessionStorage` sigue vacío, el gate sigue montado |
+| Clave correcta | `sessionStorage: 'abierta'`, sin gate, sidebar presente, Dashboard con las 5 métricas |
+| "Cerrar sesion" | Vuelve a `/`, `sessionStorage` limpio |
+| `/admin/pedidos` sin sesión | Gate mostrado, **0 filas de tabla**, ningún `h2` de la página: los datos no llegan a renderizar |
+| Consola | **0 errores, 0 avisos** |
 
 ### Hecho cuando
 
-- [ ] Toggle "Modo Admin" funciona en navbar
-- [ ] Enlace "Panel Admin" aparece solo en modo admin
-- [ ] Redirección `/admin` sin admin funciona
-- [ ] `npx tsc --noEmit` sale 0
-- [ ] `npm run build` sale 0
+- [x] No hay botón de acceso al panel en la tienda
+- [x] `/admin` pide contraseña
+- [x] La contraseña abre la sesión y muestra el panel
+- [x] Las 5 rutas hijas están cubiertas por el mismo gate
+- [x] "Cerrar sesión" funciona
+- [x] El flag antiguo `isAdmin` ya no abre nada
+- [x] `npx tsc --noEmit` sale 0
+- [x] `npm run build` sale 0
+- [x] **187/187 tests en verde** (+10 de acceso)
 
 ---
 

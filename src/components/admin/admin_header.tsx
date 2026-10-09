@@ -13,7 +13,7 @@ interface AdminHeaderProps {
   titulo: string
   esMovil: boolean
   onAbrirMenu: () => void
-  /** Se llama al confirmar "Cerrar modo admin". */
+  /** Se llama al confirmar "Cerrar sesion". */
   onSalirDelModoAdmin: () => void
 }
 
@@ -89,7 +89,7 @@ export const AdminHeader = ({
                   className='flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-neutral-300 transition-colors hover:bg-charcoal-800 hover:text-cream-100'
                 >
                   <LogOut className='h-4 w-4 shrink-0' aria-hidden='true' />
-                  Cerrar modo admin
+                  Cerrar sesion
                 </button>
               </div>
             </>

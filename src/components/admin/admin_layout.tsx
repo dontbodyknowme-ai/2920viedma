@@ -1,10 +1,11 @@
 ﻿import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
+import { AdminGate } from './admin_gate'
 import { AdminHeader } from './admin_header'
 import { AdminSidebar } from './admin_sidebar'
 import { useEsMovil } from '../../hooks/useMediaQuery'
-import { loadIsAdmin, saveIsAdmin } from '../../App'
+import { cerrarSesionAdmin, haySesionAdmin } from '../../utils/admin_acceso'
 
 /**
  * Layout del panel de administracion.
@@ -16,6 +17,20 @@ import { loadIsAdmin, saveIsAdmin } from '../../App'
  * las cinco rutas hijas, y proteger cada una por separado seria cinco chequeos
  * que pueden desincronizarse. `AdminLayout` es el unico ancestro comun de las
  * cinco, asi que un solo chequeo cubre todas.
+ *
+ * ## Sin sesion no hay redirect: hay una pantalla de clave
+ *
+ * Antes, entrar a `/admin` sin el flag redirigia a la tienda con un `alert`.
+ * Ahora se muestra `AdminGate`, que pide la contrasena.
+ *
+ * La razon es que **no hay ningun boton de acceso en la tienda**: al panel se
+ * llega escribiendo la URL. Un redirect seria responderle a alguien que hizo
+ * `/admin` a proposito con "no, anda a la tienda", que es una respuesta
+ * distinta a la que merecia: le estan pidiendo la clave.
+ *
+ * La tienda publica no menciona el panel en ningun lado. Un boton "Modo Admin"
+ * en la navbar le diria a cualquier visitante que hay una seccion restringida y
+ * que esta a un clic.
  */
 
 const TITULOS: Record<string, string> = {
@@ -35,17 +50,15 @@ export const AdminLayout = () => {
 
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [colapsado, setColapsado] = useState(false)
-  // Es un flag, no autenticacion: cualquiera que abra la consola puede ponerlo en
-  // `true`. La spec 004-b lo reemplaza por `GET /api/auth/me` con token real.
-  const [autorizado, setAutorizado] = useState(true)
+  // `undefined` mientras no se resuelve, `true` con sesion abierta, `false` si
+  // hay que pedir la clave. El tercer estado existe para que el gate no
+  // aparezca un fotograma en cada recarga: sin el, el panel se veria un instante
+  // antes de pedir la contrasena.
+  const [autorizado, setAutorizado] = useState<boolean | undefined>(undefined)
 
   useEffect(() => {
-    if (!loadIsAdmin()) {
-      setAutorizado(false)
-      alert('Acceso denegado. Activa el modo admin para entrar al panel.')
-      navigate('/', { replace: true })
-    }
-  }, [navigate])
+    setAutorizado(haySesionAdmin())
+  }, [])
 
   // En movil el drawer se cierra solo al cambiar de seccion: si no, el usuario
   // navega y el menu le queda tapando el contenido.
@@ -53,15 +66,13 @@ export const AdminLayout = () => {
     setMenuAbierto(false)
   }, [location.pathname])
 
-  const salirDelModoAdmin = () => {
-    saveIsAdmin(false)
+  const cerrarSesion = () => {
+    cerrarSesionAdmin()
     navigate('/', { replace: true })
   }
 
-  // Antes de que resuelva el chequeo de acceso no se pinta nada. El `Outlet`
-  // tardaria un render en desmontar solo y podria llegar a renderizar la
-  // seccion solicitada durante ese cuadro.
-  if (!autorizado) return null
+  if (autorizado === undefined) return null
+  if (!autorizado) return <AdminGate />
 
   return (
     <div className='min-h-screen bg-charcoal-900 text-cream-100'>
@@ -90,7 +101,7 @@ export const AdminLayout = () => {
             >
               <X className='h-5 w-5' aria-hidden='true' />
             </button>
-            <AdminSidebar colapsado={false} onSalirAlTienda={salirDelModoAdmin} />
+            <AdminSidebar colapsado={false} onSalirAlTienda={cerrarSesion} />
           </aside>
         </>
       ) : (
@@ -102,7 +113,7 @@ export const AdminLayout = () => {
         >
           <AdminSidebar
             colapsado={colapsado}
-            onSalirAlTienda={salirDelModoAdmin}
+            onSalirAlTienda={cerrarSesion}
             onAlternarColapso={() => setColapsado((previo) => !previo)}
           />
         </aside>
@@ -117,7 +128,7 @@ export const AdminLayout = () => {
           titulo={tituloDe(location.pathname)}
           esMovil={esMovil}
           onAbrirMenu={() => setMenuAbierto(true)}
-          onSalirDelModoAdmin={salirDelModoAdmin}
+          onSalirDelModoAdmin={cerrarSesion}
         />
 
         <main className='p-4 md:p-6'>

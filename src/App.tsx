@@ -12,31 +12,12 @@ import { AnimatedSection } from './components/animated_section'
 
 const STORAGE_KEY_WINES = 'vinoteca_wines'
 const STORAGE_KEY_CART = 'vinoteca_cart'
-const STORAGE_KEY_ADMIN = 'isAdmin'
 
-// Modo admin de la spec 004-a. Es un flag, NO autenticacion: no hay password,
-// no hay token y cualquiera que abra la consola puede ponerlo en true. T9 lo
-// reemplaza por `GET /api/auth/me` con token real, que es lo que hace la
-// spec 004-b.
-//
-// T1 entrega la lectura y la escritura del flag; el estado y el boton que lo
-// cambian llegan en T9.
-export function loadIsAdmin(): boolean {
-  try {
-    return localStorage.getItem(STORAGE_KEY_ADMIN) === 'true'
-  } catch {
-    // Sin localStorage el modo admin queda apagado, que es el estado seguro.
-    return false
-  }
-}
-
-export function saveIsAdmin(value: boolean): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_ADMIN, String(value))
-  } catch {
-    // Si falla el almacenamiento, el toggle igual funciona en memoria.
-  }
-}
+// El acceso al panel ya no vive aca. T1 dejo un flag `isAdmin` en
+// `localStorage` que cualquier visitante activaba con un boton en la navbar, y
+// que ademas se podia poner en `true` desde la consola. Se reemplazo por una
+// clave en `src/utils/admin_acceso.ts`, que ademas no es ningun boton: al panel
+// se entra escribiendo `/admin`.
 
 // RF-34 y CE-01: si lo guardado no es un array con contenido, se arranca con
 // el catalogo inicial. Sin estas dos guardas, un `localStorage` con `"{}"` o con

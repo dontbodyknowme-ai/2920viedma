@@ -83,8 +83,13 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 
 ### 4.1 Acceso y Layout
 
-- **RF-01** — CUANDO el usuario activa "Modo Admin" en navbar, EL SISTEMA muestra el botón de acceso a `/admin` y habilita las rutas protegidas
-- **RF-02** — CUANDO el usuario navega a `/admin/*` sin modo admin activo, EL SISTEMA redirige a `/` con mensaje "Acceso denegado"
+- **RF-01** — CUANDO el usuario navega a `/admin/*` sin sesión abierta, EL SISTEMA muestra una pantalla que pide la contraseña, y la valida antes de habilitar las rutas protegidas
+  - **Desviación aprobada (2026-10-09), implementada en T9.** El enunciado original pedía un botón "Modo Admin" visible en la navbar para todos los visitantes. **Se cambió: no hay ningún botón.** La tienda pública no menciona que exista un panel.
+  - **Por qué:** un botón "Modo Admin" le comunica a cualquier visitante que hay una sección restringida y que está a un clic. Además el flag se podía poner en `true` desde la consola, así que no protegía nada y solo daba la impresión de que protegía.
+  - **Cómo queda:** se entra escribiendo `/admin`, que pide una contraseña. La sesión vive en `sessionStorage`, así que dura lo que la pestaña.
+  - **Lo que sigue siendo mock:** la contraseña se compara en el navegador contra un valor del bundle, y cualquiera que abra la consola puede leerla. No es autenticación. Cuando exista la API de la 004-b se reemplaza por `POST /api/auth/login` con token, y después 2FA.
+- **RF-02** — CUANDO el usuario navega a `/admin/*` sin sesión abierta, EL SISTEMA muestra el pedido de contraseña en `/admin`
+  - **Desviación aprobada (2026-10-09).** El enunciado pedía redirigir a `/` con un `alert`. Se muestra `AdminGate` en la misma URL en vez de rebotar: quien escribió `/admin` a propósito está pidiendo entrar, y responderle "anda a la tienda" contesta otra cosa. El mensaje de error aparece debajo del campo, no en un `alert`.
 - **RF-03** — CUANDO el usuario accede a `/admin`, EL SISTEMA muestra AdminLayout con sidebar, header y contenido del Dashboard
 - **RF-04** — CUANDO el ancho es < 768 px, EL SISTEMA muestra sidebar en drawer lateral y header compacto
 
@@ -192,8 +197,9 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 
 | CA | Criterio | Verificación |
 |---|---|---|
-| CA-01 | Modo Admin toggle funciona | Click en navbar → aparece enlace "/admin" → navega a Dashboard |
-| CA-02 | Rutas protegidas | Sin modo admin → `/admin` redirige a `/` con toast |
+| CA-01 | Acceso con contraseña | `/admin` → pantalla de clave → clave correcta → Dashboard |
+| CA-01b | **No hay botón de acceso en la tienda** | La navbar pública no contiene ninguna referencia a admin (verificado sobre el HTML renderizado, no solo sobre el código) |
+| CA-02 | Rutas protegidas | Las 5 rutas hijas muestran el pedido de clave sin sesión, ninguna renderiza datos |
 | CA-03 | Layout responsive | < 768px: sidebar en drawer, header compacto |
 
 ### 8.2 Dashboard
