@@ -1,4 +1,4 @@
-// ARCHIVO GENERADO. No editar a mano.
+﻿// ARCHIVO GENERADO. No editar a mano.
 //
 // Regenerar con:  node scripts/generar-mocks.mjs
 //
@@ -203,26 +203,26 @@ export const mockCustomers: Customer[] = [
     'email': 'maria.gomez@correo.com',
     'phone': '+54 261 412-8890',
     'tags': [
-      'VIP'
+      'vip'
     ],
     'notes': [
       {
         'id': 'nota-1-1',
         'text': 'Pidio envio express a Mendoza capital.',
         'author': 'Admin',
-        'createdAt': '2026-09-01T02:03:13.335Z'
+        'createdAt': '2026-09-01T15:07:26.488Z'
       },
       {
         'id': 'nota-1-2',
         'text': 'Consulta por estaciones. Es VIP, atender con prioridad.',
         'author': 'Admin',
-        'createdAt': '2026-09-18T02:03:13.335Z'
+        'createdAt': '2026-09-18T15:07:26.488Z'
       }
     ],
     'totalOrders': 1,
     'totalSpent': 0,
-    'lastOrderAt': '2026-08-30T02:03:13.335Z',
-    'createdAt': '2026-09-15T02:03:13.335Z'
+    'lastOrderAt': '2026-08-30T15:07:26.488Z',
+    'createdAt': '2026-09-15T15:07:26.488Z'
   },
   {
     'id': 'cli-2',
@@ -233,8 +233,8 @@ export const mockCustomers: Customer[] = [
     'notes': [],
     'totalOrders': 2,
     'totalSpent': 241500,
-    'lastOrderAt': '2026-09-20T02:03:13.335Z',
-    'createdAt': '2026-08-17T02:03:13.335Z'
+    'lastOrderAt': '2026-09-20T15:07:26.488Z',
+    'createdAt': '2026-08-17T15:07:26.488Z'
   },
   {
     'id': 'cli-3',
@@ -245,8 +245,8 @@ export const mockCustomers: Customer[] = [
     'notes': [],
     'totalOrders': 2,
     'totalSpent': 89500,
-    'lastOrderAt': '2026-09-30T02:03:13.335Z',
-    'createdAt': '2026-05-23T02:03:13.335Z'
+    'lastOrderAt': '2026-09-30T15:07:26.488Z',
+    'createdAt': '2026-05-23T15:07:26.488Z'
   },
   {
     'id': 'cli-4',
@@ -259,19 +259,19 @@ export const mockCustomers: Customer[] = [
         'id': 'nota-4-1',
         'text': 'Paga con transferencia, confirmar antes de enviar.',
         'author': 'Admin',
-        'createdAt': '2026-10-03T02:03:13.335Z'
+        'createdAt': '2026-10-03T15:07:26.488Z'
       },
       {
         'id': 'nota-4-2',
         'text': 'Compra para restaurante, suele pedir por volumen.',
         'author': 'Admin',
-        'createdAt': '2026-09-25T02:03:13.335Z'
+        'createdAt': '2026-09-25T15:07:26.488Z'
       }
     ],
     'totalOrders': 2,
     'totalSpent': 135000,
-    'lastOrderAt': '2026-09-24T02:03:13.335Z',
-    'createdAt': '2026-07-22T02:03:13.335Z'
+    'lastOrderAt': '2026-09-24T15:07:26.488Z',
+    'createdAt': '2026-07-22T15:07:26.488Z'
   },
   {
     'id': 'cli-5',
@@ -279,20 +279,20 @@ export const mockCustomers: Customer[] = [
     'email': 'ana.martinez@correo.com',
     'phone': '+54 261 418-9903',
     'tags': [
-      'VIP'
+      'vip'
     ],
     'notes': [
       {
         'id': 'nota-5-1',
         'text': 'Compra para restaurante, suele pedir por volumen.',
         'author': 'Admin',
-        'createdAt': '2026-09-02T02:03:13.335Z'
+        'createdAt': '2026-09-02T15:07:26.488Z'
       }
     ],
     'totalOrders': 2,
     'totalSpent': 114000,
-    'lastOrderAt': '2026-09-21T02:03:13.335Z',
-    'createdAt': '2026-04-17T02:03:13.335Z'
+    'lastOrderAt': '2026-09-21T15:07:26.488Z',
+    'createdAt': '2026-04-17T15:07:26.488Z'
   },
   {
     'id': 'cli-6',
@@ -303,8 +303,8 @@ export const mockCustomers: Customer[] = [
     'notes': [],
     'totalOrders': 2,
     'totalSpent': 0,
-    'lastOrderAt': '2026-09-10T02:03:13.335Z',
-    'createdAt': '2026-08-02T02:03:13.335Z'
+    'lastOrderAt': '2026-09-10T15:07:26.488Z',
+    'createdAt': '2026-08-02T15:07:26.488Z'
   },
   {
     'id': 'cli-7',
@@ -317,19 +317,19 @@ export const mockCustomers: Customer[] = [
         'id': 'nota-7-1',
         'text': 'Consulta por estaciones. Es VIP, atender con prioridad.',
         'author': 'Admin',
-        'createdAt': '2026-09-24T02:03:13.335Z'
+        'createdAt': '2026-09-24T15:07:26.488Z'
       },
       {
         'id': 'nota-7-2',
         'text': 'Mostro interes en un vino con nombre propio.',
         'author': 'Admin',
-        'createdAt': '2026-09-12T02:03:13.335Z'
+        'createdAt': '2026-09-12T15:07:26.488Z'
       }
     ],
     'totalOrders': 2,
     'totalSpent': 145500,
-    'lastOrderAt': '2026-09-14T02:03:13.335Z',
-    'createdAt': '2026-05-15T02:03:13.335Z'
+    'lastOrderAt': '2026-09-14T15:07:26.488Z',
+    'createdAt': '2026-05-15T15:07:26.488Z'
   },
   {
     'id': 'cli-8',
@@ -337,14 +337,14 @@ export const mockCustomers: Customer[] = [
     'email': 'miguel.torres@correo.com',
     'phone': '+54 261 444-3320',
     'tags': [
-      'Mayorista',
-      'VIP'
+      'mayorista',
+      'vip'
     ],
     'notes': [],
     'totalOrders': 2,
     'totalSpent': 203000,
-    'lastOrderAt': '2026-10-06T02:03:13.335Z',
-    'createdAt': '2026-08-29T02:03:13.335Z'
+    'lastOrderAt': '2026-10-06T15:07:26.488Z',
+    'createdAt': '2026-08-29T15:07:26.488Z'
   },
   {
     'id': 'cli-9',
@@ -352,20 +352,20 @@ export const mockCustomers: Customer[] = [
     'email': 'valeria.romero@correo.com',
     'phone': '+54 261 407-6655',
     'tags': [
-      'VIP'
+      'vip'
     ],
     'notes': [
       {
         'id': 'nota-9-1',
         'text': 'Paga con transferencia, confirmar antes de enviar.',
         'author': 'Admin',
-        'createdAt': '2026-09-25T02:03:13.335Z'
+        'createdAt': '2026-09-25T15:07:26.488Z'
       }
     ],
     'totalOrders': 2,
     'totalSpent': 427500,
-    'lastOrderAt': '2026-10-04T02:03:13.335Z',
-    'createdAt': '2026-07-24T02:03:13.335Z'
+    'lastOrderAt': '2026-10-04T15:07:26.488Z',
+    'createdAt': '2026-07-24T15:07:26.488Z'
   },
   {
     'id': 'cli-10',
@@ -378,19 +378,19 @@ export const mockCustomers: Customer[] = [
         'id': 'nota-10-1',
         'text': 'Compra para restaurante, suele pedir por volumen.',
         'author': 'Admin',
-        'createdAt': '2026-09-15T02:03:13.335Z'
+        'createdAt': '2026-09-15T15:07:26.488Z'
       },
       {
         'id': 'nota-10-2',
         'text': 'Pidio envio express a Mendoza capital.',
         'author': 'Admin',
-        'createdAt': '2026-09-17T02:03:13.335Z'
+        'createdAt': '2026-09-17T15:07:26.488Z'
       }
     ],
     'totalOrders': 2,
     'totalSpent': 419000,
-    'lastOrderAt': '2026-09-22T02:03:13.335Z',
-    'createdAt': '2026-05-22T02:03:13.335Z'
+    'lastOrderAt': '2026-09-22T15:07:26.488Z',
+    'createdAt': '2026-05-22T15:07:26.488Z'
   },
   {
     'id': 'cli-11',
@@ -401,8 +401,8 @@ export const mockCustomers: Customer[] = [
     'notes': [],
     'totalOrders': 2,
     'totalSpent': 221500,
-    'lastOrderAt': '2026-09-01T02:03:13.335Z',
-    'createdAt': '2026-09-09T02:03:13.335Z'
+    'lastOrderAt': '2026-09-01T15:07:26.488Z',
+    'createdAt': '2026-09-09T15:07:26.488Z'
   },
   {
     'id': 'cli-12',
@@ -413,8 +413,8 @@ export const mockCustomers: Customer[] = [
     'notes': [],
     'totalOrders': 1,
     'totalSpent': 62000,
-    'lastOrderAt': '2026-10-02T02:03:13.335Z',
-    'createdAt': '2026-08-16T02:03:13.335Z'
+    'lastOrderAt': '2026-10-02T15:07:26.488Z',
+    'createdAt': '2026-08-16T15:07:26.488Z'
   },
   {
     'id': 'cli-13',
@@ -422,26 +422,26 @@ export const mockCustomers: Customer[] = [
     'email': 'florencia.paz@correo.com',
     'phone': '+54 261 406-8815',
     'tags': [
-      'VIP'
+      'vip'
     ],
     'notes': [
       {
         'id': 'nota-13-1',
         'text': 'Mostro interes en un vino con nombre propio.',
         'author': 'Admin',
-        'createdAt': '2026-09-15T02:03:13.335Z'
+        'createdAt': '2026-09-15T15:07:26.488Z'
       },
       {
         'id': 'nota-13-2',
         'text': 'Paga con transferencia, confirmar antes de enviar.',
         'author': 'Admin',
-        'createdAt': '2026-09-08T02:03:13.335Z'
+        'createdAt': '2026-09-08T15:07:26.488Z'
       }
     ],
     'totalOrders': 1,
     'totalSpent': 68500,
-    'lastOrderAt': '2026-08-27T02:03:13.335Z',
-    'createdAt': '2026-06-11T02:03:13.335Z'
+    'lastOrderAt': '2026-08-27T15:07:26.488Z',
+    'createdAt': '2026-06-11T15:07:26.488Z'
   },
   {
     'id': 'cli-14',
@@ -452,23 +452,23 @@ export const mockCustomers: Customer[] = [
     'notes': [],
     'totalOrders': 1,
     'totalSpent': 28000,
-    'lastOrderAt': '2026-08-24T02:03:13.335Z',
-    'createdAt': '2026-08-01T02:03:13.335Z'
+    'lastOrderAt': '2026-08-24T15:07:26.488Z',
+    'createdAt': '2026-08-01T15:07:26.488Z'
   },
   {
     'id': 'cli-15',
     'name': 'Silvia Rojas',
-    'email': 'silvia.rojas@correo.com',
-    'phone': '+54 261 434-5527',
+    'email': '',
+    'phone': '',
     'tags': [
-      'Nuevo',
-      'Mayorista'
+      'nuevo',
+      'mayorista'
     ],
     'notes': [],
     'totalOrders': 1,
     'totalSpent': 0,
-    'lastOrderAt': '2026-09-06T02:03:13.335Z',
-    'createdAt': '2026-05-14T02:03:13.335Z'
+    'lastOrderAt': '2026-09-06T15:07:26.488Z',
+    'createdAt': '2026-05-14T15:07:26.488Z'
   }
 ]
 
@@ -505,12 +505,12 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-08-30T02:03:13.335Z',
+        'timestamp': '2026-08-30T15:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-08-30T02:03:13.335Z',
-    'updatedAt': '2026-08-30T02:03:13.335Z'
+    'createdAt': '2026-08-30T15:07:26.488Z',
+    'updatedAt': '2026-08-30T15:07:26.488Z'
   },
   {
     'id': 'CAVA-1002',
@@ -544,23 +544,23 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-30T02:03:13.335Z',
+        'timestamp': '2026-09-30T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-30T13:03:13.335Z',
+        'timestamp': '2026-10-01T02:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'cancelado',
-        'timestamp': '2026-09-30T12:03:13.335Z',
+        'timestamp': '2026-10-01T01:07:26.488Z',
         'author': 'Admin',
         'note': 'Cancelado a pedido del cliente.'
       }
     ],
-    'createdAt': '2026-09-30T02:03:13.335Z',
-    'updatedAt': '2026-09-30T12:03:13.335Z'
+    'createdAt': '2026-09-30T15:07:26.488Z',
+    'updatedAt': '2026-10-01T01:07:26.488Z'
   },
   {
     'id': 'CAVA-1003',
@@ -594,23 +594,23 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-24T02:03:13.335Z',
+        'timestamp': '2026-09-24T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-25T02:03:13.335Z',
+        'timestamp': '2026-09-25T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'cancelado',
-        'timestamp': '2026-09-24T13:03:13.335Z',
+        'timestamp': '2026-09-25T02:07:26.488Z',
         'author': 'Admin',
         'note': 'Cancelado a pedido del cliente.'
       }
     ],
-    'createdAt': '2026-09-24T02:03:13.335Z',
-    'updatedAt': '2026-09-24T13:03:13.335Z'
+    'createdAt': '2026-09-24T15:07:26.488Z',
+    'updatedAt': '2026-09-25T02:07:26.488Z'
   },
   {
     'id': 'CAVA-1004',
@@ -651,23 +651,23 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-21T02:03:13.335Z',
+        'timestamp': '2026-09-21T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-21T18:03:13.335Z',
+        'timestamp': '2026-09-22T07:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'cancelado',
-        'timestamp': '2026-09-21T14:03:13.335Z',
+        'timestamp': '2026-09-22T03:07:26.488Z',
         'author': 'Admin',
         'note': 'Cancelado a pedido del cliente.'
       }
     ],
-    'createdAt': '2026-09-21T02:03:13.335Z',
-    'updatedAt': '2026-09-21T14:03:13.335Z'
+    'createdAt': '2026-09-21T15:07:26.488Z',
+    'updatedAt': '2026-09-22T03:07:26.488Z'
   },
   {
     'id': 'CAVA-1005',
@@ -694,23 +694,23 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-10T02:03:13.335Z',
+        'timestamp': '2026-09-10T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-10T13:03:13.335Z',
+        'timestamp': '2026-09-11T02:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'devuelto',
-        'timestamp': '2026-09-10T15:03:13.335Z',
+        'timestamp': '2026-09-11T04:07:26.488Z',
         'author': 'Admin',
         'note': 'Devolucion aceptada. Producto en buen estado.'
       }
     ],
-    'createdAt': '2026-09-10T02:03:13.335Z',
-    'updatedAt': '2026-09-10T15:03:13.335Z'
+    'createdAt': '2026-09-10T15:07:26.488Z',
+    'updatedAt': '2026-09-11T04:07:26.488Z'
   },
   {
     'id': 'CAVA-1006',
@@ -744,27 +744,27 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-14T02:03:13.335Z',
+        'timestamp': '2026-09-14T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-14T16:03:13.335Z',
+        'timestamp': '2026-09-15T05:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-09-15T02:03:13.335Z',
+        'timestamp': '2026-09-15T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'entregado',
-        'timestamp': '2026-09-14T17:03:13.335Z',
+        'timestamp': '2026-09-15T06:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-09-14T02:03:13.335Z',
-    'updatedAt': '2026-09-14T17:03:13.335Z'
+    'createdAt': '2026-09-14T15:07:26.488Z',
+    'updatedAt': '2026-09-15T06:07:26.488Z'
   },
   {
     'id': 'CAVA-1007',
@@ -798,27 +798,27 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-03T02:03:13.335Z',
+        'timestamp': '2026-09-03T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-03T07:03:13.335Z',
+        'timestamp': '2026-09-03T20:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-09-05T06:03:13.335Z',
+        'timestamp': '2026-09-05T19:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'entregado',
-        'timestamp': '2026-09-05T05:03:13.335Z',
+        'timestamp': '2026-09-05T18:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-09-03T02:03:13.335Z',
-    'updatedAt': '2026-09-05T05:03:13.335Z'
+    'createdAt': '2026-09-03T15:07:26.488Z',
+    'updatedAt': '2026-09-05T18:07:26.488Z'
   },
   {
     'id': 'CAVA-1008',
@@ -866,22 +866,22 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-10-04T02:03:13.335Z',
+        'timestamp': '2026-10-04T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-10-05T02:03:13.335Z',
+        'timestamp': '2026-10-05T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-10-06T06:03:13.335Z',
+        'timestamp': '2026-10-06T19:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-10-04T02:03:13.335Z',
-    'updatedAt': '2026-10-06T06:03:13.335Z'
+    'createdAt': '2026-10-04T15:07:26.488Z',
+    'updatedAt': '2026-10-06T19:07:26.488Z'
   },
   {
     'id': 'CAVA-1009',
@@ -922,27 +922,27 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-07T02:03:13.335Z',
+        'timestamp': '2026-09-07T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-08T00:03:13.335Z',
+        'timestamp': '2026-09-08T13:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-09-07T12:03:13.335Z',
+        'timestamp': '2026-09-08T01:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'entregado',
-        'timestamp': '2026-09-09T05:03:13.335Z',
+        'timestamp': '2026-09-09T18:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-09-07T02:03:13.335Z',
-    'updatedAt': '2026-09-09T05:03:13.335Z'
+    'createdAt': '2026-09-07T15:07:26.488Z',
+    'updatedAt': '2026-09-09T18:07:26.488Z'
   },
   {
     'id': 'CAVA-1010',
@@ -990,22 +990,22 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-08-21T02:03:13.335Z',
+        'timestamp': '2026-08-21T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-08-21T12:03:13.335Z',
+        'timestamp': '2026-08-22T01:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-08-23T06:03:13.335Z',
+        'timestamp': '2026-08-23T19:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-08-21T02:03:13.335Z',
-    'updatedAt': '2026-08-23T06:03:13.335Z'
+    'createdAt': '2026-08-21T15:07:26.488Z',
+    'updatedAt': '2026-08-23T19:07:26.488Z'
   },
   {
     'id': 'CAVA-1011',
@@ -1032,27 +1032,27 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-10-02T02:03:13.335Z',
+        'timestamp': '2026-10-02T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-10-02T09:03:13.335Z',
+        'timestamp': '2026-10-02T22:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-10-03T20:03:13.335Z',
+        'timestamp': '2026-10-04T09:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'entregado',
-        'timestamp': '2026-10-04T20:03:13.335Z',
+        'timestamp': '2026-10-05T09:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-10-02T02:03:13.335Z',
-    'updatedAt': '2026-10-04T20:03:13.335Z'
+    'createdAt': '2026-10-02T15:07:26.488Z',
+    'updatedAt': '2026-10-05T09:07:26.488Z'
   },
   {
     'id': 'CAVA-1012',
@@ -1086,27 +1086,27 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-08-27T02:03:13.335Z',
+        'timestamp': '2026-08-27T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-08-28T00:03:13.335Z',
+        'timestamp': '2026-08-28T13:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-08-28T02:03:13.335Z',
+        'timestamp': '2026-08-28T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'entregado',
-        'timestamp': '2026-08-29T11:03:13.335Z',
+        'timestamp': '2026-08-30T00:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-08-27T02:03:13.335Z',
-    'updatedAt': '2026-08-29T11:03:13.335Z'
+    'createdAt': '2026-08-27T15:07:26.488Z',
+    'updatedAt': '2026-08-30T00:07:26.488Z'
   },
   {
     'id': 'CAVA-1013',
@@ -1133,18 +1133,18 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-08-24T02:03:13.335Z',
+        'timestamp': '2026-08-24T15:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-08-24T02:03:13.335Z',
-    'updatedAt': '2026-08-24T02:03:13.335Z'
+    'createdAt': '2026-08-24T15:07:26.488Z',
+    'updatedAt': '2026-08-24T15:07:26.488Z'
   },
   {
     'id': 'CAVA-1014',
     'customerId': 'cli-15',
     'customerName': 'Silvia Rojas',
-    'customerEmail': 'silvia.rojas@correo.com',
+    'customerEmail': '',
     'items': [
       {
         'wineId': '6',
@@ -1172,23 +1172,23 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-06T02:03:13.335Z',
+        'timestamp': '2026-09-06T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-06T10:03:13.335Z',
+        'timestamp': '2026-09-06T23:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'cancelado',
-        'timestamp': '2026-09-07T00:03:13.335Z',
+        'timestamp': '2026-09-07T13:07:26.488Z',
         'author': 'Admin',
         'note': 'Cancelado a pedido del cliente.'
       }
     ],
-    'createdAt': '2026-09-06T02:03:13.335Z',
-    'updatedAt': '2026-09-07T00:03:13.335Z'
+    'createdAt': '2026-09-06T15:07:26.488Z',
+    'updatedAt': '2026-09-07T13:07:26.488Z'
   },
   {
     'id': 'CAVA-1015',
@@ -1222,23 +1222,23 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-08-30T02:03:13.335Z',
+        'timestamp': '2026-08-30T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-08-30T10:03:13.335Z',
+        'timestamp': '2026-08-30T23:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'devuelto',
-        'timestamp': '2026-08-31T01:03:13.335Z',
+        'timestamp': '2026-08-31T14:07:26.488Z',
         'author': 'Admin',
         'note': 'Devolucion aceptada. Producto en buen estado.'
       }
     ],
-    'createdAt': '2026-08-30T02:03:13.335Z',
-    'updatedAt': '2026-08-31T01:03:13.335Z'
+    'createdAt': '2026-08-30T15:07:26.488Z',
+    'updatedAt': '2026-08-31T14:07:26.488Z'
   },
   {
     'id': 'CAVA-1016',
@@ -1265,17 +1265,17 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-20T02:03:13.335Z',
+        'timestamp': '2026-09-20T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-20T11:03:13.335Z',
+        'timestamp': '2026-09-21T00:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-09-20T02:03:13.335Z',
-    'updatedAt': '2026-09-20T11:03:13.335Z'
+    'createdAt': '2026-09-20T15:07:26.488Z',
+    'updatedAt': '2026-09-21T00:07:26.488Z'
   },
   {
     'id': 'CAVA-1017',
@@ -1309,27 +1309,27 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-25T02:03:13.335Z',
+        'timestamp': '2026-09-25T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-25T12:03:13.335Z',
+        'timestamp': '2026-09-26T01:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-09-26T18:03:13.335Z',
+        'timestamp': '2026-09-27T07:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'entregado',
-        'timestamp': '2026-09-28T05:03:13.335Z',
+        'timestamp': '2026-09-28T18:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-09-25T02:03:13.335Z',
-    'updatedAt': '2026-09-28T05:03:13.335Z'
+    'createdAt': '2026-09-25T15:07:26.488Z',
+    'updatedAt': '2026-09-28T18:07:26.488Z'
   },
   {
     'id': 'CAVA-1018',
@@ -1356,17 +1356,17 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-14T02:03:13.335Z',
+        'timestamp': '2026-09-14T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-14T11:03:13.335Z',
+        'timestamp': '2026-09-15T00:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-09-14T02:03:13.335Z',
-    'updatedAt': '2026-09-14T11:03:13.335Z'
+    'createdAt': '2026-09-14T15:07:26.488Z',
+    'updatedAt': '2026-09-15T00:07:26.488Z'
   },
   {
     'id': 'CAVA-1019',
@@ -1393,22 +1393,22 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-08-30T02:03:13.335Z',
+        'timestamp': '2026-08-30T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-08-30T21:03:13.335Z',
+        'timestamp': '2026-08-31T10:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-08-31T06:03:13.335Z',
+        'timestamp': '2026-08-31T19:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-08-30T02:03:13.335Z',
-    'updatedAt': '2026-08-31T06:03:13.335Z'
+    'createdAt': '2026-08-30T15:07:26.488Z',
+    'updatedAt': '2026-08-31T19:07:26.488Z'
   },
   {
     'id': 'CAVA-1020',
@@ -1449,23 +1449,23 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-05T02:03:13.335Z',
+        'timestamp': '2026-09-05T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-05T23:03:13.335Z',
+        'timestamp': '2026-09-06T12:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'devuelto',
-        'timestamp': '2026-09-06T06:03:13.335Z',
+        'timestamp': '2026-09-06T19:07:26.488Z',
         'author': 'Admin',
         'note': 'Devolucion aceptada. Producto en buen estado.'
       }
     ],
-    'createdAt': '2026-09-05T02:03:13.335Z',
-    'updatedAt': '2026-09-06T06:03:13.335Z'
+    'createdAt': '2026-09-05T15:07:26.488Z',
+    'updatedAt': '2026-09-06T19:07:26.488Z'
   },
   {
     'id': 'CAVA-1021',
@@ -1499,27 +1499,27 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-08-22T02:03:13.335Z',
+        'timestamp': '2026-08-22T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-08-22T09:03:13.335Z',
+        'timestamp': '2026-08-22T22:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-08-23T14:03:13.335Z',
+        'timestamp': '2026-08-24T03:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'entregado',
-        'timestamp': '2026-08-24T08:03:13.335Z',
+        'timestamp': '2026-08-24T21:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-08-22T02:03:13.335Z',
-    'updatedAt': '2026-08-24T08:03:13.335Z'
+    'createdAt': '2026-08-22T15:07:26.488Z',
+    'updatedAt': '2026-08-24T21:07:26.488Z'
   },
   {
     'id': 'CAVA-1022',
@@ -1546,27 +1546,27 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-10-06T02:03:13.335Z',
+        'timestamp': '2026-10-06T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-10-06T18:03:13.335Z',
+        'timestamp': '2026-10-07T07:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-10-07T04:03:13.335Z',
+        'timestamp': '2026-10-07T17:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'entregado',
-        'timestamp': '2026-10-07T02:03:13.335Z',
+        'timestamp': '2026-10-07T15:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-10-06T02:03:13.335Z',
-    'updatedAt': '2026-10-07T02:03:13.335Z'
+    'createdAt': '2026-10-06T15:07:26.488Z',
+    'updatedAt': '2026-10-07T15:07:26.488Z'
   },
   {
     'id': 'CAVA-1023',
@@ -1607,12 +1607,12 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-08-27T02:03:13.335Z',
+        'timestamp': '2026-08-27T15:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-08-27T02:03:13.335Z',
-    'updatedAt': '2026-08-27T02:03:13.335Z'
+    'createdAt': '2026-08-27T15:07:26.488Z',
+    'updatedAt': '2026-08-27T15:07:26.488Z'
   },
   {
     'id': 'CAVA-1024',
@@ -1639,22 +1639,22 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-22T02:03:13.335Z',
+        'timestamp': '2026-09-22T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-22T17:03:13.335Z',
+        'timestamp': '2026-09-23T06:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'enviado',
-        'timestamp': '2026-09-22T20:03:13.335Z',
+        'timestamp': '2026-09-23T09:07:26.488Z',
         'author': 'Admin'
       }
     ],
-    'createdAt': '2026-09-22T02:03:13.335Z',
-    'updatedAt': '2026-09-22T20:03:13.335Z'
+    'createdAt': '2026-09-22T15:07:26.488Z',
+    'updatedAt': '2026-09-23T09:07:26.488Z'
   },
   {
     'id': 'CAVA-1025',
@@ -1688,23 +1688,23 @@ export const mockOrders: Order[] = [
     'timeline': [
       {
         'status': 'pendiente',
-        'timestamp': '2026-09-01T02:03:13.335Z',
+        'timestamp': '2026-09-01T15:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'preparando',
-        'timestamp': '2026-09-01T12:03:13.335Z',
+        'timestamp': '2026-09-02T01:07:26.488Z',
         'author': 'Admin'
       },
       {
         'status': 'cancelado',
-        'timestamp': '2026-09-02T11:03:13.335Z',
+        'timestamp': '2026-09-03T00:07:26.488Z',
         'author': 'Admin',
         'note': 'Cancelado a pedido del cliente.'
       }
     ],
-    'createdAt': '2026-09-01T02:03:13.335Z',
-    'updatedAt': '2026-09-02T11:03:13.335Z'
+    'createdAt': '2026-09-01T15:07:26.488Z',
+    'updatedAt': '2026-09-03T00:07:26.488Z'
   }
 ]
 
@@ -1909,31 +1909,31 @@ export const mockMetrics: Metrics = {
       'type': 'order',
       'id': 'CAVA-1022',
       'description': 'Pedido CAVA-1022 - Miguel Torres',
-      'timestamp': '2026-10-06T02:03:13.335Z'
+      'timestamp': '2026-10-06T15:07:26.488Z'
     },
     {
       'type': 'order',
       'id': 'CAVA-1008',
       'description': 'Pedido CAVA-1008 - Valeria Romero',
-      'timestamp': '2026-10-04T02:03:13.335Z'
+      'timestamp': '2026-10-04T15:07:26.488Z'
     },
     {
       'type': 'order',
       'id': 'CAVA-1011',
       'description': 'Pedido CAVA-1011 - Nicolas Vega',
-      'timestamp': '2026-10-02T02:03:13.335Z'
+      'timestamp': '2026-10-02T15:07:26.488Z'
     },
     {
       'type': 'order',
       'id': 'CAVA-1002',
       'description': 'Pedido CAVA-1002 - Lucia Fernandez',
-      'timestamp': '2026-09-30T02:03:13.335Z'
+      'timestamp': '2026-09-30T15:07:26.488Z'
     },
     {
       'type': 'order',
       'id': 'CAVA-1017',
       'description': 'Pedido CAVA-1017 - Lucia Fernandez',
-      'timestamp': '2026-09-25T02:03:13.335Z'
+      'timestamp': '2026-09-25T15:07:26.488Z'
     }
   ]
 }

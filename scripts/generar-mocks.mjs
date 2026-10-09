@@ -244,7 +244,11 @@ const NOMBRES = [
   ['Silvia Rojas', 'silvia.rojas@correo.com', '+54 261 434-5527']
 ]
 
-const TAGS = ['VIP', 'Frecuente', 'Nuevo', 'Mayorista']
+// En **minusculas**, y a proposito: `EtiquetaCliente` en `src/types/admin.ts` es
+// `'nuevo' | 'vip' | 'frecuente' | 'mayorista'`, y el filtro de tags normaliza
+// a minusculas antes de comparar. Con tags capitalizadas el filtro no
+// encontraria ninguna: `normalizar('VIP')` es `'vip'`, que no es igual a `'VIP'`.
+const TAGS = ['vip', 'frecuente', 'nuevo', 'mayorista']
 
 const NOTAS_CLIENTE = [
   'Pidio envio express a Mendoza capital.',
@@ -273,8 +277,12 @@ const mockCustomers = NOMBRES.map(([name, email, phone], indice) => {
   return {
     id: `cli-${indice + 1}`,
     name,
-    email,
-    phone,
+    // CE-04: el ultimo cliente se registro en el mostrador, sin dejar mail ni
+    // telefono. Sin un caso asi en los datos, la advertencia de la fila y del
+    // drawer nunca se verian en el panel, que es justamente lo que CE-04 pide
+    // poder comprobar.
+    email: indice === NOMBRES.length - 1 ? '' : email,
+    phone: indice === NOMBRES.length - 1 ? '' : phone,
     tags,
     notes,
     totalOrders: 0,

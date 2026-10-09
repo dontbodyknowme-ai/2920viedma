@@ -74,6 +74,22 @@ describe('filtrarPedidos', () => {
     ).toBeGreaterThan(0)
   })
 
+  it('busca tambien por customerId, que es como el CRM encuentra los pedidos', () => {
+    // Sin esto, el drawer del cliente abria la pestana "Pedidos" vacia para
+    // cualquier cliente: el `customerId` no aparece en ningun campo visible
+    // del pedido, asi que `?search=cli-1` no encontraba nada.
+    const cliente = mockOrders[0]
+
+    const porCustomerId = filtrarPedidos(
+      url(`search=${encodeURIComponent(cliente.customerId)}`)
+    )
+
+    expect(porCustomerId.length).toBeGreaterThan(0)
+    porCustomerId.forEach((pedido) => {
+      expect(pedido.customerId).toBe(cliente.customerId)
+    })
+  })
+
   it('filtra por rango de fechas cerrado, con ambos extremos', () => {
     // El filtro es inclusivo: elegir "del 1 al 15" tiene que incluir el 1 y el
     // 15. Un rango con `>` en el ultimo dia dejaria fuera los pedidos de ese

@@ -63,6 +63,10 @@ export const filtrarPedidos = (url: URL): Order[] => {
     const coincideBusqueda =
       busqueda === '' ||
       pedido.id.toLowerCase().includes(busqueda) ||
+      // El `customerId` se busca tambien: es como el drawer del CRM encuentra
+      // los pedidos de un cliente. Sin esto, `?search=cli-1` no devuelve nada
+      // porque el id del cliente no aparece en ningun campo visible del pedido.
+      pedido.customerId.toLowerCase().includes(busqueda) ||
       pedido.customerName.toLowerCase().includes(busqueda) ||
       pedido.customerEmail.toLowerCase().includes(busqueda)
     const coincideDesde = desde === null || diaDe(pedido.createdAt) >= desde

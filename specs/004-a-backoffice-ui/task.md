@@ -974,7 +974,7 @@ Puerto 5205, `npm run dev`, con `isAdmin` activo.
 
 **RF cubiertos:** RF-30 a RF-34
 **Depende de:** T3
-**Estado:** `pendiente`
+**Estado:** `hecha` — 177/177 tests en verde, verificado en navegador
 
 ### Qué hacer
 
@@ -1020,12 +1020,91 @@ En navegador:
 
 ### Hecho cuando
 
-- [ ] `clientes.tsx` con DataTable funciona
-- [ ] `customer_drawer.tsx` con 3 tabs funcionales
-- [ ] Notas y tags persisten (MSW)
-- [ ] Export CSV funciona
-- [ ] `npx tsc --noEmit` sale 0
-- [ ] `npm run build` sale 0
+- [x] `clientes.tsx` con DataTable funciona
+- [x] `customer_drawer.tsx` con 3 tabs funcionales
+- [x] `useClientes.ts` existe
+- [x] Notas y tags persisten (MSW)
+- [x] Export CSV funciona
+- [x] CE-04 verificado: cliente sin email muestra aviso en fila y en drawer
+- [x] `npx tsc --noEmit` sale 0
+- [x] `npm run build` sale 0
+- [x] **177/177 tests en verde** (+18: 17 de clientes, 1 de busqueda por `customerId`)
+
+### Bugs encontrados y corregidos (2026-10-09)
+
+**1. El filtro de tags no encontraba nada.** Las tags de los datos mock estaban
+capitalizadas (`'VIP'`, `'Frecuente'`, `'Nuevo'`, `'Mayorista'`) pero el filtro
+normaliza a minusculas antes de comparar: `normalizar('VIP')` es `'vip'`, que no
+es igual a `'VIP'`. Marcar cualquier tag dejaba la tabla vacia **sin error**.
+Ademas `EtiquetaCliente` en `src/types/admin.ts` es
+`'nuevo' | 'vip' | 'frecuente' | 'mayorista'` en minusculas: los datos no cumplian
+el tipo que el panel declara usar. Se regenero `data.ts` con minusculas.
+
+El test se comprobo **revirtiendo los datos a mayusculas y viendo que falla**.
+
+**2. No habia ningun cliente sin email, asi que CE-04 no se podia ver.** CE-04
+pide que se pueda guardar un cliente sin email ni telefono y que la fila lo
+avise. Con 15 clientes todos completos, el caso nunca aparecia en el panel y la
+advertencia era codigo muerto. El generador ahora deja al ultimo cliente
+(`cli-15`, "Silvia Rojas") sin email ni telefono, como el que se registro en el
+mostrador.
+
+**3. La busqueda de pedidos no buscaba por `customerId`.** El drawer del CRM
+pide los pedidos del cliente con `?search=<id>`, pero `customerId` no aparece en
+ningun campo visible del pedido: la busqueda no encontraba nada y la pestana
+"Pedidos" salia en `(0)` para todos. Ahora `customerId` entra en la busqueda.
+
+El pedido que llega igual se filtra por `customerId` en el hook, porque la
+busqueda por texto es por nombre o email y dos clientes pueden llamarse igual.
+
+### Decisiones
+
+**1. El orden de la tabla se aplica en memoria, no en el servidor.** Catalogo y
+pedidos ordenan en el servidor porque son cientos de filas. Clientes son 15 en
+total: ordenar en el servidor seria una peticion extra para colocar 15
+elementos que ya estan en memoria. Si el numero de clientes creciera, pasa al
+servidor igual que las otras dos tablas.
+
+**2. `StatusBadge` no se usa para los tags del cliente.** Solo acepta las cuatro
+etiquetas del tema (`nuevo`, `vip`, `frecuente`, `mayorista`) y el CRM deja
+agregar tags libres. Se creo `ChipTag`, que es neutro y ademas tiene el boton de
+quitar. Se exporta desde `customer_drawer.tsx` para que la tabla lo use tambien.
+
+**3. Las notas se agregan y los tags se reemplazan completos.** No es una
+inconsistencia: RF-32 dice "agrega nota" (el historial es acumulativo) y RF-33
+dice "actualiza tags" (el conjunto de tags es el estado completo). Van al mismo
+`PATCH` con campos distintos, y el mock los trata distinto.
+
+**4. Las notas se muestran de mas reciente a mas antigua.** La que se acaba de
+escribir es la que el admin quiere releer. El `Customer` las trae en orden de
+insercion, asi que el drawer las invierte para mostrar.
+
+### Verificación en navegador (2026-10-09)
+
+Puerto 5207, `npm run dev`, con `isAdmin` activo.
+
+| Qué | Resultado |
+|---|---|
+| DataTable | 15 clientes, "Mostrando 1-10 de 15 clientes", columnas Nombre/Email/Telefono/Pedidos/Total gastado/Ultimo pedido/Tags/Acciones |
+| Filtro de tags | `vip` → 5 clientes, contador "Tags 1". `vip + mayorista` → 1 cliente, contador "Tags 2", con ambas tags |
+| Drawer | "Maria Gomez", 3 pestanas: Pedidos (1), Notas (2), Datos |
+| Pestana Pedidos | CAVA-1015, 30/08/26, DEVUELTO, $ 82.000, con link a `/admin/pedidos?id=` |
+| Pestana Notas | 2 notas con autor y fecha, ordenadas de mas reciente a mas antigua |
+| Nota vacia | "La nota no puede estar vacia." |
+| Agregar nota | 3 notas, contador "Notas (3)", campo limpiado, "09/10/26, 12:12 p. m." |
+| Tags: sugereridas | datalist con `mayorista`, `nuevo`, `vip` |
+| Tags: agregar | header pasa de `vip` a `vip, mayorista` |
+| Tags: quitar | `Quitar tag vip` lo elimina |
+| CE-04 | Fila "Silvia Rojas / **Sin email** / — / —"; drawer: "Este cliente no tiene email ni telefono. No se podra avisarle de novedades por mail." |
+| Consola | **0 errores, 0 avisos** |
+
+### Archivos
+
+| Archivo | Rol |
+|---|---|
+| `src/pages/admin/clientes.tsx` | La pagina: toolbar, filtro de tags, tabla, orden en memoria |
+| `src/components/admin/customer_drawer.tsx` | Drawer con 3 pestanas + `ChipTag` |
+| `src/hooks/useClientes.ts` | Filtros, paginacion, notas, tags, export |
 
 ---
 
