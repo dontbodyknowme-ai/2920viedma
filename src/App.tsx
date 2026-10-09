@@ -6,16 +6,49 @@ import { Hero } from './components/hero'
 import { ProductCatalog } from './components/carta_de_catalogo'
 import { CartDrawer } from './components/carrito_de_compras'
 import { ProductForm } from './components/editor_formador_productos'
+import { VistaRapidaProducto } from './components/vista_rapida_producto'
 import { Footer } from './components/pie_de_pagina'
 import { AnimatedSection } from './components/animated_section'
 
 const STORAGE_KEY_WINES = 'vinoteca_wines'
 const STORAGE_KEY_CART = 'vinoteca_cart'
+const STORAGE_KEY_ADMIN = 'isAdmin'
 
+// Modo admin de la spec 004-a. Es un flag, NO autenticacion: no hay password,
+// no hay token y cualquiera que abra la consola puede ponerlo en true. T9 lo
+// reemplaza por `GET /api/auth/me` con token real, que es lo que hace la
+// spec 004-b.
+//
+// T1 entrega la lectura y la escritura del flag; el estado y el boton que lo
+// cambian llegan en T9.
+export function loadIsAdmin(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY_ADMIN) === 'true'
+  } catch {
+    // Sin localStorage el modo admin queda apagado, que es el estado seguro.
+    return false
+  }
+}
+
+export function saveIsAdmin(value: boolean): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_ADMIN, String(value))
+  } catch {
+    // Si falla el almacenamiento, el toggle igual funciona en memoria.
+  }
+}
+
+// RF-34 y CE-01: si lo guardado no es un array con contenido, se arranca con
+// el catalogo inicial. Sin estas dos guardas, un `localStorage` con `"{}"` o con
+// `"[]"` deja el catalogo vacio y la pagina muestra un estado de "no hay
+// etiquetas" en lugar del catalogo de la tienda.
 function loadWines(): Wine[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_WINES)
-    if (stored) return JSON.parse(stored)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
   } catch {
     // ignore
   }
@@ -26,10 +59,15 @@ function saveWines(wines: Wine[]) {
   localStorage.setItem(STORAGE_KEY_WINES, JSON.stringify(wines))
 }
 
+// Misma guarda que `loadWines`, por el mismo motivo (RF-34, CE-02): lo guardado
+// tiene que ser un array, o se arranca con el carrito vacio.
 function loadCart(): CartItem[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_CART)
-    if (stored) return JSON.parse(stored)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) return parsed
+    }
   } catch {
     // ignore
   }
@@ -47,10 +85,15 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [vinoAEditar, setVinoAEditar] = useState<Wine | null>(null)
-  const [_selectedWine, setSelectedWine] = useState<Wine | null>(null)
+  const [selectedWine, setSelectedWine] = useState<Wine | null>(null)
   const [minPrice, setMinPrice] = useState<number | ''>('')
   const [maxPrice, setMaxPrice] = useState<number | ''>('')
   const [selectedVarietals, setSelectedVarietals] = useState<string[]>([])
+  const [pedidoConfirmado, setPedidoConfirmado] = useState(false)
+  // El estado `isAdmin` y su toggle se agregan en T9, junto con el boton del
+  // navbar que los consume. Declararlos en T1 dejaba el setter sin uso y el
+  // `noUnusedLocals` del proyecto lo rechaza: el flag queda persistido por las
+  // funciones de arriba y el estado nace cuando hay algo que lo lea.
 
   useEffect(() => {
     saveWines(wines)
@@ -86,11 +129,16 @@ export default function App() {
     setCart((prev) => prev.filter((item) => item.product.id !== wineId))
   }, [])
 
+  // RF-27: mensaje de pedido confirmado y carrito vacio, sin recargar la
+  // pagina. Se renderiza en el JSX de mas abajo como <p role='status'>, no con
+  // `alert`: `alert` bloquea la ejecucion, y el test de RF-45 lee el DOM para
+  // encontrar el mensaje.
   const finalizarCompra = useCallback(() => {
+    if (cart.length === 0) return
     setCart([])
     setCartOpen(false)
-    alert('¡Gracias por tu compra!')
-  }, [])
+    setPedidoConfirmado(true)
+  }, [cart.length])
 
   const agregarWine = useCallback((wine: Wine) => {
     setWines((prev) => [...prev, wine])
@@ -160,6 +208,22 @@ export default function App() {
       <AnimatedSection>
         <Footer />
       </AnimatedSection>
+      {/* RF-35 a RF-37: la vista rapida se monta SIEMPRE y es su `AnimatePresence`
+          interno el que decide si hay algo que mostrar. Montarla con
+          `selectedWine !== null` la desmontaria de golpe al cerrar y la animacion
+          de salida no correria. */}
+      <VistaRapidaProducto
+        wine={selectedWine}
+        onClose={() => setSelectedWine(null)}
+      />
+      {pedidoConfirmado && (
+        <p
+          role='status'
+          className='pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-gold-500/40 bg-charcoal-900/95 px-6 py-4 text-center text-sm font-semibold tracking-wider text-gold-400 shadow-2xl'
+        >
+          Pedido confirmado. Gracias por tu compra.
+        </p>
+      )}
     </>
   )
 }

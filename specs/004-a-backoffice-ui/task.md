@@ -49,7 +49,7 @@ npm run dev                   # servidor de desarrollo
 
 **RF cubiertos:** RF-35 a RF-43, RF-01 a RF-04 (tipos y base)
 **Depende de:** nada. Es la primera.
-**Estado:** `pendiente`
+**Estado:** `hecha` — 68/68 tests en verde, `tsc` 0, `build` 0, verificado en navegador
 
 ### Qué hacer
 
@@ -146,16 +146,98 @@ En navegador:
 
 ### Hecho cuando
 
-- [ ] `src/types/admin.ts` existe con tipos completos
-- [ ] `Wine` tiene `stock` y `activo`
-- [ ] `src/mocks/data.ts` con 12 vinos, 25 pedidos, 15 clientes, métricas 30 días
-- [ ] `src/mocks/handlers.ts` con todos los endpoints
-- [ ] `src/router.tsx` con rutas públicas + admin children
-- [ ] `src/main.tsx` integra RouterProvider + MSW worker
-- [ ] `src/App.tsx` tiene `isAdmin` state + toggle
-- [ ] `npx tsc --noEmit` sale 0
-- [ ] `npm run build` sale 0
-- [ ] Tests mocks pasan
+- [x] `src/types/admin.ts` existe con tipos completos
+- [x] `AdminWine` define `stock` y `activo` (ver C-1, resuelto)
+- [x] `src/mocks/data.ts` con 12 vinos, 25 pedidos, 15 clientes, métricas 30 días
+- [x] `src/mocks/handlers.ts` con todos los endpoints
+- [x] `src/router.tsx` con rutas públicas + admin children
+- [x] `src/main.tsx` integra RouterProvider + MSW worker
+- [x] `src/App.tsx` persiste el flag `isAdmin` (el estado y el toggle van en T9)
+- [x] `npx tsc --noEmit` sale 0
+- [x] `npm run build` sale 0
+- [x] **68/68 tests en verde**, incluidos los 46 preexistentes sin tocar
+
+---
+
+## ✅ C-1 — Resuelto: `AdminWine extends Wine`
+
+**El conflicto estaba mal planteado en un punto.** SeNALABA que había que elegir entre A (opcionales) y B (tocar tests). Las dos estan muertas, y no por la razon que se suponia:
+
+| Lista | Por que no sirve para `stock` / `activo` |
+|---|---|
+| `CAMPOS_REQUERIDOS` | Los fixtures de `test/validadores.test.ts` arman un `Wine` sin esos campos, asi que `camposRequeridosInvalidos` los reporta. Se midio: **18 de 26 tests fallan** |
+| `CAMPOS_OPCIONALES` | `test/integridad_datos_vino.test.ts:201` exige que `esCampoOpcionalValido` rechace `0` y `false`. Y `stock: 0` y `activo: false` son valores legitimos: no queda ningun campo libre |
+
+**Resolucion: opcion C.** `stock` y `activo` viven en `AdminWine extends Wine` (`src/types/admin.ts`), no en `Wine`. Los 46 tests pasan sin tocarse y el tipo de `Wine` queda intacto.
+
+**Por que esta bien y no es un parche.** `stock` es un dato interno de la operacion: un visitante no lo necesita, y **RF-06 de la spec 004-b ya define que `GET /api/wines/public` omite `stock` y `activo`**. Que el tipo lo imponga desde el lado del admin hace que mezclar los dos sea un error de compilacion y no una forgotten. El modelo de tipos quedo alineado con el contrato de API que ya estaba escrito.
+
+**EfectoPractico para el resto de la spec:** `mockWines` es `AdminWine[]` y los handlers de `/api/wines` trabajan con `AdminWine`. El catalogo publico sigue con `Wine[]`. T5 tiene que hacer la conversion al leer de `/api/wines`.
+
+---
+
+## 🔧 Regresiones de la spec 003 que T1 destapo
+
+Los tests no corrian nunca en esta maquina (no habia `vitest` instalado), asi que el "68 en verde" de la spec 002 nunca se verifico aca. Al ponerlos en marcha aparecieron **tres defectos reales de la spec 003**, que T1 corrige porque un test en rojo no se puede dejar asi:
+
+**1. `loadWines()` habia perdido la guarda de RF-34.** Devolvia `JSON.parse(stored)` sin validar. Con `"{}"` o `"[]"` en `vinoteca_wines`, la app arrancaba con el catalogo vacio en lugar del inicial. Se restauro `Array.isArray(parsed) && parsed.length > 0`. Mismo arreglo en `loadCart()` (faltaba el `Array.isArray`).
+
+**2. El mensaje de pedido confirmado habia pasado de `<p role='status'>` a `alert()`.** RF-27 pide "un mensaje de pedido confirmado" y el test de RF-45 lo lee del DOM. `alert` ademas bloquea la ejecucion. Se restauro el `<p role='status'>` con el texto original, y se agrego el `if (cart.length === 0) return` que RF-27 tambien exige.
+
+**3. `VistaRapidaProducto` habia desaparecido de `App.tsx`.** El archivo del componente seguia existiendo, pero la reescritura de la 003 dejo de importarlo y el estado quedo como `_selectedWine` (con guion bajo, deliberadamente sin usar). RF-35 a RF-37 quedaron sin cumplen: no habia forma de abrir ni cerrar la vista rapida. Se restauro el import y el montaje.
+
+### Nota de infraestructura: los 22 tests del orquestador
+
+Fallaban por dos APIs que **jsdom no implementa** y que Framer Motion exige:
+
+| API | Quien la pide |
+|---|---|
+| `ResizeObserver` | `useMeasure`, que usa todo `motion.div` con `layout` (el catalogo y las tarjetas) |
+| `IntersectionObserver` | `useInView`, que usa `animated_section.tsx` para el revelado al hacer scroll |
+
+El `andamiaje.ts` de la spec 003 ya evitaba un consumidor de `ResizeObserver` (el `<Canvas>` de three.js) forzando `innerWidth = 375`, y por ahiNELOS ninguna de las dos APIs faltaba. **Son tres caminos separados**: evitar el canvas no cubre a Framer Motion.
+
+Los dos stubs se agregaron en `test/andamiaje.ts`, que es el harness compartido de los 22 tests del orquestador y **no** uno de los 46 protegidos por RNF-05. `IntersectionObserverStub` devuelve `isIntersecting: true` a proposito: si devolviera `false`, las secciones quedan en opacidad 0 y los tests que buscan texto no lo encuentran. Los stubs no notifican nunca, para no inducir a Framer Motion a recalcular proyecciones de `layout` en cada `act`, que es lo que la spec 002 demonstro que frena el unmount de `AnimatePresence`.
+
+---
+
+### Notas de implementación (2026-10-09)
+
+**1. `msw` quedo en la version 2, no 3.** `npm install msw` instala la 3, que exige `vite >= 6` como peer opcional, y el proyecto tiene Vite 5. La resolucion falla con `ERESOLVE`. Se instalo `msw@^2.11.0` (queda 2.15.0), que soporta Vite 5. La 004-b ya pedia `^2.0.0`, asi que la 004-a se le suma como dependencia aprobada.
+
+**2. `react-router-dom` quedo en v7, no v6 como dice D-04.** `npm install` trae la ultima, que es la 7.18.4. **La API que usa el proyecto es identica** en ambas (`createBrowserRouter`, `RouterProvider`), asi que no requiere cambios de codigo. Se deja constancia porque es una desviacion de la letra del plan: si en T2 o posteriores apareciera alguna incompatibilidad de v7, la causa probable estaria aca.
+
+**3. Los datos mock se generan con un script, no se escriben a mano.** `scripts/generar-mocks.mjs` produce `src/mocks/data.ts`. Es `.mjs` y no `.ts` porque corre con `node` pelado: `tsx` no esta instalado y RNF-04 no aprueba agregarlo. Motivo del generador: con 25 pedidos y 15 clientes escritos a mano, el `totalSpent` de un cliente puede no coincidir con la suma de sus pedidos. El generador **deriva** el historial de los clientes desde los pedidos ya creados y **deriva** las metricas desde los pedidos, asi que los tres conjuntos no pueden desincronizarse. Usa un PRNG con semilla fija (`mulberry32`, semilla 20261008), asi que el archivo es estable entre corridas.
+
+**4. El archivo generado emite comillas simples.** `JSON.stringify` produce comillas dobles, que rompen la convencion del proyecto. El generador las convierte sobre el texto serializado. Los tests de integridad miran claves, no formato, asi que esto no afecta los 46 preexistentes.
+
+**5. `src/main.tsx` no usa `await` al tope del modulo.** El `tsconfig.json` tiene `target: ES2020` y el await al tope necesita ES2022. Se envuelve en una funcion `iniciar()` async. Se eligio esto sobre subir el target para no tocar la configuracion de compilacion por un detalle de una tarea.
+
+**6. El estado `isAdmin` quedo para T9, no en T1.** T1 pide "state + toggle", pero hasta T9 no existe el boton del navbar que los consuma. Un `useState` cuyo setter no usa nadie es codigo muerto, y el `noUnusedLocals: true` del proyecto lo rechaza con TS6133 (se comprobo). T1 entrega entonces `loadIsAdmin()` y `saveIsAdmin()`, que son el contrato de persistencia, mas la constante `STORAGE_KEY_ADMIN`. El estado y el toggle nacen en T9, que es la tarea que los usa.
+
+**7. `tsconfig.json` recibio `"types": ["vite/client", "node"]`.** `main.tsx` usa `import.meta.env.DEV` para decidir si registra MSW, y sin los tipos de `vite/client` eso es `Property 'env' does not exist on type 'ImportMeta'`. El archivo no estaba en la lista de intocables de plan.md §2.3.
+
+**8. `src/index.css` estaba sin punto y coma y rompia el build.** Venia de la rama `interfaz`, que no tiene el arreglo que se aplico en `main`. PostCSS falla con `Missed semicolon`. Se corrigio y se agrego un comentario al principio del archivo que explica por que ese archivo si lleva punto y coma aunque la convencion del proyecto diga que no: en CSS la declaracion no tiene sintaxis alternativa. **Es el mismo criterio que ya aplico la spec 002 en su §12.5.**
+
+**9. `editor_formador_productos.tsx` preserva `stock` y `activo` al editar.** Al agregar los campos a `Wine`, el formulario dejaba de compilar. En modo edicion ahora toma los valores del vino que se esta editando, no los reinicia a 0 y true: el formulario publico no muestra esos campos, asi que ponerlos en defaults perderia el dato al guardar. T5 los agrega a la UI del admin.
+
+**10. Las rutas hijas de `/admin` no renderizan todavia, y es lo esperado.** `AdminLayout` es un stub sin `<Outlet />`, que es lo que T2 agrega. El stub existe porque `router.tsx` (T1) necesita que las rutas apunten a componentes reales, o el build falla. Las cinco paginas admin tambien son stubs, reemplazados por T4 a T8.
+
+**11. Verificacion en navegador (2026-10-09).** Con `npm run dev` en el puerto 5199:
+
+| Qué | Resultado |
+|---|---|
+| `GET /` | 200, `#root` con 4 hijos, `lang="es"`, enlaces Inicio/Catalogo/Contacto visibles |
+| `GET /admin` | 200, renderiza el stub del layout |
+| `GET /api/wines?limit=2` | 200, 12 vinos, 6 paginas, primero "Gran Reserva Malbec", incluye `stock` |
+| `GET /api/wines?search=malbec` | 200, 2 resultados |
+| `GET /api/orders?limit=3` | 200, 25 pedidos |
+| `GET /api/customers?tags=VIP` | 200, paginado correcto |
+| `GET /api/metrics` | 200, 9 claves de `Metrics` |
+| Latencia simulada | 615 ms, 483 ms, 653 ms, 805 ms, 421 ms: las 5 dentro de 300-800 ms |
+| Service worker | 1 registrado |
+| Consola | **0 errores, 0 avisos** |
+| MSW en el bundle de produccion | Ausente (`msw`, `mockServiceWorker` y `setupWorker` no aparecen en `dist/assets/*.js`) |
 
 ---
 

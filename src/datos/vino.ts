@@ -1,5 +1,8 @@
 import { Wine } from '../types/vino'
 
+// Los dos vinos base del catalogo publico. No llevan `stock` ni `activo`: esos
+// campos son del panel de administracion y viven en `AdminWine`
+// (`src/types/admin.ts`). El catalogo que ve un visitante no los necesita.
 export const INITIAL_WINES: Wine[] = [
   {
     id: '1',

@@ -283,7 +283,7 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 | D-11 | **MetricCard con tendencia** | Icono + valor + flecha % vs período anterior + label |
 | D-12 | **CSV export usa PapaParse o nativo** | PapaParse si disponible, sino `Blob` + `URL.createObjectURL` nativo |
 | D-13 | **Mock data realista** | 25 pedidos estados distribuidos, 15 clientes con historial, 30 días ventas |
-| D-14 | **Campo `stock` y `activo` en `Wine`** | Requerido para gestión de inventario; `stock: number` (default 0), `activo: boolean` (default true) |
+| D-14 | **`stock` y `activo` se definen en `AdminWine extends Wine`, no en `Wine`** | **CORREGIDA en T1.** Se pedían como campos de `Wine`, pero las dos listas de `src/utils/validadores.ts` cierran ese contrato por los dos lados. `CAMPOS_REQUERIDOS` no puede incluirlos: los fixtures de `test/validadores.test.ts` arman un `Wine` sin ellos, y RNF-05 protege el contenido de esos tests (18 de 26 fallan). `CAMPOS_OPCIONALES` tampoco: `test/integridad_datos_vino.test.ts:201` exige que `esCampoOpcionalValido` rechace `0` y `false`, y `stock: 0` y `activo: false` son valores legítimos. No queda ningún campo libre. La solución coincide además con **RF-06 de la spec 004-b**, que ya define que el endpoint público omite `stock` y `activo`: son datos internos de la operación, no del catálogo. Ver C-1 en `task.md` |
 | D-15 | **Estados de pedido fijos** | 5 estados principales + devuelto; no configurables en esta spec |
 | D-16 | **Solo flag `isAdmin`** | Sin roles granulares; mock auth suficiente para validar UI |
 | D-17 | **Logs de auditoría en timeline/notas** | Timestamp + acción + autor en timeline pedidos y notas clientes; autor hardcoded `"Admin"` (mock sin auth real) |
