@@ -5,13 +5,21 @@
 **Gestor de paquetes: npm** (el repo tiene `package-lock.json`; no usar pnpm).
 
 - Instalar dependencias: `npm install`
-- Iniciar servidor de desarrollo: `npm run dev`
+- Iniciar servidor de desarrollo (frontend): `npm run dev`
+- Iniciar servidor de desarrollo (backend): `cd backend && npm run dev`
 - Ejecutar pruebas: `npm test` (usa `vitest run`, no watch)
 - Verificar tipos: `npx tsc --noEmit`
 - Lint: `npm run lint` (ESLint 9 flat config, `--max-warnings 0`)
 - Build de producción: `npm run build` (ejecuta `tsc && vite build`)
 - Regenerar datos mock: `node scripts/generar-mocks.mjs`
 - Clave panel admin: `VITE_ADMIN_PASSWORD` (default `admin123`)
+
+**Backend (spec 004-b):**
+- `cd backend && npm run db:migrate` — aplica migraciones Prisma
+- `cd backend && npm run seed` — crea usuarios admin/gestor/vendedor
+- `cd backend && npm run dev` — levanta Fastify en :3000
+- `cd backend && npm run test` — tests unitarios (mock Prisma)
+- `docker compose up -d db` — levanta PostgreSQL
 
 ## Estilo de código
 
@@ -24,11 +32,14 @@
 
 | Aspecto | Detalle |
 |---------|---------|
-| **Framework** | React 18 + Vite 5 + TypeScript (no Next.js) |
-| **Routing** | `react-router-dom` v7; `/admin` es hijo de `AdminLayout` (protege 5 rutas) |
+| **Framework Frontend** | React 18 + Vite 5 + TypeScript (no Next.js) |
+| **Framework Backend** | Fastify + Node 20 + PostgreSQL + Prisma (spec 004-b **COMPLETA**) |
+| **Routing Frontend** | `react-router-dom` v7; `/admin` es hijo de `AdminLayout` (protege 5 rutas) |
 | **Estado tienda** | `localStorage`: `vinoteca_wines` y `vinoteca_cart` (sin librería global) |
-| **Estado admin** | `sessionStorage` (no `localStorage`); clave validada en navegador contra `VITE_ADMIN_PASSWORD` |
-| **API mock** | MSW v2 en `src/mocks/` (latencia 300-800 ms); handlers en `handlers.ts` |
+| **Estado admin (frontend)** | `sessionStorage`; clave validada contra `VITE_ADMIN_PASSWORD` (mock) |
+| **Auth real (backend)** | JWT access 15min + refresh rotativo 7d cookie httpOnly, roles admin/gestor/vendedor |
+| **API mock (frontend)** | MSW v2 en `src/mocks/` (latencia 300-800 ms); handlers en `handlers.ts` |
+| **API real (backend)** | Fastify REST en `http://localhost:3000` (spec 004-b completa) |
 | **Datos mock** | Generados con PRNG sembrado (`scripts/generar-mocks.mjs`) para consistencia |
 | **Gráficos** | Recharts con `import()` diferido (chunk aparte de ~376 kB) |
 | **Tablas** | TanStack Table modo manual (`manualPagination/Sorting/Filtering`) |
@@ -36,15 +47,24 @@
 | **CSV** | Parser/escritor manual en `src/utils/csv.ts` (`papa-parse` da 404 en este registry) |
 | **Animaciones** | Framer Motion; `AnimatedSection` usa `useInView`; degradación en móvil (< 640px) |
 
-## Panel Admin (`/admin`) — spec 004-a implementada
+## Panel Admin (`/admin`) — spec 004-a implementada (frontend) + spec 004-b (backend real)
 
+**Frontend (actual, mock):**
 - **Sin botón en la tienda pública**: se entra escribiendo `/admin`
 - **Pantalla de clave** (`AdminGate`), no redirect: la sesión vive en `sessionStorage`
-- **La contraseña NO es autenticación**: se compara en el bundle, no hay backend
+- **La contraseña NO es autenticación**: se compara en el bundle contra `VITE_ADMIN_PASSWORD`
 - **No existe flag `isAdmin` en `localStorage`** (era público y editable desde consola)
-- **`AdminWine` extiende `Wine`** (agrega `stock` y `activo`); formulario separado: `AdminWineForm` ≠ `ProductForm`
+
+**Backend 004-b (listo para 004-c):**
+- `POST /api/auth/login` → JWT access 15min + refresh rotativo 7d (cookie httpOnly)
+- Roles: `admin` / `gestor` / `vendedor` (middleware `requireRole()`)
+- Rate-limit login: 5 req/min/IP
+- Swagger UI: `http://localhost:3000/api/docs`
+
+**Común:**
+- `AdminWine` extiende `Wine` (agrega `stock` y `activo`); formulario separado: `AdminWineForm` ≠ `ProductForm`
 - 5 módulos: Dashboard, Catálogo, Pedidos, Clientes CRM, Configuración
-- `DataTable` genérica con paginación/filtrado/orden en servidor (MSW)
+- `DataTable` genérica con paginación/filtrado/orden en servidor (backend real)
 - `DateRangePicker` con react-day-picker v9 (tema oscuro, dos meses)
 - Offline: `src/utils/offline.ts` guarda último response por URL; banner `AvisoOffline` + "Reintentar"
 
