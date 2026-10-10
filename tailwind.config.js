@@ -26,15 +26,14 @@ export default {
        *
        * ## La rampa `charcoal`
        *
-       * **No es gris.** Son los cinco rojos mas oscuros de la misma familia,
-       * para que los fondos tengan temperatura de vino en vez de negro neutro.
-       * Con la paleta anterior el fondo era `#0a0a0a`, un gris casi puro que
-       * contrastaba con un vino carmin.
+       * **Negro carbon, neutro.** En un primer pase la paleta convirtio esta
+       * rampa en los cinco rojos mas oscuros (fondo de pagina `#35030f`) y el
+       * usuario pidio volver al negro carbon en vez de rojo (2026-10-09).
+       * Otra vez es gris neutro, como antes de la paleta.
        *
-       * `charcoal-600` y `charcoal-700` repiten exactamente `wine-800` y
-       * `wine-900`. Es correcto: son el mismo color de la paleta, y separarlo
-       * en dos familias es una cuestion de semantica (superficie vs. marca),
-       * no de matiz.
+       * Los nueve rojos siguen en `wine`: son el acento (botones, bordes,
+       * badges), no la superficie. El fondo de pagina es `charcoal-950`
+       * (`#0a0a0a`) y las cards `charcoal-800/900`.
        */
       colors: {
         wine: {
@@ -49,11 +48,11 @@ export default {
           950: '#4f0718'
         },
         charcoal: {
-          600: '#6d061e',
-          700: '#630a1f',
-          800: '#4f0718',
-          900: '#470615',
-          950: '#35030f'
+          600: '#2e2e2e',
+          700: '#262626',
+          800: '#1e1e1e',
+          900: '#121212',
+          950: '#0a0a0a'
         },
 
         /**
@@ -88,35 +87,27 @@ export default {
         },
 
         /**
-         * Neutros con temperatura de vino.
+         * Neutros grises puros.
          *
-         * Tailwind trae un `neutral` gris puro, y el sitio lo usa para bordes y
-         * textos secundarios. Contra un fondo vino, un gris frio se ve sucio.
-         * Se sobreescriben los pasos que el codigo usa, con el mismo tono pero
-         * **mas claros**.
+         * Tailwind trae un `neutral` gris, y el sitio lo usa para textos
+         * secundarios y bordes. Se sobreescriben con grises puros **mas
+         * claros** que los de Tailwind en los pasos medios y bajos: contra
+         * `#0a0a0a`, el `neutral-500` por defecto da 4.4:1, apenas debajo del
+         * 4.5:1 que pide WCAG AA para texto normal.
          *
-         * ## Por que mas claros y no solo tintados
-         *
-         * El fondo paso de `#0a0a0a` a `#35030f`. El nuevo es **mas claro**
-         * (luminancia relativa 0.009 contra 0.003), asi que el mismo gris deja
-         * de alcanzar el contraste que alcanzaba: `neutral-500` paso de 4.4:1
-         * sobre el fondo viejo a 3.4:1 sobre el nuevo, por debajo del 4.5:1 que
-         * pide WCAG AA para texto normal.
-         *
-         * Por eso los pasos medios suben en vez de solo recibir el tinte. Los
-         * bordes (`700`, `800`, `900`) suben tambien, y eso es a proposito: los
-         * bordes se dibujan como `border-neutral-800` sobre cards
-         * `bg-charcoal-900`, y con el gris viejo quedaban casi invisibles.
+         * En una version previa estos pasos estaban tintados de vino, para que
+         * no se vieran sucios sobre el fondo rojo. Vuelto el fondo al negro
+         * carbon (a pedido del usuario), el tinte sobra: vuelven a ser neutros.
          */
         neutral: {
-          200: '#e2d6d9',
-          300: '#c6b4ba',
-          400: '#ad979e',
-          500: '#a08b93',
-          600: '#7a6a70',
-          700: '#564a50',
-          800: '#3d3438',
-          900: '#2b2427'
+          200: '#e5e5e5',
+          300: '#d4d4d4',
+          400: '#a3a3a3',
+          500: '#8f8f8f',
+          600: '#6b6b6b',
+          700: '#4a4a4a',
+          800: '#2e2e2e',
+          900: '#1c1c1c'
         }
       }
     }

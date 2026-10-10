@@ -24,7 +24,7 @@ Gestor de paquetes: **npm** (el repo tiene `package-lock.json`; no usar pnpm).
 Construir una aplicacion web interactiva, responsiva y visualmente atractiva para una vinoteca de alta gama. El proyecto incluye interacciones con animaciones de scroll, un catalogo dinamico de productos, un modulo de carga de productos en tiempo real y un carrito de compras interactivo.
 
 ### Requerimientos de UI / UX
-- **Paleta de Colores y Tema:** Estetica premium oscura. Los 9 rojos de la paleta (de `#AD0021` a `#35030F`) mas blanco (`#ffffff`) y dorado (`#D4AF37`). Fuente unica: `tailwind.config.js`.
+- **Paleta de Colores y Tema:** Estetica premium oscura sobre **negro carbon** (superficies `charcoal` neutras; fondo `#0a0a0a`/`#121212`), con los 9 rojos de la paleta como acento (`wine`, de `#AD0021` a `#4F0718`), dorado (`#D4AF37`) y blanco (`#ffffff`). Fuente unica: `tailwind.config.js`.
 - **Animaciones de Scroll:** Efectos de revelado suave al hacer scroll, efectos parallax en la seccion principal/historia, barra de navegacion fija con cambio de opacidad/glassmorphism y transiciones fluidas mediante Framer Motion.
 - **Diseño Responsivo:** Enfoque *mobile-first* implementado con Tailwind CSS.
 

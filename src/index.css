@@ -19,8 +19,8 @@
   font-weight: 400;
   color-scheme: dark;
   color: #fdfbf7;
-  /* `charcoal-950`. */
-  background-color: #35030f;
+  /* `charcoal-900`. */
+  background-color: #121212;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -35,8 +35,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* `charcoal-950`. */
-  background-color: #35030f;
+  /* `charcoal-900`. */
+  background-color: #121212;
 }
 
 #root {

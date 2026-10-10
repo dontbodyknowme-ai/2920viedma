@@ -20,11 +20,11 @@
 ## 3. Guia de Diseño UI / UX
 - **Paleta de Colores Obligatoria:**
   - **Fuente unica:** `tailwind.config.js`. Los hex no van en componentes (unicamente `PALETA` en `herocanvas3d.tsx`, porque Three.js no puede leer el config).
-  - **Rojos (marca):** los 9 de la paleta, `wine` 400→950: `#AD0021`, `#96092B`, `#7F0D28`, `#7A0B25`, `#6D061E`, `#630A1F`, `#4F0718`, `#470615`, `#35030F`.
-  - **Fondo / superficies:** `charcoal` = los 5 rojos mas oscuros. Fondo de pagina `charcoal-950` (`#35030F`), cards `charcoal-800/900`.
+  - **Rojos (acento):** los 9 de la paleta, `wine` 400→950: `#AD0021`, `#96092B`, `#7F0D28`, `#7A0B25`, `#6D061E`, `#630A1F`, `#4F0718`, `#470615`, `#35030F`. Botones, bordes, badges y estados seleccionados.
+  - **Fondo / superficies:** `charcoal` = **negro carbon neutro** (`#2E2E2E`/`#262626`/`#1E1E1E`/`#121212`/`#0A0A0A`). Fondo de pagina `charcoal-950` (`#0A0A0A`), cards `charcoal-800/900` (`#1E1E1E`/`#121212`), `body` en `#121212`. El usuario pidio negro carbon, no rojos oscuros (2026-10-09).
   - **Acentos:** Dorado (`gold`: `#F0D98C`, `#E5C158`, `#D4AF37`, `#AA8C2C`); texto largo sobre oscuro en crema calido (`#FDFBF7`).
   - **Blanco:** rampa `white` (`#ffffff` / 100-300) para `bg-white` y `text-white`.
-  - **Neutros:** calidos con temperatura de vino, ajustados para WCAG AA (> 4.5:1) sobre los fondos oscuros.
+  - **Neutros:** grises puros, mas claros que los de Tailwind para WCAG AA (> 4.5:1) sobre el negro carbon.
 - **Tipografia:**
   - Encabezados y titulos: Tipografia Serif elegante (`font-serif`).
   - Cuerpo de texto y controles: Sans-serif limpia (`font-sans`).

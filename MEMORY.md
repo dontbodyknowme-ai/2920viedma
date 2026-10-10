@@ -80,14 +80,20 @@
   - Patrones funcionales
   - Gestor de paquetes: `npm`
 - Paleta de colores (fuente unica en `tailwind.config.js`):
-  - 9 rojos de la imagen: `wine` 400→950 (`#AD0021`, `#96092B`, `#7F0D28`, `#7A0B25`, `#6D061E`, `#630A1F`, `#4F0718`, `#470615`, `#35030F`), mas tintes claros `wine-50/100` para hovers.
-  - Superficies: `charcoal` = los 5 rojos mas oscuros (fondo de pagina `charcoal-950` `#35030F`, cards `charcoal-800/900`).
+  - Superficies: `charcoal` negro carbon neutro (`#2E2E2E` → `#0A0A0A`); fondo de pagina `charcoal-950` `#0A0A0A`, cards `#1E1E1E`/`#121212`, `body` `#121212`. **Decidido 2026-10-09:** al usuario no le gusto el fondo rojo de un primer pase y pidio "volver al negro carbon en vez de rojo".
+  - Acento rojo: los 9 rojos de la imagen, `wine` 400→950 (botones, bordes, badges, estados seleccionados).
   - Blanco (agregado a pedido del usuario): rampa `white` (`#ffffff`, 100-300). Definida para que `bg-white`/`text-white` resuelvan; el texto largo sobre oscuro sigue en `cream` (`#FDFBF7`), menos fatigante.
   - Dorado (acento de la marca): `gold` (`#F0D98C`, `#E5C158`, `#D4AF37`, `#AA8C2C`).
-  - Neutros calidos tintados de vino, mas claros que el gris de Tailwind para alcanzar WCAG AA (> 4.5:1) sobre los fondos.
+  - Neutros: grises puros, mas claros que los de Tailwind para alcanzar WCAG AA (> 4.5:1) sobre el negro carbon.
   - Excepcion a "sin hex en componentes": `PALETA` en `herocanvas3d.tsx` (Three.js no lee el config).
 
 ## Bitacora de Cambios / Notas
+- *2026-10-09 (noche):* **Fondo y superficies de vuelta al negro carbon.** Al usuario no le gusto el fondo rojo del primer pase (`#35030F`) y pidio "volver al negro carbon en vez de rojo". Los 9 rojos siguen como acento; solo cambia la superficie:
+  - `charcoal` deja de ser los 5 rojos mas oscuros y vuelve al gris neutro: `#2E2E2E`/`#262626`/`#1E1E1E`/`#121212`/`#0A0A0A`. `charcoal-800/900/950` recuperan los valores previos a la paleta (`#1e1e1e`/`#121212`/`#0a0a0a`); `600/700` (que codigo usa para hovers y no existian antes) se definen como grises.
+  - `neutral` pierde el tinte vino y pasa a grises puros (`400` `#a3a3a3`, `500` `#8f8f8f` = 5.15:1 sobre `#1e1e1e`), manteniendo WCAG AA sobre las superficies carbon.
+  - `src/index.css`: `:root` y `body` vuelven a `#121212` (el valor previo a la paleta; habian quedado en `#35030F`).
+  - No cambian `wine` (9 rojos), `gold`, `white` ni `cream`. La 3D no toca el fondo (el canvas es alfa, la botella sigue siendo roja/vino como marca).
+  - Reauditado en navegador: 0 fallas de contraste en `/` y las 5 rutas de `/admin`. 224/224 tests, `tsc` 0, `lint` 0, `build` OK.
 - *2026-10-09 (noche):* **Paleta de la marca aplicada** (los 9 rojos de la imagen + blanco y dorado, a pedido del usuario).
   - **`tailwind.config.js` quedo como fuente unica de la paleta.** Se elimino el bloque `@layer utilities` de `src/index.css` que pisaba las utilidades de Tailwind con hex hardcodeados y ya divergentes (`wine-900` era `#3d0a16` en CSS contra `#3a0a1a` en el config; `gold-500`, `#c9a02e` contra `#d4af37`). Ese bloque, agregado sin avisar en un commit de la spec 003, es la razon de que hasta ahora "cambiar la paleta" no cambiara nada.
   - Rampas nuevas: `wine` con los 9 rojos (400→950); `charcoal` = los 5 rojos mas oscuros, para que las superficies tengan temperatura de vino en vez de gris; `white` (`#ffffff` + 100-300) agregada a pedido del usuario; `gold-300` (el codigo ya la usaba sin estar definida); `neutral` sobreescrito con grises calidos **mas claros**, porque el fondo nuevo (`#35030F`) es mas claro que el viejo (`#0a0a0a`) y con el gris de Tailwind el texto secundario caia por debajo de AA.
