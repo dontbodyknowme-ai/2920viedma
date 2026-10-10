@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main, spec-*]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  frontend:
+    name: Frontend (typecheck + build + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+  backend:
+    name: Backend (typecheck + build + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vinoteca
+          POSTGRES_PASSWORD: vinoteca
+          POSTGRES_DB: vinoteca
+        ports: [5432:5432]
+        options: >-
+          --health-cmd="pg_isready -U vinoteca"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+        env:
+          DATABASE_URL: postgresql://vinoteca:vinoteca@localhost:5432/vinoteca
+
+      - name: Run migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgresql://vinoteca:vinoteca@localhost:5432/vinoteca
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm run test
+        env:
+          DATABASE_URL: postgresql://vinoteca:vinoteca@localhost:5432/vinoteca
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t vinoteca-backend ./backend
+
+      - name: Build frontend image (placeholder)
+        run: echo "Frontend Docker build would go here"
