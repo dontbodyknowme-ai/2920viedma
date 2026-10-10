@@ -138,7 +138,7 @@ export const AdminSidebar = ({
         </button>
       )}
 
-      {!colapsado && <p className='px-4 pt-2 text-[10px] text-neutral-700'>CAVA &amp; CO. v1.0</p>}
+      {!colapsado && <p className='px-4 pt-2 text-[10px] text-neutral-500'>CAVA &amp; CO. v1.0</p>}
     </div>
   </div>
 )

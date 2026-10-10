@@ -78,13 +78,26 @@
   - Comillas simples
   - Sin puntos y comas (no semicolons)
   - Patrones funcionales
-  - Gestor de paquetes: `pnpm`
-- Paleta de colores:
-  - Fondo/Base: Negro carbon (`#121212` / `bg-neutral-900`)
-  - Primario/Acento: Borgoña / Vino profundo (`#5B132B` / `#800020`)
-  - Detalles: Dorado tenue (`#D4AF37`) y texto crema (`#FDFBF7`)
+  - Gestor de paquetes: `npm`
+- Paleta de colores (fuente unica en `tailwind.config.js`):
+  - 9 rojos de la imagen: `wine` 400→950 (`#AD0021`, `#96092B`, `#7F0D28`, `#7A0B25`, `#6D061E`, `#630A1F`, `#4F0718`, `#470615`, `#35030F`), mas tintes claros `wine-50/100` para hovers.
+  - Superficies: `charcoal` = los 5 rojos mas oscuros (fondo de pagina `charcoal-950` `#35030F`, cards `charcoal-800/900`).
+  - Blanco (agregado a pedido del usuario): rampa `white` (`#ffffff`, 100-300). Definida para que `bg-white`/`text-white` resuelvan; el texto largo sobre oscuro sigue en `cream` (`#FDFBF7`), menos fatigante.
+  - Dorado (acento de la marca): `gold` (`#F0D98C`, `#E5C158`, `#D4AF37`, `#AA8C2C`).
+  - Neutros calidos tintados de vino, mas claros que el gris de Tailwind para alcanzar WCAG AA (> 4.5:1) sobre los fondos.
+  - Excepcion a "sin hex en componentes": `PALETA` en `herocanvas3d.tsx` (Three.js no lee el config).
 
 ## Bitacora de Cambios / Notas
+- *2026-10-09 (noche):* **Paleta de la marca aplicada** (los 9 rojos de la imagen + blanco y dorado, a pedido del usuario).
+  - **`tailwind.config.js` quedo como fuente unica de la paleta.** Se elimino el bloque `@layer utilities` de `src/index.css` que pisaba las utilidades de Tailwind con hex hardcodeados y ya divergentes (`wine-900` era `#3d0a16` en CSS contra `#3a0a1a` en el config; `gold-500`, `#c9a02e` contra `#d4af37`). Ese bloque, agregado sin avisar en un commit de la spec 003, es la razon de que hasta ahora "cambiar la paleta" no cambiara nada.
+  - Rampas nuevas: `wine` con los 9 rojos (400→950); `charcoal` = los 5 rojos mas oscuros, para que las superficies tengan temperatura de vino en vez de gris; `white` (`#ffffff` + 100-300) agregada a pedido del usuario; `gold-300` (el codigo ya la usaba sin estar definida); `neutral` sobreescrito con grises calidos **mas claros**, porque el fondo nuevo (`#35030F`) es mas claro que el viejo (`#0a0a0a`) y con el gris de Tailwind el texto secundario caia por debajo de AA.
+  - `PALETA` en `herocanvas3d.tsx` duplica los hex: Three.js no puede leer el config. Documentado ahi y en `AGENTS.md`.
+  - **Auditoria de contraste en navegador (medicion de estilos computados, no capturas):** 0 fallas en `/` y en las 5 rutas de `/admin` despues de tres arreglos, ninguno introducido por la paleta sino expuesto por ella:
+    1. Aviso +18 del footer: `text-wine-500/80` daba **1.73:1**, ilegible (ya estaba roto con la paleta anterior: era `#800020` sobre `#0a0a0a`, 1.8:1) → `text-gold-400` (10.3:1).
+    2. "CAVA & CO. v1.0" del sidebar: `text-neutral-700` a **2.13:1** a 10 px → `text-neutral-500`.
+    3. `neutral-500` ajustado de `#9b858d` a `#A08B93`: daba 4.46:1 sobre `bg-charcoal-800`, **0.04 por debajo** de AA. El `neutral-400` (`#ad979e`) sigue siendo mas claro, asi que la rampa no se invierte.
+  - La paleta en si quedo commiteada por el usuario (`c3cf120`, "botella"); los tres arreglos y esta documentacion estan en el working tree.
+  - 224/224 tests, `tsc` 0, `lint` 0, `build` OK.
 - *2026-10-09:* **Spec 004-a (Back-Office) completa.** 10 tareas, 200 tests, `tsc` 0, `lint` 0, `build` 0. Rama `spec-004-a`.
   - **T1** Infra: `react-router-dom` v7, MSW v2, tipos `AdminWine`/`Order`/`Customer`/`Metrics`, mocks generados por `scripts/generar-mocks.mjs` con PRNG sembrado. Arregladas 3 regresiones de la spec 003 que nunca seHabian detectado (`loadWines`/`loadCart` sin guardas RF-34, mensaje de checkout, `VistaRapidaProducto` caido de `App.tsx`).
   - **T2** Layout: `AdminLayout`, `AdminSidebar`, `AdminHeader`, `useMediaQuery`. La proteccion vive en el layout y no en el router: es el unico ancestro comun de las cinco rutas hijas.

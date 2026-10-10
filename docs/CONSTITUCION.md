@@ -19,10 +19,12 @@
 
 ## 3. Guia de Diseño UI / UX
 - **Paleta de Colores Obligatoria:**
-  - **Fondo:** Negro carbon (`#121212` / `bg-charcoal-900` / `bg-charcoal-950`).
-  - **Primario:** Borgoña / Vino profundo (`#5B132B` / `#800020`).
-  - **Acentos:** Dorado tenue (`#D4AF37` / `text-gold-500`).
-  - **Texto:** Crema calido (`#FDFBF7` / `text-cream-100`).
+  - **Fuente unica:** `tailwind.config.js`. Los hex no van en componentes (unicamente `PALETA` en `herocanvas3d.tsx`, porque Three.js no puede leer el config).
+  - **Rojos (marca):** los 9 de la paleta, `wine` 400→950: `#AD0021`, `#96092B`, `#7F0D28`, `#7A0B25`, `#6D061E`, `#630A1F`, `#4F0718`, `#470615`, `#35030F`.
+  - **Fondo / superficies:** `charcoal` = los 5 rojos mas oscuros. Fondo de pagina `charcoal-950` (`#35030F`), cards `charcoal-800/900`.
+  - **Acentos:** Dorado (`gold`: `#F0D98C`, `#E5C158`, `#D4AF37`, `#AA8C2C`); texto largo sobre oscuro en crema calido (`#FDFBF7`).
+  - **Blanco:** rampa `white` (`#ffffff` / 100-300) para `bg-white` y `text-white`.
+  - **Neutros:** calidos con temperatura de vino, ajustados para WCAG AA (> 4.5:1) sobre los fondos oscuros.
 - **Tipografia:**
   - Encabezados y titulos: Tipografia Serif elegante (`font-serif`).
   - Cuerpo de texto y controles: Sans-serif limpia (`font-sans`).

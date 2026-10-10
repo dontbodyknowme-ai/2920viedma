@@ -16,6 +16,7 @@ Gestor de paquetes: **npm** (el repo tiene `package-lock.json`; no usar pnpm).
 - Modo estricto de TypeScript (TypeScript strict mode)
 - Comillas simples, sin puntos y comas
 - Usar patrones funcionales siempre que sea posible
+- No hardcodear colores hex en los componentes: viven en `tailwind.config.js` (unica excepcion: `PALETA` en `herocanvas3d.tsx`, para los materiales de Three.js)
 
 ## Especificacion del Proyecto: E-Commerce Vinoteca de Alta Gama
 
@@ -23,7 +24,7 @@ Gestor de paquetes: **npm** (el repo tiene `package-lock.json`; no usar pnpm).
 Construir una aplicacion web interactiva, responsiva y visualmente atractiva para una vinoteca de alta gama. El proyecto incluye interacciones con animaciones de scroll, un catalogo dinamico de productos, un modulo de carga de productos en tiempo real y un carrito de compras interactivo.
 
 ### Requerimientos de UI / UX
-- **Paleta de Colores y Tema:** Estetica premium oscura (tonos borgoña/vino profundo, negro carbon, acentos en dorado tenue y texto en crema/blanco calido).
+- **Paleta de Colores y Tema:** Estetica premium oscura. Los 9 rojos de la paleta (de `#AD0021` a `#35030F`) mas blanco (`#ffffff`) y dorado (`#D4AF37`). Fuente unica: `tailwind.config.js`.
 - **Animaciones de Scroll:** Efectos de revelado suave al hacer scroll, efectos parallax en la seccion principal/historia, barra de navegacion fija con cambio de opacidad/glassmorphism y transiciones fluidas mediante Framer Motion.
 - **Diseño Responsivo:** Enfoque *mobile-first* implementado con Tailwind CSS.
 
