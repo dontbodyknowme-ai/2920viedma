@@ -51,6 +51,67 @@ Object.defineProperty(window, 'innerWidth', {
   writable: true
 })
 
+/**
+ * jsdom no implementa `ResizeObserver`, y Framer Motion lo necesita: los
+ * `motion.div` con `layout` de `carta_de_catalogo.tsx` y
+ * `carta_de_productos.tsx` miden su caja con `useMeasure`, que observa con
+ * `ResizeObserver`. Sin esto, montar `App` tira "This browser does not support
+ * ResizeObserver out of the box" y ningun test llega a mirar la logica.
+ *
+ * Ojo con el comentario de mas arriba: forzar `innerWidth` a 375 evita el
+ * `<Canvas>` de three.js, que es un consumidor de `ResizeObserver` distinto.
+ * Evitar ese no alcanza, porque Framer Motion sigue pidiendo el observer por su
+ * cuenta. Son dos caminos separados y hacen falta los dos.
+ *
+ * El stub no mide nada: expone la interfaz y nunca notifica. Para estos tests,
+ * que verifican estado y no medidas, alcanza. Un polyfill que dispare un
+ * callback en el proximo tick induciria a Framer Motion a recalcular
+ * proyecciones de layout en cada `act`, que es justamente lo que T6 de la spec
+ * 002 demostro que frena el unmount de `AnimatePresence`.
+ */
+class ResizeObserverStub implements ResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  value: ResizeObserverStub,
+  configurable: true,
+  writable: true
+})
+
+/**
+ * `IntersectionObserver` tampoco existe en jsdom, y Framer Motion lo pide por
+ * `useInView`, que es lo que usa `animated_section.tsx` para el revelado al
+ * hacer scroll (spec 003, T5). Sin esto, montar `App` tira
+ * "IntersectionObserver is not defined".
+ *
+ * A diferencia de `ResizeObserver`, aca el stub tiene que devolver `true` en
+ * `isIntersecting`: si devuelve `false`, `useInView` mantiene las secciones en
+ * opacidad 0 y los tests que buscan texto de la interfaz no lo encuentran.
+ * Devolver `true` los deja visibles, que es el estado final que un visitante ve
+ * despues de hacer scroll.
+ */
+class IntersectionObserverStub implements IntersectionObserver {
+  readonly root: Element | null = null
+  readonly rootMargin: string = ''
+  readonly thresholds: ReadonlyArray<number> = [0]
+
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return []
+  }
+}
+
+Object.defineProperty(globalThis, 'IntersectionObserver', {
+  value: IntersectionObserverStub,
+  configurable: true,
+  writable: true
+})
+
 export const CLAVE_VINOS = 'vinoteca_wines'
 export const CLAVE_CARRITO = 'vinoteca_cart'
 

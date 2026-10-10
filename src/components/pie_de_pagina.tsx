@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { TIENDA } from '../utils/tienda'
 
 export const Footer = () => {
   return (
@@ -65,8 +66,8 @@ export const Footer = () => {
                 </a>
               </p>
               <p>
-                <a href='mailto:hola@cava-co.com' className='hover:text-gold-500 transition-colors'>
-                  hola@cava-co.com
+                <a href={`mailto:${TIENDA.email}`} className='hover:text-gold-500 transition-colors'>
+                  {TIENDA.email}
                 </a>
               </p>
             </address>
@@ -83,7 +84,7 @@ export const Footer = () => {
           <p className='text-neutral-500 text-sm'>
             © 2024 CAVA & CO. Todos los derechos reservados.
           </p>
-          <p className='text-wine-500/80 text-sm font-semibold'>
+          <p className='text-gold-400 text-sm font-semibold'>
             Prohibida la venta de alcohol a menores de 18 años. Beba con moderación.
           </p>
           <nav className='flex gap-6 text-sm'>

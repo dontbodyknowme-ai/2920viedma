@@ -128,6 +128,42 @@ La aplicación compila, arranca y es usable de punta a punta (spec 002). Esta sp
 - **RF-23** — CUANDO el usuario pulsa una botella destacada, EL SISTEMA abre la vista rápida de ese vino
 - **RF-24** — SI no hay botellas destacadas (catálogo vacío), ENTONCES EL SISTEMA no muestra la sección de destacados
 
+#### Pendiente: RESUELTO — el hero quedo cargado (2026-10-09)
+
+**Motivo del usuario: "el titulo (nombre de la empresa) tapa la animacion 3D, y queda tosco."**
+
+**Estado: resuelto.** El hero paso a disposicion partida y las botellas
+destacadas se movieron a su propia seccion, debajo.
+
+**Lo que se hizo:**
+
+1. **Hero en dos columnas** (`lg:grid-cols-2`): texto a la izquierda, botella 3D
+   a la derecha. El canvas ya no esta en `absolute inset-0`, asi que no hay nada
+   que tapar. Se verifico en el navegador: el titulo ocupa `left 80 → 640` y el
+   canvas `left 712 → 1296`, sin interseccion.
+2. **El titulo bajo de `text-8xl` a `text-6xl`.** En una columna de la mitad del
+   ancho, un `text-8xl` obliga a que "CAVA & CO." baje de linea.
+3. **Las botellas destacadas salen del hero.** Estaban en `absolute bottom-24`
+   dentro de un `min-h-screen`; ahora van en su propia `<section>` en flujo
+   normal, debajo, renderizada desde `App.tsx`. `position: relative`, no absoluta.
+4. **La flecha de scroll bajo el boton.** Estaba en `absolute bottom-12`, centrada
+   en pantalla, justo encima de las botellas 3D.
+5. **El hero ya no recibe props.** `Hero` era `({ wines, onSelectWine })` solo
+   para las destacadas; ahora es `Hero()`. Las botellas viven en
+   `src/components/botellas_destacadas.tsx`.
+6. **El hero salio de su `AnimatedSection`.** Es la primera pantalla y tiene su
+   propia animacion de entrada; envolverlo hacia que el reveal por scroll lo
+   mantuviera fuera de vista al cargar.
+
+**RF-22 a RF-24 siguen cumplidas:** la seccion existe, con los vinos mas caros, y
+el click abre la vista rapida. Lo que cambio es **donde**, no **que**.
+
+**En movil** se apila: texto arriba (48px), canvas debajo, sin scroll horizontal.
+
+**Nota sobre la cantidad de botellas:** se muestran 2, no 3, porque
+`INITIAL_WINES` tiene 2 vinos. Los 12 del panel son mock de MSW, no del catalogo
+publico. El componente toma `min(3, wines.length)`, asi que con 3 o mas muestra 3.
+
 ---
 
 ## 5. Requisitos no funcionales

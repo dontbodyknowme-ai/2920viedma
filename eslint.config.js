@@ -25,7 +25,11 @@ export default tseslint.config(
     ignores: [
       'node_modules/',
       'dist/',
-      'coverage/'
+      'coverage/',
+      // Generado por `npx msw init`. No es codigo del proyecto: se regenera
+      // con ese comando y no se edita a mano, asi que lintiarlo solo produce
+      // ruido (hoy, un `eslint-disable` que MSW escribio para otra version).
+      'public/mockServiceWorker.js'
     ]
   },
 
