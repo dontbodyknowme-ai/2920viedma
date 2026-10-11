@@ -108,11 +108,67 @@ Tener la app **en producción, con HTTPS, base de datos real y archivos reales**
 - [ ] **CA-10** El CI sigue en verde después de mergear.
 - [ ] **CA-11** La guía de deploy documenta cada variable y se puede seguir de principio a fin.
 
-## 8. Fuera de alcance
+## 8. Requisitos futuros (pedidos 2026-10-11, NO son parte de esta spec)
 
-Se anota explícitamente para que no se cuele:
+El usuario pidió tres cosas **más adelante**, que se registran acá porque(implementarlas mal ahora las hace más caras después):
 
-- **Imágenes privadas.** Con RF-10 el bucket es público. Si alguna vez hacen falta imágenes privadas, hay que re-firmar en cada lectura (el backend devuelve URLs firmadas nuevas al listar vinos) y cambiar el esquema para guardar la *clave* en vez de la URL. Es trabajo aparte.
-- **Dominio propio y DNS.** Se usa el dominio que den los proveedores.
+1. **Acceso al panel con un código alfanumérico**, en vez de email + contraseña.
+2. **Cuentas de usuario final con login de Google**, para comprar más seguro.
+3. **Dominio propio con HTTPS.**
+
+### 8.1 Restricciones que 005 **no puede** cerrar mal
+
+Estas son la razón de que esta sección exista: cambios de acá hacen más caro lo de después.
+
+| # | Restricción | Por qué |
+|---|---|---|
+| **N-01** | El código de acceso **no** puede compararse en el bundle del frontend | Es el error que ya se cometió en 004-a: una "contraseña" en el bundle no es autenticación, es decoración. El código vive en el servidor, con hash |
+| **N-02** | `Order` tiene que admitir `userId` **nullable desde ahora** | Cuando existan cuentas de usuario, los pedidos tienen que pertenecer a alguien. Agregar la columna después es una migración con backfill sobre datos reales |
+| **N-03** | `Customer` y `User` **no se fusionan** | Son cosas distintas: un cliente que compró y un usuario con cuenta. Fusionarlas obliga a inventar campos paralos que no tienen cuenta |
+| **N-04** | Los endpoints de pedidos aceptan `customerId` **y** van a admitir `userId` | Si el listado filtra solo por `customerId`, las compras de usuarios quedan fuera del panel |
+| **N-05** | CORS se configura por variable, no hardcodeado | Google OAuth redirige al origen; cambiar de dominio no puede requerir tocar código |
+| **N-06** | El dominio se compra **después** de que el deploy funcione | Si el deploy falla, se pagó el dominio al año para nada. Y el dominio no es gratis: se renueva cada 12 meses |
+
+### 8.2 Lo que 005 sí resuelve de paso
+
+- **HTTPS**: Railway y Vercel dan HTTPS con `*.up.railway.app` y `*.vercel.app` sin hacer nada. El dominio propio es opcional después.
+- **El acceso actual (email + contraseña)** sirve hasta que 006 lo reemplace. No es trabajo tirado: es el andamiaje sobre el que se construye el código numérico.
+
+### 8.3 Secuencia propuesta
+
+| Spec | Qué | Tamaño | Nota |
+|---|---|---|---|
+| **005** | Deploy | Este | Primero: sin URL pública no se prueba nada de lo demás |
+| **006** | Acceso al panel por código | Chico | Reemplaza email+contraseña **solo** del lado admin. El backend de usuarios no se toca |
+| **007** | Cuentas de usuario + Google OAuth | Grande | Trae carrito del lado servidor y pedidos que pertenecen a alguien |
+| **008** | Dominio propio | Chico | Al final, cuando 005 esté estable |
+
+### 8.4 Advertencia honesta sobre el código de acceso
+
+Un código alfanumérico compartido es **más débil que una contraseña por usuario**, y conviene decirlo antes de implementarlo, no después:
+
+- **Se puede adivinar.** Un PIN de 6 dígitos son un millón de combinaciones; con rate limit de 5/min por IP son ~14 días de intentos nonstop desde una sola máquina. Con más IP, mucho menos.
+- **No deja rastro.** Todos los que entran hacen la misma acción: no se puede saber quién vació el inventario.
+- **Revocar es todo o nada**: cambiar el código cierra la puerta a todos.
+
+**Mitigaciones que 006 debería incluir sí o sí:**
+
+| Mitigación | Por qué |
+|---|---|
+| Rate limit estricto en el endpoint del código | Es lo único que frena el adivinado |
+| Hash del código en el servidor (bcrypt/argon2) | Para que una filtración de la base no alcance |
+| **Aviso de conexión** al panel: hora, IP, origen | Con código compartido es la única forma de saber si alguien entró |
+| Registro de acciones sensibles (borrar vino, editar pedido) | Reemplaza parcialmente el rastro que da una cuenta individual |
+| Longitud mínima de 10 caracteres alfanuméricos | 8 alfanuméricos son ~2 billones; 6 dígitos son un millón |
+
+Con esas cinco, un código compartido es **aceptable para un panel de una vinoteca con dos o tres personas**. Sin la de aviso y la de registro, es una puerta abierta con candado nuevo.
+
+## 9. Fuera de alcance
+
+Se anota explícitamente para que no se cuele en esta spec:
+
+- **Imágenes privadas.** Con RF-10 el bucket es público. Si alguna vez hacen falta imágenes privadas, hay que re-firmar en cada lectura (el backend devuelve URLs firmadas nuevas al listar vinos) y guardar la *clave* del objeto en vez de la URL. Es trabajo aparte.
+- **Dominio propio y DNS.** Se usa el dominio que den los proveedores; HTTPS ya sale gratis ahí. El dominio propio va en la spec 008.
 - **Pagos, emails, analytics.**
 - **Escalado** (réplicas, CDN de assets).
+- **Acceso por código, cuentas de usuario y Google OAuth.** Van en 006, 007 y 008 (ver sección 8).

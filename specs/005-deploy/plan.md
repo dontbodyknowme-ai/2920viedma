@@ -75,6 +75,18 @@ T1 y T2 son de código y no dependen de nada: se pueden hacer y mergear de entra
 | Se forgets `NODE_ENV=production` | El backend no arranca | Ya corregido en el logger; T6 lo verifica contra el healthcheck |
 | El seed pisa datos reales | Se pierden los vinos cargados | D-I: seed manual, y solo crea los tres usuarios |
 
+## Impacto de los requisitos futuros (sección 8 de la spec)
+
+Pedidos el 2026-10-11, después de escribir este plan. **No agregan tareas a 005**, pero sí pueden obligar a cambiar decisiones que acá se toman:
+
+| Pedido | Qué obliga a hacer 005 | Dónde |
+|---|---|---|
+| Acceso al panel por código | Nada. El auth actual es el andamiaje sobre el que se construye | — |
+| Cuentas de usuario con Google | **`Order` necesita `userId` nullable** y el listado de pedidos tiene que filtrar por usuario también. Si 005 lo deja solo por `customerId`, 007 es una migración con datos reales | N-02, N-04 — **es la única decisión que esta spec tiene que acertar ahora** |
+| Dominio propio | Nada. HTTPS sale gratis en Railway y Vercel | N-06: se compra al final |
+
+**Lo que NO se hace acá:** access code login, OAuth de Google, ni comprar dominio. Está escrito en la sección 8 de la spec con su secuencia (006, 007, 008) y con la advertencia de seguridad del código compartido.
+
 ## Qué NO se toca
 
 - `backend/src/` salvo `logger.ts` (ya corregido) y el upload de T1
