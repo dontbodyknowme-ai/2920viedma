@@ -171,3 +171,12 @@
 16. **`routePrefix` de Swagger necesita barra final** (fix 2026-10-11). Swagger UI sirve el HTML con rutas
     relativas (`./static/…`); entrando en `/api/docs` sin barra el navegador pide `/api/static/…` y la
     página queda sin estilos ni JS. Va `/api/docs/` más un redirect explícito desde `/api/docs`.
+17. **La imagen del backend es Debian slim, NO Alpine** (fix 2026-10-11). Con `node:24-alpine` el build
+    pasaba y el contenedor **no arrancaba nunca**: `libquery_engine-linux-musl.so.node` pide `libssl.so.1.1`
+    y Alpine usa musl con OpenSSL 3. `prisma generate` no carga el engine, así que el fallo aparece recién
+    al arrancar, no al construir — por eso solo lo encuentra alguien que levanta la imagen.
+18. **El logger no puede pedir `pino-pretty` a ciegas** (fix 2026-10-11). Es devDependency y en producción
+    no está (`npm ci --omit=dev`): pedirlo tira `unable to determine transport target for "pino-pretty"` al
+    importar el módulo y el backend no levanta. La guarda es **disponibilidad**, no solo `NODE_ENV` — si
+    `NODE_ENV` queda en `development` (que es lo que dice `.env.example`) la app tampoco arranca.
+    Por eso `logger.ts` hace `require.resolve('pino-pretty')` antes de usarlo.
