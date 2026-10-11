@@ -158,3 +158,16 @@
     directo, `isAuthenticated` queda en `false`, `AdminLayout` vuelve a renderizar `<AdminGate />` y el
     formulario se limpia: **bucle infinito con la contraseña correcta**. Dos estados separados (módulo y
     contexto) que hay que setear juntos; por eso hay un solo camino para entrar al panel.
+14. **Los errores de Fastify NO son todos 500** (fix 2026-10-11). `setErrorHandler` manejava `ZodError` y
+    `AppError` y mandaba todo lo demás a `500 INTERNAL_ERROR`. JSON malformado, body vacío y schema que no
+    valida*daban 500. Además `request.log.error` salía del `logger: false` de Fastify: escribir ahí es
+    escribir a la nada, así que un 500 real no quedaba registrado en producción. Ahora se usa el `logger`
+    del proyecto y los 4xx de Fastify se devuelven con su status real.
+15. **`Content-Type: application/json` en un POST sin cuerpo rompe Fastify** (fix 2026-10-11).
+    `FST_ERR_CTP_EMPTY_JSON_BODY` → 500. Por eso `POST /api/auth/logout` y `/api/auth/refresh` devolvían
+    500: el cliente manda esos POST **sin body**. Por eso `request()` en `client.ts` pone el header solo si
+    hay cuerpo, y `buildApp` registra un parser que acepta el cuerpo vacío como `{}` (**quitando el BOM**,
+    como hacía el parser original de Fastify).
+16. **`routePrefix` de Swagger necesita barra final** (fix 2026-10-11). Swagger UI sirve el HTML con rutas
+    relativas (`./static/…`); entrando en `/api/docs` sin barra el navegador pide `/api/static/…` y la
+    página queda sin estilos ni JS. Va `/api/docs/` más un redirect explícito desde `/api/docs`.

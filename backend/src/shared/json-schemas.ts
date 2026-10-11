@@ -1,8 +1,6 @@
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import {
   loginSchema,
-  refreshSchema,
-  logoutSchema,
   wineCreateSchema,
   wineUpdateSchema,
   wineIdParamSchema,
@@ -68,7 +66,9 @@ export const jsonSchemas = {
     }
   },
   refresh: {
-    body: toJsonSchema(refreshSchema),
+    // Sin `body`: este endpoint lee la cookie `refreshToken`, no el cuerpo.
+    // Declarar `z.object({})` obligaba al cliente a mandar `{}` y, sin body,
+    // AJV rechazaba con "body must be object" -> 500.
     response: {
       200: {
         type: 'object',
@@ -79,7 +79,7 @@ export const jsonSchemas = {
     }
   },
   logout: {
-    body: toJsonSchema(logoutSchema),
+    // Idem `refresh`: la sesion sale de la cookie.
     response: {
       204: { type: 'null' },
       401: errorLibre

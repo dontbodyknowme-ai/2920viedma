@@ -31,13 +31,19 @@ async function request<T>(
   options: RequestInit = {},
   retry = true
 ): Promise<T> {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options.headers
+  const headers: Record<string, string> = { ...(options.headers as Record<string, string>) }
+
+  // El `Content-Type` va **solo si hay cuerpo**. Declararlo en un POST sin
+  // body hace que Fastify responda `FST_ERR_CTP_EMPTY_JSON_BODY` ("Body cannot
+  // be empty when content-type is set to application/json"), que es como
+  // rompieron `POST /api/auth/logout` y `POST /api/auth/refresh`: el panel
+  // necesito los dos para renovar y cerrar sesion.
+  if (options.body !== undefined && options.body !== null) {
+    headers['Content-Type'] = 'application/json'
   }
 
   if (accessToken) {
-    ;(headers as Record<string, string>)['Authorization'] = `Bearer ${accessToken}`
+    headers['Authorization'] = `Bearer ${accessToken}`
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
