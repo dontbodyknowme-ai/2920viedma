@@ -110,3 +110,5 @@
 4. **`VistaRapidaProducto` se monta SIEMPRE**; su `AnimatePresence` interno decide visibilidad (montar condicionalmente rompe animación de salida)
 5. **`loadWines`/`loadCart` tienen guardas contra `localStorage` corrupto** (`{}` o `[]` vacían catálogo/carrito)
 6. **Escrituras offline fallan explícitamente** (no se encolan; evitaría conflictos sin resolver)
+7. **Login button removido del navbar** (T2 004-c): acceso a `/admin` solo por URL directa
+8. **MSW eliminado** (T7 004-c): `src/mocks/`, `public/mockServiceWorker.js` eliminados; `msw` movido a `devDependencies`

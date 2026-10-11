@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import type { AdminWine, Wine } from '../../types/admin'
 import { CATEGORIAS } from '../../hooks/useCatalogo'
+import { api } from '../../api/client'
 
 /**
  * Formulario de alta y edicion de vinos del panel.
@@ -263,15 +264,66 @@ export const AdminWineForm = ({ isOpen, vino, onClose, onGuardar }: AdminWineFor
                 </div>
 
                 <div>
-                  <label htmlFor='admin-image' className={etiqueta}>URL de la imagen</label>
-                  <input
-                    id='admin-image'
-                    type='url'
-                    value={campos.imageUrl}
-                    onChange={(e) => cambiar('imageUrl', e.target.value)}
-                    placeholder='https://...'
-                    className={campo}
-                  />
+                  <label htmlFor='admin-image' className={etiqueta}>
+                    Imagen del vino
+                  </label>
+                  <div className='space-y-2'>
+                    <div className='relative'>
+                      <input
+                        type='file'
+                        accept='image/*'
+                        onChange={async (e) => {
+                          const archivo = e.target.files?.[0]
+                          if (!archivo) return
+                          if (archivo.size > 5 * 1024 * 1024) {
+                            alert('La imagen no puede superar 5 MB')
+                            return
+                          }
+                          try {
+                            const formData = new FormData()
+                            formData.append('file', archivo)
+                            const res = await api.upload.uploadFile(formData)
+                            cambiar('imageUrl', res.url)
+                          } catch (err: unknown) {
+                            alert('Error al subir la imagen: ' + (err instanceof Error ? err.message : 'Error desconocido'))
+                          }
+                        }}
+                        className='sr-only'
+                        id='admin-image-upload'
+                      />
+                      <label
+                        htmlFor='admin-image-upload'
+                        className='flex items-center gap-2 cursor-pointer w-full px-4 py-3 border-2 border-dashed border-neutral-700 rounded-xl text-center text-neutral-400 hover:border-gold-500 hover:bg-charcoal-700 transition-colors'
+                      >
+                        <svg className='h-6 w-6 mx-auto text-neutral-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' />
+                        </svg>
+                        <div className='flex flex-col'>
+                          <span className='text-sm font-medium text-cream-100'>Click o arrastra para subir imagen</span>
+                          <span className='text-xs text-neutral-500'>Máx 5 MB · JPG, PNG, WebP</span>
+                        </div>
+                      </label>
+                    </div>
+                    {campos.imageUrl && (
+                      <div className='relative w-24 h-24 rounded-lg overflow-hidden border border-wine-500/30'>
+                        <img
+                          src={campos.imageUrl}
+                          alt='Previsualización'
+                          className='w-full h-full object-cover'
+                        />
+                        <button
+                          type='button'
+                          onClick={() => cambiar('imageUrl', '')}
+                          className='absolute top-1 right-1 bg-wine-700/90 text-cream-100 rounded-full p-1 hover:bg-wine-500 transition-colors'
+                          aria-label='Eliminar imagen'
+                        >
+                          <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
