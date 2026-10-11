@@ -134,3 +134,9 @@
    en `NODE_VERSION` del CI y en las dos etapas del `backend/Dockerfile`. Si se toca una, se tocan las tres.
 9. **El typecheck del CI es `npm run typecheck`, no `npx tsc`**. Con `node_modules` ausente, `npx` baja del
    registry el paquete `tsc@2.0.4` (que no es TypeScript) y el paso "pasa" sin compilar nada.
+10. **`backend/vitest.config.ts` declara `css.postcss: { plugins: [] }` a propósito** (fix CI 2026-10-11).
+    Sin eso, Vite busca `postcss.config.js` subiendo directorios desde `backend/`, encuentra el del
+    frontend e intenta cargar `tailwindcss`. En local se resuelve desde el `node_modules` de la raíz y
+    nadie ve el problema; en CI el job de backend solo instala `backend/node_modules` y el run muere con
+    `Failed to load PostCSS config: Cannot find module 'tailwindcss'`. Vite solo saltea la búsqueda en
+    disco si `css.postcss` es un objeto plano. **No borrar ese bloque.**

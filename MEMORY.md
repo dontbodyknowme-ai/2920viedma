@@ -98,8 +98,12 @@ backend/
 ├── prisma/schema.prisma        # 8 modelos (User, Wine, Order, etc.)
 ├── scripts/seed.ts             # Admin/gestor/vendedor
 ├── scripts/migrate-from-localstorage.ts
-├── tests/setup.ts              # Vitest + Prisma test client
-├── Dockerfile                  # Multi-stage
+├── tests/setup.ts              # Defaults de process.env + Prisma (solo con DATABASE_URL_TEST)
+├── tests/unit/esquemas.test.ts     # 20 tests de los schemas Zod
+├── tests/modules/autenticacion.test.ts # 12 tests de authService (Prisma mockeado)
+├── tests/modules/roles.test.ts       # 10 tests de authenticate/requireRole
+├── vitest.config.ts            # OJO: `css.postcss: { plugins: [] }` es obligatorio
+├── Dockerfile                  # Multi-stage (node:24-alpine)
 ├── docker-compose.yml          # DB + backend
 └── .github/workflows/ci.yml    # GitHub Actions CI
 ```
@@ -134,6 +138,12 @@ backend/
   - Excepcion a "sin hex en componentes": `PALETA` en `herocanvas3d.tsx` (Three.js no lee el config).
 
 ## Bitacora de Cambios / Notas
+- *2026-10-11:* **CI arreglado.** Los 3 checks de GitHub Actions estaban rojos despues del merge de 004-c. Tres causas distintas, ninguna en el codigo de la app:
+  - **Frontend — Node 20 vs `jsdom@30`.** El job moria en `Test` con `webidl.util.markAsUncloneable is not a function`, 6 unhandled errors y 0 tests corridos. `jsdom@30.1.2` exige `^22.22.2 || ^24.15.0 || >=26` y su `undici@8` llama a `util.markAsUncloneable`, que nacio en Node 22.13. Local pasaba porque el usuario corre Node 26. Node 24 fijado en `.nvmrc`, `NODE_VERSION` y las dos etapas del `backend/Dockerfile`.
+  - **Backend — no habia tests.** `tests/` solo tenia `setup.ts`; `integration/` y `modules/` estaban vacias y git no trackea carpetas vacias, asi que `vitest run` salia con "No test files found" y codigo 1. Agregados **42 tests** (`unit/esquemas`, `modules/autenticacion`, `modules/roles`) con Prisma mockeado via `vi.hoisted`.
+  - **Backend — fuga del `postcss.config.js` del frontend.** Vite busca la config de PostCSS subiendo directorios desde `backend/`, encontraba la de la raiz y pedia `tailwindcss`. Local se resolvía desde el `node_modules` de la raiz; en CI el job de backend solo instala `backend/node_modules`. Fix: `css.postcss: { plugins: [] }` en `backend/vitest.config.ts` (Vite solo saltea la busqueda en disco si `css.postcss` es un objeto plano).
+  - De paso: el typecheck del CI paso de `npx tsc` a `npm run typecheck`, porque con `node_modules` ausente `npx` baja el paquete `tsc@2.0.4` (que no es TypeScript) y el paso "pasa" sin compilar nada.
+  - La leccion general: **los dos jobs fallaron por el entorno, no por el codigo**, y los dos bugs eran "funciona en mi maquina" — version de Node y `node_modules` de un proyecto hermano.
 - *2026-10-10:* **Spec 004-b (Backend API Real) COMPLETA.** 9 tareas, 33 archivos backend, 9726 líneas agregadas. Commit `0bafd9c` pusheado a `main`.
   - T1: Infra (Prisma 8 modelos, Docker, seed, migraciones)
   - T2: Auth JWT + refresh rotativo, roles admin/gestor/vendedor, rate-limit, Swagger
