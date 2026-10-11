@@ -152,3 +152,9 @@
     (IPv6) y el motor de Prisma no llega por ahí aunque el puerto esté publicado:
     `Can't reach database server at localhost:5432` tras ~5 s de timeout, con el puerto abierto en
     `netstat` y `Test-NetConnection` en verde. Usar **`127.0.0.1`**. En Linux/CI `localhost` sí funciona.
+13. **La sesión se abre SIEMPRE por `useAuth().login()`, nunca por `api.auth.login()`** (fix 2026-10-11).
+    `api.auth.login()` es una llamada cruda: devuelve los tokens pero no toca estado. El `accessToken` vive en
+    el módulo `api` y el `user` en el `AuthProvider`; los dos los setea el hook. Si el gate llama a la API
+    directo, `isAuthenticated` queda en `false`, `AdminLayout` vuelve a renderizar `<AdminGate />` y el
+    formulario se limpia: **bucle infinito con la contraseña correcta**. Dos estados separados (módulo y
+    contexto) que hay que setear juntos; por eso hay un solo camino para entrar al panel.

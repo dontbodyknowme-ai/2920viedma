@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { KeyRound, Wine } from 'lucide-react'
-import { api } from '../../api/client'
+import { useAuth } from '../../hooks/useAuth'
 
 /**
  * Pantalla de acceso al panel.
@@ -20,16 +20,22 @@ export const AdminGate = () => {
   const [email, setEmail] = useState('admin@vinoteca.local')
   const [error, setError] = useState('')
   const [fallando, setFallando] = useState(false)
+  const { login } = useAuth()
   const navigate = useNavigate()
 
   const enviar = async (evento: React.FormEvent): Promise<void> => {
     evento.preventDefault()
 
     try {
-      await api.auth.login(email, clave)
-      // El token se guarda en el cliente (api.setAccessToken) y la cookie
-      // refreshToken se setea por el backend. Redirigimos al panel.
-      navigate('/admin')
+      // El login entra por `useAuth().login()` y **no** por `api.auth.login()`.
+      // La llamada cruda devuelve los tokens pero no toca ningun estado: el
+      // token vive en el modulo `api` y el usuario en el `AuthProvider`, y las
+      // dos cosas las setea el hook. Con la llamada directa, `isAuthenticated`
+      // sigue en `false`, `AdminLayout` vuelve a renderizar `<AdminGate />` y
+      // el formulario se limpia: bucle infinito **con la password correcta**.
+      // Ese fue el bug que hacia el panel inaccesible.
+      await login(email, clave)
+      navigate('/admin', { replace: true })
     } catch (err: unknown) {
       const mensaje = err instanceof Error ? err.message : 'Contrasena incorrecta.'
       setError(mensaje)
