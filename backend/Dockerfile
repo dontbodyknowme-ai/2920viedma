@@ -1,5 +1,7 @@
 # ---- Build stage ----
-FROM node:20-alpine AS builder
+# Node 24 LTS. `sharp` y `@prisma/client` piden >=22; con Node 20 la
+# instalacion del image falla en `npm ci`.
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -18,7 +20,7 @@ COPY src ./src/
 RUN npm run build
 
 # ---- Runtime stage ----
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 

@@ -3,7 +3,7 @@
 ## Contexto del Proyecto
 - **Nombre:** Vinoteca High-End E-Commerce
 - **Proposito:** Sitio web interactivo para una vinoteca de alta gama con catalogo de productos, carrito de compras, carga de articulos en tiempo real y navegacion con animaciones de scroll.
-- **Estado Actual:** **Backend 004-b COMPLETO** (commit `0bafd9c`). Frontend listo para 004-c (integración). Próximo: conectar frontend al backend real.
+- **Estado Actual:** **004-c COMPLETA y mergeada a `main`** (commits `575cb29`, `a6dc1ce`). Frontend consumiendo la API real; MSW eliminado. Pendiente: deploy.
 
 ## Decisiones de Arquitectura y Stack
 - **Framework / Bundler:** React 18 con Vite 5 y TypeScript strict.
@@ -11,7 +11,7 @@
 - **Estilos:** Tailwind CSS con paleta personalizada en modo oscuro.
 - **Animaciones:** Framer Motion (efectos parallax, revela al hacer scroll, animaciones del carrito, modales y drawers).
 - **Routing:** `react-router-dom` v7. El panel vive bajo `/admin` y el layout protege las cinco rutas hijas en un solo lugar.
-- **Backend:** **Fastify + Node 20 + PostgreSQL + Prisma** (spec 004-b **COMPLETA**). API REST en `http://localhost:3000`. Frontend usa MSW v2 como mock hasta 004-c.
+- **Backend:** **Fastify + Node 24 + PostgreSQL + Prisma** (spec 004-b **COMPLETA**). API REST en `http://localhost:3000`. Desde 004-c el frontend **consume esa API real**; MSW quedo eliminado (`src/mocks/` y `public/mockServiceWorker.js` no existen mas).
 - **Graficos:** Recharts, con `import()` diferido: queda en un chunk de 376 kB aparte, que el principal no carga.
 - **Tablas:** TanStack Table en modo manual. Los filtros, el orden y la paginacion van como query params; el cliente nunca tiene la lista entera en memoria.
 - **Manejo de fechas:** objeto `Date` nativo con los getters locales. **Nunca `toISOString()` para armar `YYYY-MM-DD`**: en UTC-3 un pedido del 15 a las 23:30 es del 16 en UTC y se cae fuera del rango que el usuario eligio.
@@ -26,6 +26,20 @@
 3. **Sin sesion no hay redirect: hay pantalla de clave.** El enunciado pedia rebotar a `/`; se muestra el prompt en la misma URL, porque quien la escribio a proposito esta pidiendo entrar.
 4. **La contrasena no es autenticacion.** Se compara en el navegador contra un valor del bundle. Se documento asi a proposito: un mock que aparente proteger algo es peor que uno que no.
 5. **Configuracion es de solo lectura** salvo la seccion de datos. No hay endpoint de configuracion y la spec no define ninguno.
+
+### Decisiones de la spec 004-c que conviene no olvidar
+
+1. **`backend/` es una carpeta propia con su `package.json`, no un monorepo.** No se mueve: el
+   Dockerfile, `docker-compose.yml` y las migraciones de Prisma ya apuntan ahi.
+2. **`NodeNext` + extension `.js` en los imports relativos del backend.** Con `NodeNext` el
+   compilador no resuelve `'./x'` a `x.ts`; sin la extension el build pasa en local y falla en CI.
+3. **`price` en pesos enteros, no en centavos**, para que el contrato del backend sea el mismo que
+   ya usaba el frontend. Los esquemas Zod de `shared/schemas.ts` rechazan `45000.5`.
+4. **El carrito sigue en `localStorage`.** Es estado de la tienda, no del servidor: no hay endpoint
+   de carrito en la 004-b y no se invento uno.
+5. **`src/mocks/` y `public/mockServiceWorker.js` se eliminaron, no se desactivaron.** Un mock que
+   queda en el repo es un mock que alguien vuelve a prender sin darse cuenta.
+6. **`AuthModal.tsx` se creo y se borro.** No hay modal de login en la tienda: el acceso es por URL.
 
 ## Componentes y Estructura
 - [x] `Navbar` - Navegacion fija con efecto de vidrio/opacidad al hacer scroll y contador de carrito en vivo. **Enlaces de navegación (Inicio, Catálogo, Contacto) con panel lateral en móvil implementado.**
@@ -43,7 +57,7 @@
 
 **Acceso:** panel en `/admin`. **No hay boton de acceso en la tienda publica**: se entra escribiendo la URL, que pide una contrasena. La sesion vive en `sessionStorage`. 
 
-- **Frontend (actual):** valida contra `VITE_ADMIN_PASSWORD` en bundle (mock, no es auth real).
+- **Frontend (actual):** login real contra la API (`POST /api/auth/login`, email + password). El `accessToken` vive **solo en memoria del modulo** `src/api/client.ts`; el refresh viaja en cookie httpOnly, asi que no hay nada que leer desde `sessionStorage` ni desde la consola.
 - **Backend 004-b (listo para 004-c):** `POST /api/auth/login` → JWT + refresh rotativo en cookie httpOnly, roles `admin`/`gestor`/`vendedor`, rate-limit 5 req/min.
 
 - [x] `AdminGate` - Pantalla de pedido de contrasena (`/admin` sin sesion).

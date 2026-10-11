@@ -7,7 +7,12 @@ on:
     branches: [main]
 
 env:
-  NODE_VERSION: '20'
+  # Node 24 LTS, no 20. `jsdom@30` (el entorno de los tests del frontend) exige
+  # `^22.22.2 || ^24.15.0 || >=26`, y su dependencia `undici@8` llama a
+  # `util.markAsUncloneable`, que no existe en Node 20: el job del frontend
+  # moria en `Test` con 6 "unhandled errors" y cero tests corridos.
+  # La version esta fijada aca y en `.nvmrc` para que local y CI no diverjan.
+  NODE_VERSION: '24'
 
 jobs:
   frontend:
@@ -29,7 +34,11 @@ jobs:
         run: npm ci
 
       - name: Typecheck
-        run: npx tsc --noEmit
+        # `npm run typecheck`, no `npx tsc`: si `node_modules` llegara a faltar
+        # (install fallido, cache corrupto), `npx` baja del registry el paquete
+        # `tsc@2.0.4` -que no es TypeScript- y el typecheck "pasa" sin compilar
+        # nada. Con el script de npm el paso falla en el primer comando.
+        run: npm run typecheck
 
       - name: Lint
         run: npm run lint
