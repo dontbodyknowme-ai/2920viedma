@@ -144,7 +144,6 @@ export default function App() {
       <Navbar
         cartCount={cartCount}
         onOpenCart={() => setCartOpen(true)}
-        onOpenAdmin={() => setAdminOpen(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
@@ -160,7 +159,6 @@ export default function App() {
 
       <AnimatedSection>
         <ProductCatalog
-          wines={wines}
           searchQuery={searchQuery}
           onAddToCart={agregarAlCarrito}
           onSelectWine={setSelectedWine}

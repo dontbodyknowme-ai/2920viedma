@@ -4,9 +4,9 @@
  *
  * ## Que resuelve
  *
- * CE-05: *"MSW falla o no esta registrado → Fallback a localStorage directo,
- * `alert('Modo offline')`*. Sin esto, si MSW no esta activo —un build de
- * produccion sin el worker, una excepcion en el service worker, estar
+ * CE-05: *"Backend falla o no esta disponible → Fallback a localStorage directo,
+ * `alert('Modo offline')`*. Sin esto, si el backend no esta activo —un build de
+ * produccion sin el servidor, una excepcion en el servidor, estar
  * realmente sin red— todos los `fetch` fallan y el panel queda entero en blanco.
  *
  * ## Por que el respaldo se indexa por URL y no por recurso
