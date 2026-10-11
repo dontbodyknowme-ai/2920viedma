@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { KeyRound, Wine } from 'lucide-react'
-import { iniciarSesionAdmin } from '../../utils/admin_acceso'
+import { api } from '../../api/client'
 
 /**
  * Pantalla de acceso al panel.
@@ -16,23 +17,25 @@ import { iniciarSesionAdmin } from '../../utils/admin_acceso'
 
 export const AdminGate = () => {
   const [clave, setClave] = useState('')
+  const [email, setEmail] = useState('admin@vinoteca.local')
   const [error, setError] = useState('')
   const [fallando, setFallando] = useState(false)
+  const navigate = useNavigate()
 
-  const enviar = (evento: React.FormEvent): void => {
+  const enviar = async (evento: React.FormEvent): Promise<void> => {
     evento.preventDefault()
 
-    if (iniciarSesionAdmin(clave)) {
-      // Un recarga en vez de un `setState`: la sesion vive en
-      // `sessionStorage` y `AdminLayout` la lee una sola vez, al montar. Sin
-      // recargar, el gate seguiria en pantalla.
-      window.location.reload()
-      return
+    try {
+      await api.auth.login(email, clave)
+      // El token se guarda en el cliente (api.setAccessToken) y la cookie
+      // refreshToken se setea por el backend. Redirigimos al panel.
+      navigate('/admin')
+    } catch (err: unknown) {
+      const mensaje = err instanceof Error ? err.message : 'Contrasena incorrecta.'
+      setError(mensaje)
+      setClave('')
+      setFallando(true)
     }
-
-    setError('Contrasena incorrecta.')
-    setClave('')
-    setFallando(true)
   }
 
   return (
@@ -52,8 +55,27 @@ export const AdminGate = () => {
           className='rounded-2xl border border-neutral-800 bg-charcoal-900 p-6'
         >
           <label
-            htmlFor='clave-admin'
+            htmlFor='email-admin'
             className='mb-1.5 block text-[10px] uppercase tracking-widest text-neutral-400'
+          >
+            Email
+          </label>
+          <input
+            id='email-admin'
+            type='email'
+            autoComplete='email'
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (error !== '') setError('')
+            }}
+            className='w-full rounded-xl border bg-charcoal-800 px-3 py-2.5 text-sm text-cream-100 placeholder-neutral-600 focus:outline-none focus:border-gold-500'
+            placeholder='admin@vinoteca.local'
+          />
+
+          <label
+            htmlFor='clave-admin'
+            className='mt-4 mb-1.5 block text-[10px] uppercase tracking-widest text-neutral-400'
           >
             Contrasena
           </label>
@@ -67,10 +89,7 @@ export const AdminGate = () => {
               setClave(e.target.value)
               if (error !== '') setError('')
             }}
-            // `fallando` tiembla la caja en vez de ponerla en rojo: un borde
-            // rojo no dice "esta mal la clave que escribiste", dice "este campo
-            // no se puede usar".
-            className={[
+            className={[ 
               'w-full rounded-xl border bg-charcoal-800 px-3 py-2.5 text-sm',
               'text-cream-100 placeholder-neutral-600 focus:outline-none',
               error !== ''
@@ -85,7 +104,7 @@ export const AdminGate = () => {
             <p
               id='error-clave'
               role='alert'
-              className={[
+              className={[ 
                 'mt-2 rounded-lg border border-wine-500/50 bg-wine-900/40 px-3 py-2 text-sm',
                 fallando ? 'animate-pulse' : ''
               ].join(' ')}
@@ -96,7 +115,7 @@ export const AdminGate = () => {
 
           <button
             type='submit'
-            disabled={clave === ''}
+            disabled={clave === '' || email === ''}
             className='mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-wine-500/40 bg-wine-700 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500 disabled:cursor-not-allowed disabled:opacity-40'
           >
             <KeyRound className='h-4 w-4' aria-hidden='true' />
@@ -104,14 +123,8 @@ export const AdminGate = () => {
           </button>
         </form>
 
-        {/*
-          Se dice explicitamente que es una demo. Un panel de administracion
-          con una contrasena visible en el bundle es engañoso si no se aclara:
-          alguien podria creer que hay una barrera real.
-        */}
         <p className='mt-4 text-center text-xs text-neutral-600'>
-          Acceso de prueba. La contrasena se valida en el navegador y no protege
-          datos reales.
+          Acceso de prueba. La contrasena se valida contra el backend real.
         </p>
       </div>
     </div>

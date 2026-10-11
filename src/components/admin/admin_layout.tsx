@@ -6,7 +6,7 @@ import { AvisoOffline } from './aviso_offline'
 import { AdminHeader } from './admin_header'
 import { AdminSidebar } from './admin_sidebar'
 import { useEsMovil } from '../../hooks/useMediaQuery'
-import { cerrarSesionAdmin, haySesionAdmin } from '../../utils/admin_acceso'
+import { useAuth } from '../../hooks/useAuth'
 
 /**
  * Layout del panel de administracion.
@@ -48,18 +48,15 @@ export const AdminLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const esMovil = useEsMovil()
+  const { isAuthenticated, isLoading, logout } = useAuth()
 
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [colapsado, setColapsado] = useState(false)
-  // `undefined` mientras no se resuelve, `true` con sesion abierta, `false` si
-  // hay que pedir la clave. El tercer estado existe para que el gate no
-  // aparezca un fotograma en cada recarga: sin el, el panel se veria un instante
-  // antes de pedir la contrasena.
   const [autorizado, setAutorizado] = useState<boolean | undefined>(undefined)
 
   useEffect(() => {
-    setAutorizado(haySesionAdmin())
-  }, [])
+    setAutorizado(isAuthenticated)
+  }, [isAuthenticated])
 
   // En movil el drawer se cierra solo al cambiar de seccion: si no, el usuario
   // navega y el menu le queda tapando el contenido.
@@ -68,11 +65,11 @@ export const AdminLayout = () => {
   }, [location.pathname])
 
   const cerrarSesion = () => {
-    cerrarSesionAdmin()
+    logout()
     navigate('/', { replace: true })
   }
 
-  if (autorizado === undefined) return null
+  if (isLoading) return null
   if (!autorizado) return <AdminGate />
 
   return (

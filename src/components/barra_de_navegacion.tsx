@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '../hooks/useAuth'
 
 const NAV_LINKS = [
   { href: '#hero', label: 'Inicio' },
@@ -10,7 +11,6 @@ const NAV_LINKS = [
 interface NavbarProps {
   cartCount: number
   onOpenCart: () => void
-  onOpenAdmin: () => void
   searchQuery: string
   onSearchChange: (query: string) => void
 }
@@ -18,10 +18,10 @@ interface NavbarProps {
 export const Navbar = ({
   cartCount,
   onOpenCart,
-  onOpenAdmin,
   searchQuery,
   onSearchChange
 }: NavbarProps) => {
+  const { user, isLoading, isAuthenticated, logout, hasRole } = useAuth()
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -45,6 +45,10 @@ export const Navbar = ({
         behavior: 'smooth'
       })
     }
+  }
+
+  const handleLogout = async () => {
+    await logout()
   }
 
   return (
@@ -93,12 +97,25 @@ export const Navbar = ({
           </div>
 
           <div className='flex items-center gap-4'>
-            <button
-              onClick={onOpenAdmin}
-              className='text-xs uppercase tracking-widest text-cream-200 hover:text-gold-500 px-3 py-2 rounded-lg border border-neutral-700 hover:border-gold-500 transition-colors hidden sm:block'
-            >
-              + Cargar Vino
-            </button>
+            {/* Botón "Panel Admin" solo para admin/gestor */}
+            {isAuthenticated && (hasRole('admin') || hasRole('gestor')) && (
+              <button
+                onClick={() => window.location.href = '/admin'}
+                className='text-xs uppercase tracking-widest text-cream-200 hover:text-gold-500 px-3 py-2 rounded-lg border border-neutral-700 hover:border-gold-500 transition-colors hidden sm:block'
+              >
+                Panel Admin
+              </button>
+            )}
+
+            {/* Botón Cargar Vino solo para admin/gestor (legacy) */}
+            {isAuthenticated && (hasRole('admin') || hasRole('gestor')) && (
+              <button
+                onClick={() => window.location.href = '/admin/catalogo'}
+                className='text-xs uppercase tracking-widest text-cream-200 hover:text-gold-500 px-3 py-2 rounded-lg border border-neutral-700 hover:border-gold-500 transition-colors hidden sm:block'
+              >
+                + Cargar Vino
+              </button>
+            )}
 
             <button
               onClick={onOpenCart}
@@ -129,6 +146,25 @@ export const Navbar = ({
               )}
             </button>
 
+            {/* Auth: User menu only for authenticated users */}
+            {isLoading ? (
+              <div className='w-8 h-8 border-2 border-gold-500/30 border-t-gold-500 rounded-full animate-spin' />
+            ) : isAuthenticated ? (
+              <div className='relative'>
+                <button
+                  className='flex items-center gap-2 p-2 text-cream-100 hover:text-gold-500 transition-colors'
+                  aria-label='Menú de usuario'
+                >
+                  <div className='w-8 h-8 bg-wine-700 rounded-full flex items-center justify-center text-sm font-semibold text-cream-100'>
+                    {user?.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <span className='hidden sm:block text-sm font-medium'>{user?.name}</span>
+                </button>
+              </div>
+            ) : (
+              <span className='hidden sm:block' />
+            )}
+
             <button
               onClick={() => setMobileMenuOpen(true)}
               className='md:hidden p-2 text-cream-100 hover:text-gold-500 transition-colors'
@@ -143,6 +179,7 @@ export const Navbar = ({
         </div>
       </motion.header>
 
+      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -192,16 +229,29 @@ export const Navbar = ({
                 </ul>
               </nav>
 
-              <div className='p-6 border-t border-neutral-800 bg-charcoal-950/80'>
+              <div className='p-6 border-t border-neutral-800 bg-charcoal-950/80 space-y-3'>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false)
-                    onOpenAdmin()
+                    window.location.href = '/admin/catalogo'
                   }}
                   className='w-full bg-wine-700 hover:bg-wine-500 text-cream-100 py-3 rounded-xl font-semibold tracking-wider uppercase transition-all duration-300 border border-wine-500/30'
                 >
                   + Cargar Vino
                 </button>
+
+                {isAuthenticated ? (
+                  <>
+                    <button
+                      onClick={handleLogout}
+                      className='w-full bg-neutral-800 hover:bg-neutral-700 text-cream-100 py-3 rounded-xl font-semibold tracking-wider uppercase transition-all duration-300 border border-neutral-700'
+                    >
+                      Cerrar sesión
+                    </button>
+                  </>
+                ) : (
+                    <span className='hidden' />
+                  )}
               </div>
             </motion.aside>
           </>

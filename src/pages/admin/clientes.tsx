@@ -4,7 +4,6 @@ import { Eye, Filter, X } from 'lucide-react'
 import { DataTable, columnaHelper } from '../../components/admin/data_table'
 import { ChipTag, CustomerDrawer } from '../../components/admin/customer_drawer'
 import { useClientes } from '../../hooks/useClientes'
-import { mockCustomers } from '../../mocks/data'
 import type { Customer } from '../../types/admin'
 
 /**
@@ -137,11 +136,10 @@ export const ClientesAdmin = () => {
     })
   }, [clientes.clientes, orden])
 
-  // Las unicas tags de la base, ordenadas. Se calculan una vez porque no
-  // dependen de los filtros ni de la pagina.
+  // Las unicas tags de la base, ordenadas. Se calculan desde los datos de la API.
   const tagsSugeridas = useMemo(
-    () => [...new Set(mockCustomers.flatMap((cliente) => cliente.tags))].sort(),
-    []
+    () => [...new Set(clientes.clientes.flatMap((cliente) => cliente.tags))].sort(),
+    [clientes.clientes]
   )
 
   const hayFiltros = clientes.filtros.search !== '' || clientes.filtros.tags.length > 0
