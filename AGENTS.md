@@ -140,3 +140,15 @@
     nadie ve el problema; en CI el job de backend solo instala `backend/node_modules` y el run muere con
     `Failed to load PostCSS config: Cannot find module 'tailwindcss'`. Vite solo saltea la búsqueda en
     disco si `css.postcss` es un objeto plano. **No borrar ese bloque.**
+11. **`response.schema` en Fastify CORTA los datos** (fix 2026-10-11, el bug más caro del proyecto).
+    Fastify no usa `JSON.stringify`: compila el schema con `fast-json-stringify`, que **descarta toda
+    propiedad no declarada**. Un `{ type: 'object' }` a secas devuelve `{}`. Pasó con `login` (→ `user: {}`,
+    sin rol: el botón "Panel Admin" no aparecía hasta recargar), `metrics` (→ `{}`: dashboard en cero),
+    `wines.create/update`, `orders.get/update` y `customers.get/update`. Todo respondía **200/201 sin un
+    solo error**. Por eso `json-schemas.ts` tiene `objetoLibre()` (`additionalProperties: true`) y
+    `tests/unit/json_schemas.test.ts` lo verifica serializando con Fastify de verdad.
+    **Nunca escribir `{ type: 'object' }` en un `response.schema`.**
+12. **En Windows, `DATABASE_URL` con `localhost` no conecta** (2026-10-11). `localhost` resuelve a `::1`
+    (IPv6) y el motor de Prisma no llega por ahí aunque el puerto esté publicado:
+    `Can't reach database server at localhost:5432` tras ~5 s de timeout, con el puerto abierto en
+    `netstat` y `Test-NetConnection` en verde. Usar **`127.0.0.1`**. En Linux/CI `localhost` sí funciona.
