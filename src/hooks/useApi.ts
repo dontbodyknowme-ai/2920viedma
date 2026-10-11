@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { api } from '../api/client'
 import {
   guardarRespaldo,
   leerRespaldo,
@@ -72,11 +73,12 @@ export const useApi = <T,>(url: string, opciones: OpcionesApi = {}): EstadoApi<T
     setIsLoading(true)
     setError(undefined)
 
-    fetch(url)
-      .then((respuesta) => {
-        if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`)
-        return respuesta.json() as Promise<T>
-      })
+    // Por `api.get` y no por `fetch(url)`: un fetch con path relativo pegaba
+    // al frontend (que responde `index.html`) en vez de al backend, y sin
+    // header `Authorization` toda peticionprotected daba 401. `api.get` pone
+    // la URL base, manda el token y refresca solo si el token expiro.
+    api
+      .get<T>(url)
       .then((json: T) => {
         if (!vigente) return
         setData(json)

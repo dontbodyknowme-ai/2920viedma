@@ -1,6 +1,7 @@
 ﻿import { useRef, useState } from 'react'
 import { AlertTriangle, Download, FolderTree, Lock, Store, Upload, Workflow } from 'lucide-react'
 import { useApi } from '../../hooks/useApi'
+import { api } from '../../api/client'
 import { csvCatalogo, csvClientes, csvPedidos, descargarComo } from '../../utils/csv_export'
 import { exigirConexion } from '../../utils/offline'
 import { TIENDA, zonaHorariaLocal } from '../../utils/tienda'
@@ -136,17 +137,12 @@ export const ConfiguracionAdmin = () => {
     try {
       exigirConexion()
 
-      const res = await fetch('/api/wines/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/csv' },
-        // El archivo va crudo. Parsearlo en el navegador para re-armarlo tiraria
-        // los encabezados y las comas escapadas de las descripciones.
-        body: await archivo.text()
-      })
-
-      if (!res.ok) throw new Error(`No se pudo importar (HTTP ${res.status})`)
-
-      const resultado = (await res.json()) as ImportResult
+      // El archivo va crudo. Parsearlo en el navegador para re-armarlo tiraria
+      // los encabezados y las comas escapadas de las descripciones.
+      const resultado = await api.postText<ImportResult>(
+        '/api/wines/import',
+        await archivo.text()
+      )
       const partes = [`${resultado.created} creados`, `${resultado.updated} actualizados`]
       if (resultado.errors.length > 0) partes.push(`${resultado.errors.length} con error`)
 
