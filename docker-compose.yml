@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vinoteca
+      POSTGRES_PASSWORD: vinoteca
+      POSTGRES_DB: vinoteca
+    ports: ['5432:5432']
+    volumes: ['pgdata:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U vinoteca']
+      interval: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://vinoteca:vinoteca@db:5432/vinoteca
+      # Default solo para desarrollo local. Produccion lo inyecta el deploy.
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-de-al-menos-32-caracteres-xxxx}
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://localhost:9000}
+      STORAGE_BUCKET: wine-images
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-minioadmin}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-minioadmin}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
+      CORS_ORIGIN: http://localhost:5173
+    ports: ['3000:3000']
+
+volumes:
+  pgdata:

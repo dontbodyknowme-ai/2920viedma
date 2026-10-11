@@ -3,7 +3,7 @@
 ## Contexto del Proyecto
 - **Nombre:** Vinoteca High-End E-Commerce
 - **Proposito:** Sitio web interactivo para una vinoteca de alta gama con catalogo de productos, carrito de compras, carga de articulos en tiempo real y navegacion con animaciones de scroll.
-- **Estado Actual:** Estructura inicial configurada en `AGENTS.md`. Preparado para comenzar el desarrollo de componentes.
+- **Estado Actual:** **Backend 004-b COMPLETO** (commit `0bafd9c`). Frontend listo para 004-c (integración). Próximo: conectar frontend al backend real.
 
 ## Decisiones de Arquitectura y Stack
 - **Framework / Bundler:** React 18 con Vite 5 y TypeScript strict.
@@ -11,7 +11,7 @@
 - **Estilos:** Tailwind CSS con paleta personalizada en modo oscuro.
 - **Animaciones:** Framer Motion (efectos parallax, revela al hacer scroll, animaciones del carrito, modales y drawers).
 - **Routing:** `react-router-dom` v7. El panel vive bajo `/admin` y el layout protege las cinco rutas hijas en un solo lugar.
-- **Datos del panel:** MSW v2 como API falsa, con latencia simulada de 300-800 ms. **No hay backend real todavia**: la spec 004-b lo describe y esta en `borrador`.
+- **Backend:** **Fastify + Node 20 + PostgreSQL + Prisma** (spec 004-b **COMPLETA**). API REST en `http://localhost:3000`. Frontend usa MSW v2 como mock hasta 004-c.
 - **Graficos:** Recharts, con `import()` diferido: queda en un chunk de 376 kB aparte, que el principal no carga.
 - **Tablas:** TanStack Table en modo manual. Los filtros, el orden y la paginacion van como query params; el cliente nunca tiene la lista entera en memoria.
 - **Manejo de fechas:** objeto `Date` nativo con los getters locales. **Nunca `toISOString()` para armar `YYYY-MM-DD`**: en UTC-3 un pedido del 15 a las 23:30 es del 16 en UTC y se cae fuera del rango que el usuario eligio.
@@ -39,9 +39,12 @@
 - [x] `Footer` - Informacion de contacto, horarios, redes sociales y aviso legal obligatorio (+18). **Agregado `id="contacto"` para navegación.**
 - [x] `AnimatedSection` - Wrapper de animación scroll-reveal con Framer Motion (`useInView`), degradación a transiciones simples en móvil (< 640px).
 
-### Back-Office (spec 004-a, implementada 2026-10-09)
+### Back-Office (spec 004-a, implementada 2026-10-09) + Backend Real (spec 004-b, 2026-10-10)
 
-**Acceso:** panel en `/admin`. **No hay boton de acceso en la tienda publica**: se entra escribiendo la URL, que pide una contrasena. La sesion vive en `sessionStorage`. La contrasena se valida en el navegador contra `VITE_ADMIN_PASSWORD` (default `admin123`) y **no es autenticacion**: esta en el bundle. Ver `src/utils/admin_acceso.ts`.
+**Acceso:** panel en `/admin`. **No hay boton de acceso en la tienda publica**: se entra escribiendo la URL, que pide una contrasena. La sesion vive en `sessionStorage`. 
+
+- **Frontend (actual):** valida contra `VITE_ADMIN_PASSWORD` en bundle (mock, no es auth real).
+- **Backend 004-b (listo para 004-c):** `POST /api/auth/login` → JWT + refresh rotativo en cookie httpOnly, roles `admin`/`gestor`/`vendedor`, rate-limit 5 req/min.
 
 - [x] `AdminGate` - Pantalla de pedido de contrasena (`/admin` sin sesion).
 - [x] `AvisoOffline` - Banner permanente de modo offline, con "Reintentar". Marca los datos como desactualizados.
@@ -57,6 +60,35 @@
 - [x] `OrderDrawer` - Detalle de pedido: items, cliente, direccion, estado, timeline, etiqueta y devolucion.
 - [x] `CustomerDrawer` - Detalle de cliente en 3 pestanas (pedidos/notas/datos) mas `ChipTag`.
 - [x] Paginas: `dashboard.tsx`, `catalogo.tsx`, `pedidos.tsx`, `clientes.tsx`, `configuracion.tsx`.
+
+### Backend (spec 004-b, implementada 2026-10-10)
+
+```
+backend/
+├── src/
+│   ├── config/env.ts           # Zod env validation
+│   ├── main.ts                 # Entry point
+│   ├── app.ts                  # Fastify factory + error handler
+│   ├── routes.ts               # Registro centralizado módulos
+│   ├── plugins/index.ts        # helmet, cors, rate-limit, swagger
+│   ├── utils/errors.ts         # AppError hierarchy
+│   ├── utils/logger.ts         # Pino structured logs
+│   ├── modules/
+│   │   ├── auth/               # JWT + refresh rotativo, roles
+│   │   ├── wines/              # CRUD + import CSV + público
+│   │   ├── orders/             # Timeline + roles
+│   │   ├── customers/          # Search + tags + notas
+│   │   ├── metrics/            # Agregaciones paralelas
+│   │   ├── upload/             # Sharp → WebP → S3 signed URL
+│   │   └── health/             # /health endpoint
+├── prisma/schema.prisma        # 8 modelos (User, Wine, Order, etc.)
+├── scripts/seed.ts             # Admin/gestor/vendedor
+├── scripts/migrate-from-localstorage.ts
+├── tests/setup.ts              # Vitest + Prisma test client
+├── Dockerfile                  # Multi-stage
+├── docker-compose.yml          # DB + backend
+└── .github/workflows/ci.yml    # GitHub Actions CI
+```
 
 ### Utilidades y datos (spec 004-a)
 
@@ -88,6 +120,18 @@
   - Excepcion a "sin hex en componentes": `PALETA` en `herocanvas3d.tsx` (Three.js no lee el config).
 
 ## Bitacora de Cambios / Notas
+- *2026-10-10:* **Spec 004-b (Backend API Real) COMPLETA.** 9 tareas, 33 archivos backend, 9726 líneas agregadas. Commit `0bafd9c` pusheado a `main`.
+  - T1: Infra (Prisma 8 modelos, Docker, seed, migraciones)
+  - T2: Auth JWT + refresh rotativo, roles admin/gestor/vendedor, rate-limit, Swagger
+  - T3: Vinos admin CRUD + import CSV streaming (papaparse, upsert por id)
+  - T4: Vinos públicos `GET /api/wines/public` (solo activos)
+  - T5: Pedidos CRUD + timeline atómico, roles vendedor restringido
+  - T6: Clientes search+tags, notas append-only, tags replace
+  - T7: Métricas agregaciones paralelas, shape `Metrics` exacto frontend
+  - T8: Upload Sharp→WebP→S3 signed URL, validaciones mimetype/tamaño
+  - T9: Script migración localStorage→PostgreSQL, GitHub Actions CI, Docker multi-stage
+  - TypeScript strict, build OK, typecheck OK, migraciones aplicadas, seed OK
+
 - *2026-10-09 (noche):* **Fondo y superficies de vuelta al negro carbon.** Al usuario no le gusto el fondo rojo del primer pase (`#35030F`) y pidio "volver al negro carbon en vez de rojo". Los 9 rojos siguen como acento; solo cambia la superficie:
   - `charcoal` deja de ser los 5 rojos mas oscuros y vuelve al gris neutro: `#2E2E2E`/`#262626`/`#1E1E1E`/`#121212`/`#0A0A0A`. `charcoal-800/900/950` recuperan los valores previos a la paleta (`#1e1e1e`/`#121212`/`#0a0a0a`); `600/700` (que codigo usa para hovers y no existian antes) se definen como grises.
   - `neutral` pierde el tinte vino y pasa a grises puros (`400` `#a3a3a3`, `500` `#8f8f8f` = 5.15:1 sobre `#1e1e1e`), manteniendo WCAG AA sobre las superficies carbon.

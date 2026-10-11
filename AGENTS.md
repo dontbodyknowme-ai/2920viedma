@@ -1,86 +1,112 @@
 # AGENTS.md
 
-## Comandos de configuracion
-Gestor de paquetes: **npm** (el repo tiene `package-lock.json`; no usar pnpm).
+## Comandos de configuración
+
+**Gestor de paquetes: npm** (el repo tiene `package-lock.json`; no usar pnpm).
 
 - Instalar dependencias: `npm install`
-- Iniciar servidor de desarrollo: `npm run dev`
-- Ejecutar pruebas: `npm test`
+- Iniciar servidor de desarrollo (frontend): `npm run dev`
+- Iniciar servidor de desarrollo (backend): `cd backend && npm run dev`
+- Ejecutar pruebas: `npm test` (usa `vitest run`, no watch)
 - Verificar tipos: `npx tsc --noEmit`
-- Lint: `npm run lint`
-- Build de produccion: `npm run build`
-- Regenerar los datos mock: `node scripts/generar-mocks.mjs`
-- Clave del panel admin: `VITE_ADMIN_PASSWORD` (default `admin123`)
+- Lint: `npm run lint` (ESLint 9 flat config, `--max-warnings 0`)
+- Build de producción: `npm run build` (ejecuta `tsc && vite build`)
+- Regenerar datos mock: `node scripts/generar-mocks.mjs`
+- Clave panel admin: `VITE_ADMIN_PASSWORD` (default `admin123`)
 
-## Estilo de codigo
-- Modo estricto de TypeScript (TypeScript strict mode)
+**Backend (spec 004-b):**
+- `cd backend && npm run db:migrate` — aplica migraciones Prisma
+- `cd backend && npm run seed` — crea usuarios admin/gestor/vendedor
+- `cd backend && npm run dev` — levanta Fastify en :3000
+- `cd backend && npm run test` — tests unitarios (mock Prisma)
+- `docker compose up -d db` — levanta PostgreSQL
+
+## Estilo de código
+
+- TypeScript strict mode (`noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`)
 - Comillas simples, sin puntos y comas
-- Usar patrones funcionales siempre que sea posible
-- No hardcodear colores hex en los componentes: viven en `tailwind.config.js` (unica excepcion: `PALETA` en `herocanvas3d.tsx`, para los materiales de Three.js)
+- Patrones funcionales; componentes puros de React
+- No hardcodear colores hex en componentes: viven en `tailwind.config.js` (única excepción: `PALETA` en `herocanvas3d.tsx` para Three.js)
 
-## Especificacion del Proyecto: E-Commerce Vinoteca de Alta Gama
+## Arquitectura clave (lo que un agente suele pasar por alto)
 
-### Objetivo
-Construir una aplicacion web interactiva, responsiva y visualmente atractiva para una vinoteca de alta gama. El proyecto incluye interacciones con animaciones de scroll, un catalogo dinamico de productos, un modulo de carga de productos en tiempo real y un carrito de compras interactivo.
+| Aspecto | Detalle |
+|---------|---------|
+| **Framework Frontend** | React 18 + Vite 5 + TypeScript (no Next.js) |
+| **Framework Backend** | Fastify + Node 20 + PostgreSQL + Prisma (spec 004-b **COMPLETA**) |
+| **Routing Frontend** | `react-router-dom` v7; `/admin` es hijo de `AdminLayout` (protege 5 rutas) |
+| **Estado tienda** | `localStorage`: `vinoteca_wines` y `vinoteca_cart` (sin librería global) |
+| **Estado admin (frontend)** | `sessionStorage`; clave validada contra `VITE_ADMIN_PASSWORD` (mock) |
+| **Auth real (backend)** | JWT access 15min + refresh rotativo 7d cookie httpOnly, roles admin/gestor/vendedor |
+| **API mock (frontend)** | MSW v2 en `src/mocks/` (latencia 300-800 ms); handlers en `handlers.ts` |
+| **API real (backend)** | Fastify REST en `http://localhost:3000` (spec 004-b completa) |
+| **Datos mock** | Generados con PRNG sembrado (`scripts/generar-mocks.mjs`) para consistencia |
+| **Gráficos** | Recharts con `import()` diferido (chunk aparte de ~376 kB) |
+| **Tablas** | TanStack Table modo manual (`manualPagination/Sorting/Filtering`) |
+| **Fechas** | `Date` nativo; **nunca `toISOString()` para `YYYY-MM-DD`** (UTC-3 rompe rangos). Usar `aIsoLocal` de `src/utils/fechas.ts` |
+| **CSV** | Parser/escritor manual en `src/utils/csv.ts` (`papa-parse` da 404 en este registry) |
+| **Animaciones** | Framer Motion; `AnimatedSection` usa `useInView`; degradación en móvil (< 640px) |
 
-### Requerimientos de UI / UX
-- **Paleta de Colores y Tema:** Estetica premium oscura sobre **negro carbon** (superficies `charcoal` neutras; fondo `#0a0a0a`/`#121212`), con los 9 rojos de la paleta como acento (`wine`, de `#AD0021` a `#4F0718`), dorado (`#D4AF37`) y blanco (`#ffffff`). Fuente unica: `tailwind.config.js`.
-- **Animaciones de Scroll:** Efectos de revelado suave al hacer scroll, efectos parallax en la seccion principal/historia, barra de navegacion fija con cambio de opacidad/glassmorphism y transiciones fluidas mediante Framer Motion.
-- **Diseño Responsivo:** Enfoque *mobile-first* implementado con Tailwind CSS.
+## Panel Admin (`/admin`) — spec 004-a implementada (frontend) + spec 004-b (backend real)
 
-### Estructura de la Pagina y Funcionalidades Clave
-1. **Encabezado / Barra de Navegacion:**
-   - Logo de la marca, enlaces de navegacion (Inicio, Catálogo, Contacto), barra de busqueda e icono de carrito con contador en tiempo real. **Panel lateral en móvil implementado.**
-2. **Seccion Principal (Hero Section):**
-   - Banner a pantalla completa con efecto parallax, titular impactante, boton de accion ("Explorar Cava") y exhibicion de botellas destacadas (3 vinos más caros).
-3. **Catalogo de Productos (Cuadricula E-commerce):**
-   - Tarjetas de producto con efecto de zoom sutil al pasar el cursor (hover).
-   - Informacion por tarjeta: Imagen del producto, Nombre del vino, Bodega/Cepa, Cosecha/Año, Precio (formateado con moneda) y boton "Agregar al Carrito".
-   - Sistema de filtros: Por tipo de vino (Tinto, Blanco, Rosado, Espumante), **rango de precio** y **cepa** (Malbec, Cabernet Sauvignon, Chardonnay, etc.).
-4. **Modulo de Carga / Panel Admin:**
-   - Modal o formulario para agregar o editar productos en tiempo real.
-   - Campos: Nombre, Categoria/Cepa, Precio, Descripcion, Cosecha/Año y Selector de Imagen (**soporte para arrastrar archivo o ingresar URL**, prioridad a archivo).
-5. **Vista de Detalle del Producto (Modal Rapido):**
-   - Modal detallado al hacer clic que muestra notas de cata, maridaje sugerido e imagen en alta resolucion.
-6. **Carrito de Compras (Panel Lateral / Drawer):**
-   - Panel desplegable animado desde la derecha al hacer clic en el carrito.
-   - Lista detallada de productos seleccionados, ajustador de cantidades, calculo automatico de subtotal/total y boton para finalizar compra.
-7. **Pie de Pagina (Footer):**
-   - Horarios de atencion, ubicacion, enlaces a redes sociales y aviso legal obligatorio de restriccion de edad (+18). **Con `id="contacto"` para navegación.**
+**Frontend (actual, mock):**
+- **Sin botón en la tienda pública**: se entra escribiendo `/admin`
+- **Pantalla de clave** (`AdminGate`), no redirect: la sesión vive en `sessionStorage`
+- **La contraseña NO es autenticación**: se compara en el bundle contra `VITE_ADMIN_PASSWORD`
+- **No existe flag `isAdmin` en `localStorage`** (era público y editable desde consola)
 
-### Back-Office (`/admin`) - spec 004-a, implementada
-Panel de administracion con 5 modulos: Dashboard, Catalogo, Pedidos, Clientes CRM y Configuracion.
+**Backend 004-b (listo para 004-c):**
+- `POST /api/auth/login` → JWT access 15min + refresh rotativo 7d (cookie httpOnly)
+- Roles: `admin` / `gestor` / `vendedor` (middleware `requireRole()`)
+- Rate-limit login: 5 req/min/IP
+- Swagger UI: `http://localhost:3000/api/docs`
 
-- **Acceso: sin boton en la tienda publica.** Se entra escribiendo `/admin`, que pide una contrasena (`src/components/admin/admin_gate.tsx`). La sesion vive en `sessionStorage`, no en `localStorage`, para que el acceso no quede dado por semanas en una maquina compartida.
-- **La contrasena NO es autenticacion.** Se compara en el navegador contra `VITE_ADMIN_PASSWORD` y viaja en el bundle. No hay backend todavia; la spec 004-b (en `borrador`) define el reemplazo con token + 2FA.
-- **Sin sesion no hay redirect:** se muestra el prompt de clave en la misma URL, no un rebote a la tienda.
-- **No existe el flag `isAdmin` en `localStorage`** que hubo hasta la spec 004-a: era publico y cualquiera lo ponia en `true` desde la consola.
-- **Datos:** MSW v2 como API falsa (`src/mocks/`), con latencia de 300-800 ms. Regenerables con `node scripts/generar-mocks.mjs`.
-- **`stock` y `activo` viven en `AdminWine`, no en `Wine`:** el catalogo publico no los expone. El formulario del panel es `AdminWineForm`, separado del `ProductForm` publico.
+**Común:**
+- `AdminWine` extiende `Wine` (agrega `stock` y `activo`); formulario separado: `AdminWineForm` ≠ `ProductForm`
+- 5 módulos: Dashboard, Catálogo, Pedidos, Clientes CRM, Configuración
+- `DataTable` genérica con paginación/filtrado/orden en servidor (backend real)
+- `DateRangePicker` con react-day-picker v9 (tema oscuro, dos meses)
+- Offline: `src/utils/offline.ts` guarda último response por URL; banner `AvisoOffline` + "Reintentar"
 
-### Arquitectura Tecnica
-- **Framework:** Next.js o React + Vite con TypeScript.
-- **Estilos:** Tailwind CSS para maquetacion, tipografia y clases de utilidad.
-- **Animaciones:** Framer Motion (o GSAP) para animaciones activadas por scroll y transiciones de paneles. **Scroll reveal (`AnimatedSection`), parallax en Hero, degradación en móvil (< 640px).**
-- **Gestion de Estado:** Hooks funcionales de React o Zustand para el manejo del estado local (carrito y catalogo dinamico de productos).
-- **Organizacion del Codigo:** Division en componentes modulares y reutilizables (`ProductCard`, `ProductForm`, `CartDrawer`, `AnimatedSection`, `QuickViewModal`).
+## Paleta de colores (fuente única: `tailwind.config.js`)
 
-## Reglas y Gobernanza
-- Las directrices de arquitectura, UI/UX y calidad se encuentran especificadas en [`docs/constitution.md`](./docs/constitution.md).
+- **Superficies**: `charcoal` = negro carbón neutro (`#2E2E2E` → `#0A0A0A`); fondo página `charcoal-950` `#0A0A0A`, cards `charcoal-800/900`
+- **Acento rojo**: `wine` 400→950 (9 tonos, `#AD0021` a `#4F0718`) — botones, bordes, badges
+- **Dorado**: `gold` (`#F0D98C` → `#AA8C2C`) — acento de marca
+- **Blanco**: `white` (`#ffffff` + 100-300) para `bg-white`/`text-white`
+- **Texto largo**: `cream` (`#FDFBF7`) — menos fatigante sobre oscuro
+- **Neutros**: grises puros más claros que Tailwind para WCAG AA (> 4.5:1) sobre `#0A0A0A`
 
-## Protocolo de Actualizacion Continua (AGENTS.md & MEMORY.md)
+## Tests
 
-Cada vez que realices una tarea, modificacion, refactorizacion o agregues codigo/archivos al proyecto, DEBES seguir estas reglas sin excepcion:
+- **Ubicación**: `test/**/*.test.ts` (no `.test.tsx`; JSX no compila en `.ts`)
+- **Entorno**: jsdom con stubs para `ResizeObserver`, `IntersectionObserver`, `innerWidth=375` (evita Three.js)
+- **Montaje**: `montarApp()` en `test/andamiaje.ts` (sin StrictMode; evita doble sincronización a localStorage)
+- **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
+- **Cobertura**: 224 tests; `npm test` pasa en modo no interactivo (`watch: false`)
 
-1. **Sincronizacion de MEMORY.md:**
-   - Registra el cambio en la seccion `## Bitacora de Cambios / Notas` con la fecha actual y un resumen claro de lo realizado.
-   - Si creaste o modificaste un componente, actualiza la lista de verificacion en `## Componentes y Estructura`.
-   - Si cambio la arquitectura, el estado del proyecto o el stack, actualiza `## Decisiones de Arquitectura y Stack`.
+## Convenciones de archivos
 
-2. **Mantenimiento de AGENTS.md:**
-   - Si se introducen nuevos comandos de ejecucion/testeo, agregalos a `## Setup commands`.
-   - Si se adoptan nuevas convenciones de codigo, patrones o reglas de estilo, actualiza `## Code style`.
-   - Si cambia el alcance general de las funcionalidades, manten actualizada la seccion de especificaciones.
+- `@/*` alias a `src/*` (configurado en `vite.config.ts` y `tsconfig.json`)
+- Componentes en `src/components/` y `src/components/admin/`
+- Páginas admin en `src/pages/admin/`
+- Hooks en `src/hooks/` (`useApi`, `useCatalogo`, `usePedidos`, `useClientes`, `useMediaQuery`)
+- Utilidades en `src/utils/`
+- Tipos en `src/types/` (`vino.ts`, `admin.ts`)
+- Datos iniciales en `src/datos/vino.ts`
+- Mocks MSW en `src/mocks/`
 
-3. **Ejecucion Automatica:**
-   - La actualizacion de ambos archivos debe hacerse inmediatamente al finalizar la modificacion de codigo solicitada, dentro del mismo flujo de trabajo.
+## Reglas de gobernanza
+
+- `docs/CONSTITUCION.md` es la fuente de verdad para arquitectura, UI/UX y calidad
+- Actualizar `MEMORY.md` y `AGENTS.md` tras cada cambio (ver protocolo en MEMORY.md)
+- No agregar dependencias sin necesidad demostrada (ej. `date-fns` se agregó como dep directa tras detectarse hoisting)
+
+## Gotchas operativos
+
+1. **`npm run lint` lintea `*.ts` y `*.js` en raíz** (incluye `vitest.config.ts`, `tailwind.config.js`)
+2. **`public/mockServiceWorker.js` está en `ignores`** (generado por `npx msw init`, no editar a mano)
+3. **`hero.tsx` no renderiza `<HeroCanvas3D />` por debajo de 640px** (evita WebGL en tests/jsdom)
+4. **`VistaRapidaProducto` se monta SIEMPRE**; su `AnimatePresence` interno decide visibilidad (montar condicionalmente rompe animación de salida)
+5. **`loadWines`/`loadCart` tienen guardas contra `localStorage` corrupto** (`{}` o `[]` vacían catálogo/carrito)
+6. **Escrituras offline fallan explícitamente** (no se encolan; evitaría conflictos sin resolver)
