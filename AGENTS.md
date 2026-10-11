@@ -140,3 +140,34 @@
     nadie ve el problema; en CI el job de backend solo instala `backend/node_modules` y el run muere con
     `Failed to load PostCSS config: Cannot find module 'tailwindcss'`. Vite solo saltea la búsqueda en
     disco si `css.postcss` es un objeto plano. **No borrar ese bloque.**
+11. **`response.schema` en Fastify CORTA los datos** (fix 2026-10-11, el bug más caro del proyecto).
+    Fastify no usa `JSON.stringify`: compila el schema con `fast-json-stringify`, que **descarta toda
+    propiedad no declarada**. Un `{ type: 'object' }` a secas devuelve `{}`. Pasó con `login` (→ `user: {}`,
+    sin rol: el botón "Panel Admin" no aparecía hasta recargar), `metrics` (→ `{}`: dashboard en cero),
+    `wines.create/update`, `orders.get/update` y `customers.get/update`. Todo respondía **200/201 sin un
+    solo error**. Por eso `json-schemas.ts` tiene `objetoLibre()` (`additionalProperties: true`) y
+    `tests/unit/json_schemas.test.ts` lo verifica serializando con Fastify de verdad.
+    **Nunca escribir `{ type: 'object' }` en un `response.schema`.**
+12. **En Windows, `DATABASE_URL` con `localhost` no conecta** (2026-10-11). `localhost` resuelve a `::1`
+    (IPv6) y el motor de Prisma no llega por ahí aunque el puerto esté publicado:
+    `Can't reach database server at localhost:5432` tras ~5 s de timeout, con el puerto abierto en
+    `netstat` y `Test-NetConnection` en verde. Usar **`127.0.0.1`**. En Linux/CI `localhost` sí funciona.
+13. **La sesión se abre SIEMPRE por `useAuth().login()`, nunca por `api.auth.login()`** (fix 2026-10-11).
+    `api.auth.login()` es una llamada cruda: devuelve los tokens pero no toca estado. El `accessToken` vive en
+    el módulo `api` y el `user` en el `AuthProvider`; los dos los setea el hook. Si el gate llama a la API
+    directo, `isAuthenticated` queda en `false`, `AdminLayout` vuelve a renderizar `<AdminGate />` y el
+    formulario se limpia: **bucle infinito con la contraseña correcta**. Dos estados separados (módulo y
+    contexto) que hay que setear juntos; por eso hay un solo camino para entrar al panel.
+14. **Los errores de Fastify NO son todos 500** (fix 2026-10-11). `setErrorHandler` manejava `ZodError` y
+    `AppError` y mandaba todo lo demás a `500 INTERNAL_ERROR`. JSON malformado, body vacío y schema que no
+    valida*daban 500. Además `request.log.error` salía del `logger: false` de Fastify: escribir ahí es
+    escribir a la nada, así que un 500 real no quedaba registrado en producción. Ahora se usa el `logger`
+    del proyecto y los 4xx de Fastify se devuelven con su status real.
+15. **`Content-Type: application/json` en un POST sin cuerpo rompe Fastify** (fix 2026-10-11).
+    `FST_ERR_CTP_EMPTY_JSON_BODY` → 500. Por eso `POST /api/auth/logout` y `/api/auth/refresh` devolvían
+    500: el cliente manda esos POST **sin body**. Por eso `request()` en `client.ts` pone el header solo si
+    hay cuerpo, y `buildApp` registra un parser que acepta el cuerpo vacío como `{}` (**quitando el BOM**,
+    como hacía el parser original de Fastify).
+16. **`routePrefix` de Swagger necesita barra final** (fix 2026-10-11). Swagger UI sirve el HTML con rutas
+    relativas (`./static/…`); entrando en `/api/docs` sin barra el navegador pide `/api/static/…` y la
+    página queda sin estilos ni JS. Va `/api/docs/` más un redirect explícito desde `/api/docs`.

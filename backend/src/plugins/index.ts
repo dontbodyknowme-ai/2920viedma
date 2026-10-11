@@ -67,8 +67,17 @@ export const registerPlugins = fp(async (fastify) => {
     }
   })
 
+  // Sin este redirect, `/api/docs` (como lo escribe cualquiera) daba 404: con
+  // la barra en el `routePrefix` de abajo Fastify no redirige solo.
+  fastify.get('/api/docs', async (_request, reply) => reply.redirect('/api/docs/', 302))
+
+  // La barra final en `routePrefix` no es cosmetica. Swagger UI sirve el HTML
+  // con rutas relativas (`./static/swagger-ui.css`); entrando en `/api/docs`
+  // sin barra, el navegador las resuelve contra `/api/` y pide
+  // `/api/static/...`, que no existe: la pagina carga sin estilos ni JS.
+  // Con la barra, todo resuelve bien.
   await fastify.register(swaggerUI, {
-    routePrefix: '/api/docs',
+    routePrefix: '/api/docs/',
     uiConfig: { docExpansion: 'list' }
   })
 })

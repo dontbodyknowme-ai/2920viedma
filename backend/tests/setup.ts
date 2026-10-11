@@ -28,7 +28,12 @@ process.env.REFRESH_TOKEN_DAYS ??= '7'
 process.env.CORS_ORIGIN ??= 'http://localhost:5173'
 process.env.RATE_LIMIT_MAX ??= '100'
 process.env.RATE_LIMIT_WINDOW ??= '1 minute'
-process.env.LOGIN_RATE_MAX ??= '5'
+// El limite de login va deliberadamente alto aca. Estos tests miden el mapeo
+// de errores HTTP y con el valor real de 5/min el sexto POST a
+// `/api/auth/login` (todos salen de la misma IP porque es `app.inject`) corta
+// con 429 y el test falla por el motivo equivocado. El throttling se verifica
+// a mano contra el server; lo que importa aca es el status de la respuesta.
+process.env.LOGIN_RATE_MAX ??= '1000'
 process.env.UPLOAD_MAX_BYTES ??= String(5 * 1024 * 1024)
 process.env.STORAGE_ENDPOINT ??= 'http://localhost:9000'
 process.env.STORAGE_REGION ??= 'us-east-1'

@@ -1,4 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from 'react'
+import { api } from '../api/client'
 import { useApi } from './useApi'
 import { csvPedidos, descargarComo } from '../utils/csv_export'
 import { exigirConexion } from '../utils/offline'
@@ -114,15 +115,11 @@ export const usePedidos = (): EstadoPedidos => {
     async (pedido: Order, estado: OrderStatus): Promise<Order> => {
       exigirConexion()
 
-      const res = await fetch(`/api/orders/${encodeURIComponent(pedido.id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: estado })
-      })
+      const actualizado = await api.patch<Order>(
+        `/api/orders/${encodeURIComponent(pedido.id)}`,
+        { status: estado }
+      )
 
-      if (!res.ok) throw new Error(`No se pudo actualizar el pedido (HTTP ${res.status})`)
-
-      const actualizado = (await res.json()) as Order
       // El PATCH devuelve el pedido entero con el timeline actualizado, asi que
       // se puede reemplazar en la lista sin volver a pedir la pagina. El refetch
       // de todas formas, para que el orden por `updatedAt` del servidor no
@@ -143,10 +140,7 @@ export const usePedidos = (): EstadoPedidos => {
     if (filtros.dateFrom !== '') params.set('dateFrom', filtros.dateFrom)
     if (filtros.dateTo !== '') params.set('dateTo', filtros.dateTo)
 
-    const res = await fetch(`/api/orders?${params.toString()}`)
-    if (!res.ok) throw new Error(`No se pudo exportar (HTTP ${res.status})`)
-
-    const cuerpo = (await res.json()) as Paginated<Order>
+    const cuerpo = await api.get<Paginated<Order>>(`/api/orders?${params.toString()}`)
 
     descargarComo('pedidos', csvPedidos(cuerpo.data))
   }, [filtros])

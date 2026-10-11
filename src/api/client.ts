@@ -14,7 +14,26 @@ import type {
   CustomerUpdateInput
 } from './schemas.js'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+/**
+ * URL absoluta de un path de la API.
+ *
+ * Solo para lo que **no** puede pasar por `api`: las subidas multipart y
+ * cualquier lectura que necesite el `Response` crudo. Para GET/POST/PATCH/
+ * DELETE usar `api.*`, que ademas manda el `Authorization`, refresca en 401 y
+ * traduce el error.
+ *
+ * ## Por que existe
+ *
+ * Los hooks del panel (`useApi`, `useCatalogo`, `usePedidos`, `useClientes`)
+ * se escribieron cuando la API era MSW: `fetch('/api/metrics')` funcionaba
+ * porque el service worker interceptaba las relativas. Al eliminar MSW, esas
+ * relativas dejaron de ir al backend y empezaron a pegarle al **frontend**,
+ * que responde `index.html`: el sintoma era
+ * `Unexpected token '<', "<!doctype "... is not valid JSON` en el dashboard.
+ */
+export const apiUrl = (path: string): string => `${API_BASE_URL}${path}`
 
 let accessToken: string | null = null
 
@@ -31,13 +50,19 @@ async function request<T>(
   options: RequestInit = {},
   retry = true
 ): Promise<T> {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options.headers
+  const headers: Record<string, string> = { ...(options.headers as Record<string, string>) }
+
+  // El `Content-Type` va **solo si hay cuerpo**. Declararlo en un POST sin
+  // body hace que Fastify responda `FST_ERR_CTP_EMPTY_JSON_BODY` ("Body cannot
+  // be empty when content-type is set to application/json"), que es como
+  // rompieron `POST /api/auth/logout` y `POST /api/auth/refresh`: el panel
+  // necesito los dos para renovar y cerrar sesion.
+  if (options.body !== undefined && options.body !== null) {
+    headers['Content-Type'] = 'application/json'
   }
 
   if (accessToken) {
-    ;(headers as Record<string, string>)['Authorization'] = `Bearer ${accessToken}`
+    headers['Authorization'] = `Bearer ${accessToken}`
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -57,7 +82,12 @@ async function request<T>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`)
+    throw new ApiError(
+      errorData.message || `Error ${response.status}: ${response.statusText}`,
+      response.status,
+      errorData.code,
+      errorData.details
+    )
   }
 
   if (response.status === 204) {
@@ -100,6 +130,26 @@ function buildQueryString(query?: Record<string, string>): string {
   return qs ? '?' + qs : ''
 }
 
+/**
+ * Error de la API con lo que el backend devolvio.
+ *
+ * Antes era un `Error` con el texto del `message` y nada mas, asi que un 409
+ * con `details.count` (un vino que aparece en pedidos y no se puede borrar)
+ * llegaba al panel sin el numero de pedidos: el mensaje de error era
+ * indistinguible del de cualquier otro fallo.
+ */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+    readonly details?: unknown
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 const apiObj = {
   get<T>(path: string, query?: Record<string, string>): Promise<T> {
     return request(`${path}${buildQueryString(query)}`, { method: 'GET' })
@@ -109,6 +159,15 @@ const apiObj = {
     return request(path, {
       method: 'POST',
       body: JSON.stringify(body)
+    })
+  },
+
+  /** POST con `text/csv`: es lo que espera `POST /api/wines/import`. */
+  postText<T>(path: string, body: string): Promise<T> {
+    return request(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/csv' },
+      body
     })
   },
 

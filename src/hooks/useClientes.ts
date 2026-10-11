@@ -1,4 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from 'react'
+import { api } from '../api/client'
 import { useApi } from './useApi'
 import { csvClientes, descargarComo } from '../utils/csv_export'
 import { exigirConexion } from '../utils/offline'
@@ -110,22 +111,22 @@ export const useClientes = (): EstadoClientes => {
     setCargandoCliente(true)
     setPedidosDelCliente([])
     try {
-      const res = await fetch(`/api/customers/${encodeURIComponent(id)}`)
-      if (!res.ok) throw new Error(`No se pudo cargar el cliente (HTTP ${res.status})`)
-      setClienteAbierto((await res.json()) as Customer)
+      setClienteAbierto(await api.get<Customer>(`/api/customers/${encodeURIComponent(id)}`))
 
       // Los pedidos van aparte: el `Customer` no los trae, y filtrarlos del
       // lado del cliente exigiria tener la lista entera de pedidos en memoria,
       // que es justamente lo que la paginacion evita.
-      const resPedidos = await fetch(
-        `/api/orders?limit=100&search=${encodeURIComponent(id)}`
-      )
-      if (resPedidos.ok) {
-        const cuerpo = (await resPedidos.json()) as Paginated<Order>
+      try {
+        const cuerpo = await api.get<Paginated<Order>>(
+          `/api/orders?limit=100&search=${encodeURIComponent(id)}`
+        )
         // La busqueda por texto devuelve tambien los pedidos de otros clientes
         // que tengan el mismo nombre. Se filtra por `customerId`, que es el
         // unico identificador fiable.
         setPedidosDelCliente(cuerpo.data.filter((pedido) => pedido.customerId === id))
+      } catch {
+        // El cliente ya se abrio; que falten sus pedidos no lo vuelve a cerrar.
+        setPedidosDelCliente([])
       }
     } catch (fallo) {
       throw fallo instanceof Error ? fallo : new Error('No se pudo cargar el cliente')
@@ -144,14 +145,7 @@ export const useClientes = (): EstadoClientes => {
     async (id: string, cuerpo: Record<string, unknown>): Promise<Customer> => {
       exigirConexion()
 
-      const res = await fetch(`/api/customers/${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cuerpo)
-      })
-
-      if (!res.ok) throw new Error(`No se pudo guardar (HTTP ${res.status})`)
-      return (await res.json()) as Customer
+      return api.patch<Customer>(`/api/customers/${encodeURIComponent(id)}`, cuerpo)
     },
     []
   )
@@ -194,10 +188,7 @@ export const useClientes = (): EstadoClientes => {
     if (filtros.search.trim() !== '') params.set('search', filtros.search.trim())
     if (filtros.tags.length > 0) params.set('tags', filtros.tags.join(','))
 
-    const res = await fetch(`/api/customers?${params.toString()}`)
-    if (!res.ok) throw new Error(`No se pudo exportar (HTTP ${res.status})`)
-
-    const cuerpo = (await res.json()) as Paginated<Customer>
+    const cuerpo = await api.get<Paginated<Customer>>(`/api/customers?${params.toString()}`)
 
     descargarComo('clientes', csvClientes(cuerpo.data))
   }, [filtros])

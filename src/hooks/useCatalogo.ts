@@ -1,4 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from 'react'
+import { ApiError, api } from '../api/client'
 import { useApi } from './useApi'
 import { csvCatalogo, descargarComo } from '../utils/csv_export'
 import { exigirConexion } from '../utils/offline'
@@ -142,47 +143,39 @@ export const useCatalogo = (): EstadoCatalogo => {
 
   const crear = useCallback(
     (vino: Omit<AdminWine, 'id'>) =>
-      conError(async () => {
-        const res = await fetch('/api/wines', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(vino)
-        })
-        if (!res.ok) throw new Error(`No se pudo crear el vino (HTTP ${res.status})`)
-        return (await res.json()) as AdminWine
-      }),
+      conError(async () => api.post<AdminWine>('/api/wines', vino)),
     [conError]
   )
 
   const actualizar = useCallback(
     (vino: AdminWine) =>
-      conError(async () => {
-        const res = await fetch(`/api/wines/${encodeURIComponent(vino.id)}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(vino)
-        })
-        if (!res.ok) throw new Error(`No se pudo guardar el vino (HTTP ${res.status})`)
-        return (await res.json()) as AdminWine
-      }),
+      conError(async () =>
+        api.patch<AdminWine>(`/api/wines/${encodeURIComponent(vino.id)}`, vino)
+      ),
     [conError]
   )
 
   const eliminar = useCallback(
     (id: string) =>
       conError(async () => {
-        const res = await fetch(`/api/wines/${encodeURIComponent(id)}`, { method: 'DELETE' })
-        // 409 es el caso de CE-01: el vino tiene pedidos y no se puede borrar.
-        // El codigo viaja al mensaje para que la pagina pueda explicar por que.
-        if (res.status === 409) {
-          const cuerpo = (await res.json()) as { details?: { count?: number } }
-          const cantidad = cuerpo.details?.count ?? 0
-          throw new Error(
-            `No se puede eliminar: el vino aparece en ${cantidad} ${cantidad === 1 ? 'pedido' : 'pedidos'}.`
-          )
-        }
-        if (!res.ok && res.status !== 204) {
-          throw new Error(`No se pudo eliminar el vino (HTTP ${res.status})`)
+        try {
+          await api.delete<void>(`/api/wines/${encodeURIComponent(id)}`)
+        } catch (error: unknown) {
+          // 409 es el caso de CE-01: el vino tiene pedidos y no se puede borrar.
+          // El `details.count` viaja en el error para que la pagina pueda
+          // explicar por que, y no solo "algo fallo".
+          if (error instanceof ApiError && error.status === 409) {
+            const detalles = error.details as { count?: number } | undefined
+            const cantidad = detalles?.count ?? 0
+            // Sin `{ cause: error }`: esa opcion de `Error` es ES2022 y el tsconfig del
+            // frontend apunta a ES2020, asi que no compila. La excepcion queda
+            // explicada en vez de sube target de build por una sola linea.
+            // eslint-disable-next-line preserve-caught-error
+            throw new Error(
+              `No se puede eliminar: el vino aparece en ${cantidad} ${cantidad === 1 ? 'pedido' : 'pedidos'}.`
+            )
+          }
+          throw error
         }
         return undefined
       }),
@@ -216,15 +209,7 @@ export const useCatalogo = (): EstadoCatalogo => {
 
   const importarCsv = useCallback(
     (texto: string) =>
-      conError(async () => {
-        const res = await fetch('/api/wines/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/csv' },
-          body: texto
-        })
-        if (!res.ok) throw new Error(`No se pudo importar el archivo (HTTP ${res.status})`)
-        return (await res.json()) as ImportResult
-      }),
+      conError(async () => api.postText<ImportResult>('/api/wines/import', texto)),
     [conError]
   )
 
@@ -239,10 +224,7 @@ export const useCatalogo = (): EstadoCatalogo => {
     if (filtros.varietal !== '') params.set('varietal', filtros.varietal)
     if (filtros.status !== '') params.set('status', filtros.status)
 
-    const res = await fetch(`/api/wines?${params.toString()}`)
-    if (!res.ok) throw new Error(`No se pudo exportar (HTTP ${res.status})`)
-
-    const cuerpo = (await res.json()) as Paginated<AdminWine>
+    const cuerpo = await api.get<Paginated<AdminWine>>(`/api/wines?${params.toString()}`)
 
     descargarComo('catalogo', csvCatalogo(cuerpo.data))
   }, [filtros])
