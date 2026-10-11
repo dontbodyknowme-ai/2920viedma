@@ -81,11 +81,11 @@ Pedidos el 2026-10-11, después de escribir este plan. **No agregan tareas a 005
 
 | Pedido | Qué obliga a hacer 005 | Dónde |
 |---|---|---|
-| Acceso al panel por código | Nada. El auth actual es el andamiaje sobre el que se construye | — |
-| Cuentas de usuario con Google | **`Order` necesita `userId` nullable** y el listado de pedidos tiene que filtrar por usuario también. Si 005 lo deja solo por `customerId`, 007 es una migración con datos reales | N-02, N-04 — **es la única decisión que esta spec tiene que acertar ahora** |
-| Dominio propio | Nada. HTTPS sale gratis en Railway y Vercel | N-06: se compra al final |
+| Acceso al panel por código **de email** (Resend) | Nada. El auth actual es el andamiaje sobre el que se construye | — |
+| Cuentas de usuario con Google | **`Order` necesita `userId` nullable** y `User` necesita `googleId` nullable. Si 005 los deja afuera, 007 son dos migraciones con datos reales | N-02, N-04, N-07 — **lo único que esta spec tiene que acertar ahora** |
+| Dominio propio | Nada. HTTPS sale gratis en Railway y Vercel | N-06: se compra al final, y es lo que hace que los códigos de email no caigan en spam |
 
-**Lo que NO se hace acá:** access code login, OAuth de Google, ni comprar dominio. Está escrito en la sección 8 de la spec con su secuencia (006, 007, 008) y con la advertencia de seguridad del código compartido.
+**Lo que NO se hace acá:** login por código, OAuth de Google, ni comprar dominio. Está escrito en la sección 8 de la spec con su secuencia (006, 007, 008) y las nueve reglas de seguridad que 006 tiene que cumplir sí o sí.
 
 ## Qué NO se toca
 
