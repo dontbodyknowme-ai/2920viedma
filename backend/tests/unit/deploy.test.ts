@@ -35,6 +35,7 @@ interface RailwayConfig {
 }
 
 const packageJson = leerJson<{ dependencies: Record<string, string>; devDependencies: Record<string, string>; scripts: Record<string, string> }>('backend/package.json')
+const packageLock = leerJson<{ packages: Record<string, { dependencies?: Record<string, string>; devDependencies?: Record<string, string> }> }>('backend/package-lock.json')
 const railway = leerJson<RailwayConfig>('railway.json')
 const dockerfile = leer('backend/Dockerfile')
 const envSchema = leer('backend/src/config/env.ts')
@@ -69,6 +70,34 @@ describe('configuracion de deploy en Railway', () => {
     // `npm run db:deploy` dentro del contenedor es "prisma: not found".
     expect(packageJson.dependencies.prisma).toBeDefined()
     expect(packageJson.devDependencies.prisma).toBeUndefined()
+  })
+
+  it('package.json y package-lock.json coinciden', () => {
+    // Este test SI existed y no lo agarro: `package.json` ya tenia la CLI en
+    // `dependencies`, pero el lockfile la seguia listando en
+    // `devDependencies`. Localmente `npm install` lo acomodaba solo; en CI
+    // corre `npm ci`, que se niega a instalar si no coinciden:
+    //
+    //   npm ci can only install packages when your package.json and
+    //   package-lock.json are in sync
+    //
+    // y el job muere en 36 segundos, antes de compilar nada. Un `npm install`
+    // de rutina en la maquina de uno tapa el problema y lo descubre el CI.
+    const raizLock = packageLock.packages['']
+
+    expect(raizLock.dependencies?.prisma).toBe(packageJson.dependencies.prisma)
+    expect(raizLock.devDependencies?.prisma ?? undefined).toBe(
+      packageJson.devDependencies?.prisma ?? undefined
+    )
+  })
+
+  it('las dependencias del lock son las mismas que las de package.json', () => {
+    const raizLock = packageLock.packages['']
+    const iguales =
+      JSON.stringify(Object.keys(raizLock.dependencies ?? {}).sort()) ===
+      JSON.stringify(Object.keys(packageJson.dependencies).sort())
+
+    expect(iguales).toBe(true)
   })
 
   it('el Dockerfile no corre migraciones por su cuenta', () => {
