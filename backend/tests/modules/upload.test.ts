@@ -57,6 +57,7 @@ const adminPrisma = {
   refreshToken: { deleteMany: vi.fn() },
   $queryRaw: vi.fn(),
   $connect: vi.fn(),
+  $on: vi.fn(),
   $disconnect: vi.fn()
 }
 

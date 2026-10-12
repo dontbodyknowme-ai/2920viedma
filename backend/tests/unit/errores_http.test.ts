@@ -30,6 +30,11 @@ vi.mock('@prisma/client', () => ({
     refreshToken: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
     $queryRaw: vi.fn().mockResolvedValue([{ ok: 1 }]),
     $connect: vi.fn(),
+    // `app.ts` registra listeners de eventos de Prisma para volcar sus errores
+    // al logger del proyecto. Sin esto el mock era mas pobre que la clase real
+    // y revolearon 20 tests sin avisar: el mock se desincronizo del codigo y
+    // nada lo detecto hasta que el codigo empezo a usar una API nueva.
+    $on: vi.fn(),
     $disconnect: vi.fn()
   }))
 }))

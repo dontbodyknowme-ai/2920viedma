@@ -25,7 +25,8 @@ const db = vi.hoisted(() => ({
     findUnique: vi.fn(),
     delete: vi.fn(),
     deleteMany: vi.fn()
-  }
+  },
+  $on: vi.fn()
 }))
 
 vi.mock('@prisma/client', () => ({

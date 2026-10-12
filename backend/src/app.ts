@@ -67,7 +67,28 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     ajv: { customOptions: { strict: false } }
   })
 
-  fastify.decorate('prisma', new PrismaClient())
+  // Prisma Client **no loguea nada por defecto**. Sin esto, un fallo de
+  // conexion a la base era literalmente invisible: en produccion el unico
+  // sintoma era `/health` respondiendo `"db":"disconnected"` y un 503, sin
+  // una sola linea que dijera por que.
+  //
+  // Los eventos van al logger del proyecto, por el mismo motivo que
+  // `logger: false` mas arriba: una sola fuente de logs, no dos en formatos
+  // distintos. Los listeners se registran aca y no despues, porque Prisma
+  // lanza si un evento se emite antes de que exista alguien escuchando.
+  const prisma = new PrismaClient({
+    log: [{ emit: 'event', level: 'error' }, { emit: 'event', level: 'warn' }]
+  })
+
+  prisma.$on('error', (evento) => {
+    logger.error({ target: evento.target, message: evento.message }, 'prisma')
+  })
+
+  prisma.$on('warn', (evento) => {
+    logger.warn({ target: evento.target, message: evento.message }, 'prisma')
+  })
+
+  fastify.decorate('prisma', prisma)
 
   // Fastify se niega a parsear un `application/json` vacio y responde
   // `FST_ERR_CTP_EMPTY_JSON_BODY`. Para `/api/auth/logout` y
