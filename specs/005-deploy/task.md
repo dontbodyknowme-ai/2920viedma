@@ -7,69 +7,84 @@
 
 ## T1 — Imágenes con URL estable
 
-**Cubre:** RF-09, RF-10, RF-11, RF-12 · **CE-03**
+**Cubre:** RF-09, RF-10, RF-11, RF-12 · **CE-03** — **✅ 2026-10-11**
 
-- [ ] `admin_wine_form.tsx` guarda la URL pública del bucket, no la firmada
-- [ ] La URL devuelta por `POST /api/upload` es estable (sin `X-Amz-Signature`)
-- [ ] Un vino con `imageUrl` viejo (URL firmada) no rompe la vista
-- [ ] `DELETE /api/upload/:id` sigue borrando el objeto
+- [x] La URL que devuelve `POST /api/upload` es estable, sin firma
+- [x] `admin_wine_form.tsx` guarda esa URL (no hizo falta tocarlo: ya guardaba lo que devuelve la API)
+- [x] El backend **rechaza arrancar** sin `STORAGE_PUBLIC_URL` (verificado con Zod: `"Required"`)
+- [x] `DELETE /api/upload/:id` sigue borrando el objeto
+- [x] 5 tests nuevos en `backend/tests/modules/upload.test.ts`
 
-**Puerta:** subir una imagen, esperar, recargar y comprobar que sigue viéndose. Si se cadetó, la tarea no está terminada.
+**Verificación:** 70 tests backend en verde + arranque real del backend con y sin la variable.
+**Pendiente de T5:** que el bucket exista y sea legible en esa URL pública (hoy apunta a MinIO local).
 
 ---
 
 ## T2 — Rewrite de SPA para Vercel
 
-**Cubre:** RF-15, CE-05
+**Cubre:** RF-15, CE-05 — **✅ 2026-10-11**
 
-- [ ] Existe `vercel.json` en la raíz
-- [ ] `/admin`, `/admin/catalogo`, `/admin/pedidos`, `/admin/clientes`, `/admin/configuracion` devuelven `index.html`
-- [ ] `/assets/*.js` y `/assets/*.css` se sirven tal cual (el rewrite no se los come)
-- [ ] No hay rewrite para `/api/*` (ese prefijo no existe en el frontend)
+- [x] Existe `vercel.json` en la raíz
+- [x] Las 5 rutas de `/admin` devuelven `index.html`
+- [x] Los assets se sirven como archivo, no como HTML
+- [x] `scripts/verificar-rewrite-spa.mjs` replica el orden de ruteo de Vercel (filesystem antes que rewrite)
 
-**Puerta:** `npm run build`, servir `dist/` con cualquier servidor estático y pedir `/admin/catalogo`. Debe devolver el HTML, no un 404.
+**Verificación:** `npm run build && npm run verificar:spa` → TODO OK sobre el `dist/` real.
+**Pendiente de T7:** Vercel real puede tener un orden de ruteo levemente distinto; T7 lo confirma en producción.
 
 ---
 
 ## T3 — Variables de entorno y guía de deploy
 
-**Cubre:** RF-17, RF-18, RNF-02
+**Cubre:** RF-17, RF-18, RNF-02 — **✅ 2026-10-11**
 
-- [ ] `.env.example` del backend documenta **todas** las variables, con comentario de una línea
-- [ ] Las marcadas como secretas están claras
-- [ ] Existe `docs/DEPLOY.md` con el paso a paso: R2 → Railway → Vercel
-- [ ] `git grep` no encuentra secretos
-- [ ] `.env` sigue en `.gitignore`
+- [x] `.env.example` documenta las 19 variables, con comentario de una línea
+- [x] Las 4 secretas están marcadas en una tabla (`DATABASE_URL`, `JWT_SECRET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`)
+- [x] Existe `docs/DEPLOY.md` con el paso a paso R2 → Railway → Vercel
+- [x] Incluye tabla de troubleshooting y sección de desarrollo local
+- [x] Sin secretos en el repo (`git ls-files` limpio, `.env` ignorado)
 
-**Puerta:** seguir `docs/DEPLOY.md` de principio a fin en una máquina limpia. Si hay un paso que exige saber algo no escrito, falta documentación.
+**Verificación:** las 19 variables de `env.ts` aparecen en la guía (chequeado por script), ambos JSON parsean, `.gitignore` sigue cubriendo `.env`.
 
 ---
 
 ## T4 — Script de deploy del backend
 
-**Cubre:** RF-02, RF-03, RF-04, CE-01, CE-02, CE-08
+**Cubre:** RF-02, RF-03, RF-04, CE-01, CE-02, CE-08 — **✅ 2026-10-11**
 
-- [ ] El healthcheck de Railway apunta a `/health`
-- [ ] Las migraciones se aplican con `npm run db:deploy`
-- [ ] El script no corre `migrate dev`
-- [ ] El puerto se lee del entorno, no está fijo
-- [ ] El orden es: migraciones → arranque → healthcheck
+- [x] `railway.json` con healthcheck en `/health` (no `/api/health`)
+- [x] `predeployCommand: npm run db:deploy` — `prisma migrate deploy`, nunca `dev`
+- [x] `startCommand: npm run start`
+- [x] El puerto se lee del entorno (Railway inyecta `PORT`, no está fijo en el código)
+- [x] Orden: predeploy (migraciones) → build → start
+- [x] 11 tests en `backend/tests/unit/deploy.test.ts` que verifican la coherencia de todo esto
 
-**Puerta:** el comando aparece en `docs/DEPLOY.md` y funciona contra una base de pruebas.
+**Bug encontrado al hacer T4:** la CLI `prisma` estaba en `devDependencies`, pero la etapa runner instala con `--omit=dev`. O sea que `npm run db:deploy` dentro del contenedor era `prisma: not found` y **el predeploy habría fallado en cada deploy**. Movida a `dependencies`.
+
+**Verificación:** 81 tests backend en verde. Los tests de deploy se probaron **en contra**: saboteando el healthcheck y revirtiendo `prisma` a devDependencies, los tests correspondientes fallan.
 
 ---
 
 ## T5 — Cloudflare R2
 
-**Cubre:** RF-09, RF-11 · **CE-04, CE-10**
+**Cubre:** RF-09, RF-11 · **CE-04, CE-10** — **✅ 2026-10-11**
 
-- [ ] Bucket `wine-images` creado
-- [ ] CORS del bucket permite `GET` desde el dominio de producción
-- [ ] URL pública del bucket anotada (para `STORAGE_ENDPOINT`)
-- [ ] Access key y secret key generados y guardados en el panel de Railway
-- [ ] Probado: subir un archivo desde el panel y abrirlo en el navegador
+- [x] Bucket `wine-images` creado (ubicación ENAM)
+- [x] Lectura pública habilitada (`r2.dev`)
+- [x] CORS del bucket configurado para el frontend
+- [x] Credenciales `Object Read & Write` generadas y cargadas en `.env`
+- [x] `npm run verificar:storage` → **TODO OK**
 
-**Puera:** una imagen subida se ve en una pestaña nueva del navegador, fuera de la app.
+**Verificación:** el script sube una imagen real, la abre por la URL pública comprobando el CORS, y la borra.
+
+**Dos cosas que trabaron el camino y quedaron documentadas:**
+
+1. **Token con `Object Read` en vez de `Object Read & Write`.** R2 devuelve el mismo `Access Denied` para "te falta permiso" y para "la firma está mal", y son arreglos distintos. El script ahora distingue los dos: si puede leer pero no escribir, dice que el permiso es de solo lectura.
+2. **El script probaba el CORS contra un origen inventado** (`https://ejemplo.vercel.app`), que no está en la política del bucket. El CORS denegaba bien y el script lo leía como "no configurado": un falso negativo que hizo revisar algo que estaba bien. Ahora usa `FRONTEND_ORIGIN` de `.env`.
+
+> ⚠️ **Pendiente fuera del repo:** la primera clave que se generó quedó expuesta en una captura de pantalla. Hay que borrarla desde *Manage R2 API Tokens* y dejar solo la que está en `.env`.
+
+**Puerta:** una imagen subida se ve en una pestaña nueva del navegador, fuera de la app.
 
 ---
 

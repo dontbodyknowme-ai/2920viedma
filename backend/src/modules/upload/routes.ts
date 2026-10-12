@@ -1,8 +1,7 @@
 import { FastifyInstance, FastifyRequest } from 'fastify'
 import { requireRole } from '../auth/middleware.js'
 import { randomUUID } from 'node:crypto'
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import sharp from 'sharp'
 import { env } from '../../config/env.js'
 import { PayloadTooLargeError, UnsupportedMediaTypeError } from '../../utils/errors.js'
@@ -16,6 +15,25 @@ const s3 = new S3Client({
     secretAccessKey: env.STORAGE_SECRET_KEY
   }
 })
+
+/**
+ * URL publica y estable de un objeto del bucket.
+ *
+ * No se firma, a proposito. Antes se devolvia una URL firmada con
+ * `expiresIn: 3600` y `admin_wine_form.tsx` la guardaba como `imageUrl` del
+ * vino: la imagen se veía una hora y despues quedaba rota **para siempre** en
+ * la base, porque la URL ya estaba vencida.
+ *
+ * Con la URL publica, el vino guarda una direccion que no vence. El precio es
+ * que las fotos quedan accesibles para quien tenga el link, que para un
+ * catalogo de productos es lo esperable.
+ *
+ * `STORAGE_PUBLIC_URL` se separa de `STORAGE_ENDPOINT` a proposito: el
+ * endpoint de la API S3 (`https://<cuenta>.r2.cloudflarestorage.com`) no se
+ * puede abrir en un `<img>`.
+ */
+export const publicUrl = (key: string): string =>
+  `${env.STORAGE_PUBLIC_URL.replace(/\/+$/, '')}/${key}`
 
 const ALLOWED = /^image\/(png|jpeg|webp|gif|avif)$/
 
@@ -67,12 +85,7 @@ export const uploadRoutes = async (fastify: FastifyInstance): Promise<void> => {
         ContentType: 'image/webp'
       }))
 
-      const signedUrl = await getSignedUrl(s3, new GetObjectCommand({
-        Bucket: env.STORAGE_BUCKET,
-        Key: key
-      }), { expiresIn: 3600 })
-
-      return reply.status(201).send({ id, url: signedUrl })
+      return reply.status(201).send({ id, url: publicUrl(key) })
     }
   )
 

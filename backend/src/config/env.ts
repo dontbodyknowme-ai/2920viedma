@@ -19,6 +19,13 @@ const envSchema = z.object({
   STORAGE_BUCKET: z.string().default('wine-images'),
   STORAGE_ACCESS_KEY: z.string().min(1),
   STORAGE_SECRET_KEY: z.string().min(1),
+  // URL **pública** del bucket, distinta de `STORAGE_ENDPOINT` (que es el
+  // endpoint de la API S3 y no se puede abrir en un navegador).
+  // Cloudflare R2: https://pub-<cuenta>.r2.dev  (o un dominio propio)
+  // La devuelve `POST /api/upload` y es la que queda guardada en el vino.
+  // No se firma: una URL firmada caduca en una hora y el vino la tiene guardada
+  // para siempre, o sea que la imagen se rompia al dia siguiente.
+  STORAGE_PUBLIC_URL: z.string().url(),
   PUBLIC_API_URL: z.string().url()
 })
 
