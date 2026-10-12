@@ -180,3 +180,26 @@
     importar el módulo y el backend no levanta. La guarda es **disponibilidad**, no solo `NODE_ENV` — si
     `NODE_ENV` queda en `development` (que es lo que dice `.env.example`) la app tampoco arranca.
     Por eso `logger.ts` hace `require.resolve('pino-pretty')` antes de usarlo.
+19. **`railway.json` NO puede declarar el contexto de build** (2026-10-12). El schema oficial solo tiene
+    `build.dockerfilePath`; el contexto es siempre el **Root Directory**, que es un ajuste **del panel**.
+    Nuestro `backend/Dockerfile` hace `COPY prisma ./prisma/`, así que el Root Directory tiene que ser
+    `backend`. Si queda en `/`, el build falla con `"/prisma": not found` — y falla **tarde**: `package.json`,
+    `tsconfig.json` y `src/` existen en la raíz (son los del frontend), así que se copian sin quejarse y la
+    imagen queda mezclando backend con frontend. **Se resetea solo** al renombrar el servicio o recargar el repo.
+    *Pendiente:* mover el `Dockerfile` a la raíz copiando desde `backend/`, para que el contexto sea la raíz por
+    definición y no haya nada que configurar en el panel.
+20. **Un build fallido deja sirviendo el deploy anterior, con.exito** (2026-10-12). Railway no levanta la imagen
+    nueva y conserva la vieja: `/health` da 200, la API responde y la tarjeta dice "Deployment successful"
+    —refiriéndose al deploy viejo. El único síntoma es que **los cambios del repo "no aplican"**.
+    Por eso "el healthcheck da 200" **no** significa "el deploy se aplicó".
+21. **El botón `Redeploy` de Railway re-ejecuta el mismo commit**, no vuelve a resolver la cabeza de la rama.
+    Repeatinlo da el mismo `snapshot sha256` y el mismo `image digest`: es literalmente el mismo build.
+    Para traer un commit nuevo hay que disparar el deploy desde el evento del push.
+22. **Prisma Client no loguea nada por defecto** (2026-10-12). `new PrismaClient()` sin `log` no emite ni los
+    errores de conexión. Hay que registrar los eventos con `log: [{ emit: 'event', level: 'error' }]` **y**
+    `$on(...)`Listeners antes de la primera query, porque Prisma lanza si un evento se emite sin listener.
+    Los listeners van al `logger` del proyecto, no a stdout, por el mismo motivo que `logger: false` en Fastify.
+    Cuidado: los mocks de `@prisma/client` en los tests tienen que exponer `$on` o revientan.
+23. **Renombrar un servicio en Railway libera su dominio autogenerado** (2026-10-12). El dominio viejo pasa a
+    404 y `PUBLIC_API_URL` queda apuntando a la nada. Si ya hay dominio cargado, renombrar es caro.
+

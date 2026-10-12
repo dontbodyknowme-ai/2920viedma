@@ -223,3 +223,17 @@ backend/
 - *2026-10-05:* Creado el archivo AGENTS.md en espanol con la especificacion completa del proyecto y los comandos `pnpm`.
 - *2026-10-05:* Configurado MEMORY.md sincronizado con el stack tecnico (Vite + React + TS, Tailwind CSS, Framer Motion y Zustand/Context).
 - *2026-10-05:* Creado y ubicado el documento de gobernanza en `docs/constitution.md`.
+- *2026-10-12:* **Primer despliegue real a produccion (spec 005, T6).** Railway + Postgres + Cloudflare R2. **Se dejo a medias: el backend responde pero con el dominio viejo y falta el seed.**
+  - **Cuatro bugs reales encontrados en el camino, ninguno en el codigo de negocio:**
+    1. `package-lock.json` desincronizado del `package.json` (la CLI de prisma se habia movido a `dependencies`) rompia `npm ci` del job de backend. El CI moria en 36 s, antes de compilar. Localmente no se notaba porque un `npm install` de rutina acomoda el lock solo.
+    2. `/health` contestaba `"db":"disconnected"` sin decir por que: `catch {}` en la ruta y `new PrismaClient()` **sin `log`**, que es el default de Prisma. Dos capas de silencio.
+    3. `npm run seed` no podia correr en el contenedor: `tsx` en `devDependencies` (la imagen final instala con `--omit=dev`) **e** import de `../src/config/env.js`, que el contenedor no tiene porque solo lleva `dist/`. El import ademas estaba sin usar, y sobrevivio porque `scripts/` no esta en el `include` del tsconfig.
+    4. **El mas caro:** agregar `tsconfig.scripts.json` rompia el build sin que se notara, porque el Dockerfile hacia `COPY tsconfig.json ./` (un archivo) y no lo copiaba. **Un build fallido deja sirviendo el deploy anterior con exito**: `/health` daba 200, la API respondia, y lo unico raro era que los cambios del repo "no aplican".
+  - **Test que faltaba y se agrego:** el de deploy recorre `db:deploy`, `start` y `seed`, resuelve los `npm run` anidados y falla si alguno arranca con una herramienta de `devDependencies`. Cubre la clase de bug, no el caso. Tambien uno que compara los `tsconfig*.json` **que existen en disco** contra los patrones `COPY` del Dockerfile, en vez de una lista escrita a mano.
+  - **93 -> 94 tests backend**, `tsc`/`lint`/`build` en verde.
+  - **Pendiente para retomar:**
+    - `Settings -> Source -> Root Directory` tiene que ser `backend`. **El schema de `railway.json` no permite declarar el contexto de build** (solo `dockerfilePath`), asi que esto vive solo en el panel y se resetea al renombrar el servicio o recargar el repo.
+    - **Fix estructural propuesto:** mover el `Dockerfile` a la raiz del repo copiando desde `backend/`. Con el Dockerfile en la raiz el contexto es la raiz por definicion y desaparece el unico ajuste que puede resetearse a escondidas.
+    - `PUBLIC_API_URL` apunta a un dominio que dio 404 al renombrar el servicio. Renombrar un servicio **libera su dominio autogenerado**.
+    - Falta correr el seed (`railway ssh -s Vinoteca-1` y `npm run seed`).
+    - T7 (Vercel) y T8 (verificacion integral) sin empezar.
