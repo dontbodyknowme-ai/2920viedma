@@ -88,8 +88,26 @@ con permiso de lectura/escritura solo sobre `wine-images`.
 
 1. **New Project → Deploy from GitHub repo** → elegí `Vinoteca-1`
 2. Railway detecta el `railway.json` y usa `backend/Dockerfile`
-3. **Add New → Database → PostgreSQL**
-4. Railway crea la variable `DATABASE_URL` solo. **No la toques a mano.**
+3. **Settings → Source → Root Directory = `backend`** ← **importante**
+4. **Add New → Database → PostgreSQL**
+5. Railway crea la variable `DATABASE_URL` solo. **No la toques a mano.**
+
+> ### ⚠️ Root Directory tiene que ser `backend`
+>
+> El `Dockerfile` hace `COPY prisma ./prisma/` y espera encontrarlo en el
+> **contexto de build**. Con el contexto en la raíz del repo, eso falla con:
+>
+> ```
+> failed to compute cache key: ... "/prisma": not found
+> ```
+>
+> Y falla **tarde y con una confusión**: `package.json`, `tsconfig.json` y
+> `src/` existen en la raíz (son los del frontend), así que el build los copia
+> sin quejarse y recién se rompe cuando llega a `prisma`, que solo está en
+> `backend/`. La imagen queda mezclando el backend con el frontend.
+>
+> Con `Root Directory = backend`, el contexto es `backend/`, que es
+> exactamente lo que hace `docker build ./backend` en local.
 
 ### 2.2 Cargar las variables
 
@@ -277,6 +295,7 @@ npm run dev                 # http://localhost:5173
 |---|---|---|
 | El deploy falla en el predeploy | `prisma: not found` | `prisma` tiene que estar en `dependencies`, no en `devDependencies` |
 | El deploy se queda colgado | Corriste `prisma migrate dev` | Usar `npm run db:deploy` |
+| El deploy falla y dice `/prisma: not found` | **Root Directory no es `backend`** | Settings → Source → Root Directory |
 | El deploy falla aunque la app ande | Healthcheck en `/api/health` | Va en `/health` |
 | El backend no arranca, dice qué falta | Falta una variable | Completar las de la tabla de arriba |
 | El contenedor no levanta en Railway | `NODE_ENV` sin poner | `NODE_ENV=production` |
