@@ -39,7 +39,15 @@ RUN npm ci
 COPY prisma ./prisma/
 RUN npx prisma generate
 
-COPY tsconfig.json ./
+# `tsconfig*.json` y no `tsconfig.json`: el build corre dos compilaciones,
+# `tsconfig.json` para `src/` y `tsconfig.scripts.json` para el seed. Copiar
+# solo el primero dejaba al segundo fuera de la imagen y `npm run build`
+# moria con "File 'tsconfig.scripts.json' not found".
+#
+# El fallo es invisible desde afuera: el build falla, Railway NO levanta la
+# imagen nueva y sigue sirviendo el deploy anterior con exito. Todo parece
+# andando y lo unico que se ve es que un cambio del repo "no aplica".
+COPY tsconfig*.json ./
 COPY src ./src/
 
 # Build

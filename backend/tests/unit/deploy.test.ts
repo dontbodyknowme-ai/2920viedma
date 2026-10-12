@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
@@ -177,6 +177,57 @@ describe('comandos que se ejecutan dentro del contenedor', () => {
 
     expect(tsconfigScripts.include).toContain('scripts/seed.ts')
     expect(tsconfigScripts.compilerOptions.outDir).toBe('./dist/scripts')
+  })
+})
+
+describe('lo que el Dockerfile copia', () => {
+  /** `tsconfig*.json` -> regex que matchea `tsconfig.scripts.json`. */
+  const coincideConGlob = (patron: string, archivo: string): boolean => {
+    const rx = new RegExp(
+      `^${patron.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`
+    )
+    return rx.test(archivo)
+  }
+
+  const fuentes = [...dockerfile.matchAll(/^COPY\s+(\S+)/gm)].map((m) => m[1] ?? '')
+
+  it('copia todos los tsconfig del proyecto, no solo tsconfig.json', () => {
+    // `COPY tsconfig.json ./` se lleva un archivo y deja afuera al resto. Con
+    // `COPY tsconfig*.json ./` el patron cubre los que se agreguen despues.
+    //
+    // El sintoma de este bug fue el mas confuso del deploy: el build falla,
+    // Railway no levanta la imagen nueva y sigue sirviendo la anterior "con
+    // exito". Todo parece andar bien y lo unico raro es que un cambio del
+    // repo no aplica. Por eso el test compara contra los archivos que existen,
+    // y no contra una lista escrita a mano que se actualiza sola.
+    const configs = readdirSync(join(RAIZ, 'backend')).filter((n) => /^tsconfig.*\.json$/.test(n))
+
+    expect(configs.length).toBeGreaterThan(1)
+
+    const sinCopiar = configs.filter(
+      (config) => !fuentes.some((patron) => coincideConGlob(patron, config))
+    )
+
+    expect(sinCopiar).toEqual([])
+  })
+
+  it('cada tsconfig que invoca el build existe en el repo', () => {
+    const referenciados = [...packageJson.scripts.build.matchAll(/-p\s+(\S+)/g)].map((m) => m[1] ?? '')
+
+    expect(referenciados.length).toBeGreaterThan(1)
+
+    for (const config of referenciados) {
+      expect(existsSync(join(RAIZ, 'backend', config))).toBe(true)
+    }
+  })
+
+  it('el build produce el seed compilado que el contenedor va a correr', () => {
+    // `npm run seed` apunta a `dist/scripts/seed.js`. Si el build dejara de
+    // generarlo, el contenedor arrancaria bien y solo fallaria el seed: el
+    // unico sintoma seria "tsx: not found" o "Cannot find module", sin nada
+    // raro en el arranque.
+    expect(packageJson.scripts.build).toContain('tsconfig.scripts.json')
+    expect(packageJson.scripts.seed).toBe('node dist/scripts/seed.js')
   })
 })
 
