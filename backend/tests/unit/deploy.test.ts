@@ -115,6 +115,71 @@ describe('configuracion de deploy en Railway', () => {
   })
 })
 
+describe('comandos que se ejecutan dentro del contenedor', () => {
+  // La etapa runner instala con `npm ci --omit=dev`. Cualquier comando que
+  // corra ahi tiene que arrancar con `node` o con una CLI de `dependencies`.
+  // Estas son las ordenes que Railway ejecuta dentro de la imagen:
+  //   predeploy  -> db:deploy
+  //   arranque   -> start
+  //   una vez    -> seed  (Settings -> Custom Command)
+  const ORDENES = ['db:deploy', 'start', 'seed']
+
+  /** Devuelve el binario con el que arranca un script, resolviendo `npm run`. */
+  const binario = (comando: string, profundidad = 0): string => {
+    if (profundidad > 5) return comando
+
+    const partes = comando.trim().split(/\s+/)
+
+    if (partes[0] === 'npm' && partes[1] === 'run' && partes[2]) {
+      return binario(packageJson.scripts[partes[2]] ?? '', profundidad + 1)
+    }
+
+    return partes[0] === 'node' ? 'node' : partes[0]
+  }
+
+  it('ninguno arranca con una herramienta de devDependencies', () => {
+    // Este bug ya costo dos deploys. Con la CLI de prisma en devDependencies,
+    // el predeploy era "prisma: not found". Con `tsx` en devDependencies, el
+    // seed era "tsx: not found": el comando manual que se usa una sola vez
+    // para crear los usuarios admin es justamente el que nadie prueba, y por
+    // eso es el que se descubre tarde.
+    const desarrollo = Object.keys(packageJson.devDependencies)
+
+    const culpables = ORDENES
+      .map((nombre) => ({ nombre, binario: binario(packageJson.scripts[nombre]) }))
+      .filter(({ binario: b }) => desarrollo.includes(b))
+
+    expect(culpables).toEqual([])
+  })
+
+  it('el seed se compila, no se interpreta con tsx', () => {
+    // Compilado a `dist/scripts/seed.js`, el Dockerfile lo copia sin tocar
+    // nada mas: `COPY --from=builder /app/dist ./dist`.
+    expect(packageJson.scripts.seed).toBe('node dist/scripts/seed.js')
+    expect(packageJson.scripts.build).toContain('tsconfig.scripts.json')
+  })
+
+  it('el seed compilado no importa codigo que solo exista en el repo', () => {
+    // El contenedor tiene `dist/`, no `src/`. Un import de `../src/...` en el
+    // seed compila bien en local (tsx resuelve el fuente) y revienta en el
+    // contenedor con "Cannot find module". Por eso el import de `env` en
+    // seed.ts, que ademas estaba sin usar, rompia el seed en produccion.
+    const fuente = leer('backend/scripts/seed.ts')
+
+    expect(fuente).not.toMatch(/from '\.\.\/src\//)
+  })
+
+  it('tsconfig.scripts.json existe y compila solo scripts', () => {
+    const tsconfigScripts = leerJson<{
+      include: string[]
+      compilerOptions: { rootDir: string; outDir: string }
+    }>('backend/tsconfig.scripts.json')
+
+    expect(tsconfigScripts.include).toContain('scripts/seed.ts')
+    expect(tsconfigScripts.compilerOptions.outDir).toBe('./dist/scripts')
+  })
+})
+
 describe('variables de entorno', () => {
   const exigidas = [...envSchema.matchAll(/^\s{2}([A-Z_]+):\s*z\./gm)].map((m) => m[1])
 
