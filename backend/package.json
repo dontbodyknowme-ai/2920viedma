@@ -19,6 +19,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "seed": "tsx scripts/seed.ts",
+    "verificar:storage": "node scripts/verificar-storage.mjs",
     "migrate:data": "tsx scripts/migrate-from-localstorage.ts"
   },
   "dependencies": {
@@ -41,6 +42,7 @@
     "jsonwebtoken": "^9.0.2",
     "papaparse": "^5.4.1",
     "pino": "^8.17.0",
+    "prisma": "^5.8.0",
     "sharp": "^0.33.2",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.25.2"
@@ -54,7 +56,6 @@
     "@types/supertest": "^6.0.2",
     "eslint": "^8.56.0",
     "pino-pretty": "^10.3.0",
-    "prisma": "^5.8.0",
     "supertest": "^6.3.3",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
