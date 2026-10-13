@@ -40,6 +40,10 @@ process.env.STORAGE_REGION ??= 'us-east-1'
 process.env.STORAGE_BUCKET ??= 'wine-images'
 process.env.STORAGE_ACCESS_KEY ??= 'test-access-key'
 process.env.STORAGE_SECRET_KEY ??= 'test-secret-key'
+// Obligatoria desde 005/T1. Faltaba aqui y el CI no la define: en local la
+// enmascaraba el `.env` local, y en GitHub (sin `.env`, que esta gitignored)
+// todos los tests del backend morian al importar `env.ts`.
+process.env.STORAGE_PUBLIC_URL ??= 'http://localhost:9000/wine-images'
 process.env.PUBLIC_API_URL ??= 'http://localhost:3000'
 
 const hasTestDb = !!process.env.DATABASE_URL_TEST

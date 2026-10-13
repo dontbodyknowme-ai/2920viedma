@@ -1,7 +1,53 @@
 import 'dotenv/config'
 import { z } from 'zod'
 
-const envSchema = z.object({
+/**
+ * Origenes CORS: una lista de URLs http(s), separadas por coma.
+ *
+ * Antes era `z.string()` pelado, que es donde nacio un 500 en produccion.
+ *
+ * `@fastify/cors` **rechaza en el hook** cualquier `origin` que no sea `*`, una
+ * string no vacia, una funcion o un array. Con la variable definida pero
+ * vacia (lo que pasa si se carga en un panel y se deja el campo en blanco),
+ * `z.string()` la daba por buena y el backend arrancaba perfecto:
+ *
+ *   Error: Invalid CORS origin option
+ *     at resolveOriginOption (@fastify/cors/index.js:159)
+ *
+ * Es decir: la app levanta, el healthcheck da 200, y **cada request** devuelve
+ * 500. El sintoma dice "error interno del servidor" y la causa es una variable
+ * de entorno mal cargada.
+ *
+ * Ademas `origin` acepta un array, asi que varios dominios (preview deploys,
+ * el `.vercel.app` de produccion y el de staging) se separan por coma en la
+ * misma variable, sin agregar otra.
+ */
+const origenesCors = z
+  .string({ required_error: 'falta. En produccion el frontend no puede llamar a la API' })
+  .transform((valor) =>
+    valor
+      .split(',')
+      .map((origen) => origen.trim())
+      .filter(Boolean)
+  )
+  .refine((origenes) => origenes.length > 0, {
+    message:
+      'esta vacia. En produccion el frontend queda bloqueado por CORS. Mientras no exista el deploy de Vercel, ponela en http://localhost:5173'
+  })
+  .refine(
+    (origenes) =>
+      origenes.every((origen) => {
+        try {
+          const url = new URL(origen)
+          return url.protocol === 'http:' || url.protocol === 'https:'
+        } catch {
+          return false
+        }
+      }),
+    { message: 'cada origen tiene que ser una URL http(s) completa, separados por coma' }
+  )
+
+const esquema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   HOST: z.string().default('0.0.0.0'),
@@ -9,7 +55,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(7),
-  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  CORS_ORIGIN: origenesCors.default('http://localhost:5173'),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_WINDOW: z.string().default('1 minute'),
   LOGIN_RATE_MAX: z.coerce.number().int().positive().default(5),
@@ -29,4 +75,51 @@ const envSchema = z.object({
   PUBLIC_API_URL: z.string().url()
 })
 
-export const env = envSchema.parse(process.env)
+/**
+ * En produccion `CORS_ORIGIN` es obligatoria.
+ *
+ * Sin esto, un deploy que se olvide de la variable no falla: cae al default
+ * `http://localhost:5173` y la API responde contenta, mientras el frontend en
+ * `*.vercel.app` la rechaza por CORS. El unico sintoma es un error en el
+ * navegador, sin nada raro en el log del servidor.
+ */
+const validado = esquema.superRefine((valores, ctx) => {
+  if (valores.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['CORS_ORIGIN'],
+      message:
+        'falta. En produccion no hay default: el frontend real la necesita y sin esto cada request falla por CORS'
+    })
+  }
+})
+
+const resultado = validado.safeParse(process.env)
+
+if (!resultado.success) {
+  // Un `ZodError` crudo es inservible: son 40 lineas de JSON con dos mitades
+  // que se pisan, `"message"` repetido y corchetes sin cerrar, y con
+  // `pino-pretty` el logger lo embarra todavia mas. Ademas no dice que hacer.
+  const problemas = resultado.error.issues.map((issue) => {
+    const donde = issue.path.length ? issue.path.join('.') : '(raiz)'
+    return `  - ${donde}: ${issue.message}`
+  })
+
+  process.stderr.write(
+    [
+      '',
+      'Faltan variables de entorno o tienen un valor invalido:',
+      '',
+      ...problemas,
+      '',
+      'Ver backend/.env.example para la lista completa con su documentacion.',
+      '',
+      `  ${problemas.length} problema(s). Nada arranco.`,
+      ''
+    ].join('\n')
+  )
+
+  process.exit(1)
+}
+
+export const env = resultado.data
