@@ -127,3 +127,57 @@ if (!resultado.success) {
 }
 
 export const env = resultado.data
+
+/**
+ * Aviso por `NODE_ENV` mal puesto.
+ *
+ * `NODE_ENV` decide el comportamiento de varias cosas **sin fallar** cuando no
+ * es el esperado:
+ *
+ *   - la cookie de refresh sale `SameSite=Lax` sin `Secure`, y la sesion muere
+ *     en cada recarga de pagina
+ *   - `CORS_ORIGIN` deja de ser obligatoria y cae al default de localhost
+ *   - `CORS_ORIGIN` vacia no rompe el arranque (la schema la rechaza, pero solo
+ *     si la variable existe)
+ *
+ * Los tres son fallos silenciosos: la app levanta, el healthcheck da 200 y el
+ * unico sintoma esta del lado del navegador. Paso de verdad: `NODE_ENV` sin
+ * poner en Render dejo la sesion del panel rota y no habia forma de saberlo
+ * desde los logs del servidor.
+ *
+ * `PUBLIC_API_URL` con `https://` es la senal de que esto **no** es desarrollo
+ * local: siTL;DR: pasame lo que sigue del proyecto y seguimos<tool_call>
+<invoke name="edit"><path>C:\Vinoteca\Vinoteca-1\backend\src\config\env.ts</path><newString>export const env = resultado.data
+
+/**
+ * Aviso por `NODE_ENV` mal puesto.
+ *
+ * `NODE_ENV` decide el comportamiento de varias cosas **sin fallar** cuando no
+ * es el esperado:
+ *
+ *   - la cookie de refresh sale `SameSite=Lax` y sin `Secure`, asi que la
+ *     sesion muere en cada recarga de pagina
+ *   - `CORS_ORIGIN` deja de ser obligatoria y cae al default de localhost
+ *
+ * Los dos son fallos silenciosos: la app levanta, `/health` da 200 y el unico
+ * sintoma esta del lado del navegador. Paso de verdad: `NODE_ENV` sin poner en
+ * Render dejo la sesion del panel rota y no habia forma de saberlo desde los
+ * logs del servidor.
+ *
+ * `PUBLIC_API_URL` con `https://` es la senal de que esto **no** es desarrollo
+ * local. Si lo es, el aviso se equivoca; preferible eso a no avisar nunca.
+ */
+if (env.NODE_ENV !== 'production' && env.PUBLIC_API_URL.startsWith('https://')) {
+  process.stderr.write(
+    [
+      '',
+      'AVISO: NODE_ENV=' + env.NODE_ENV + ' pero PUBLIC_API_URL es https://.',
+      'Esto parece produccion con el entorno mal puesto. Consecuencias:',
+      '  - la cookie de refresh va con SameSite=Lax y sin Secure, y la sesion',
+      '    se pierde en cada recarga de pagina',
+      '  - CORS_ORIGIN deja de ser obligatoria',
+      '',
+      ''
+    ].join('\n')
+  )
+}
