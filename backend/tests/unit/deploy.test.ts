@@ -105,6 +105,36 @@ describe('lo que el Dockerfile copia', () => {
     expect(inexistentes).toEqual([])
   })
 
+  it('todo lo que los tsconfig declaran como entrada entra a la imagen', () => {
+    // El bug del primer build en Render: el `Dockerfile` copiaba
+    // `backend/src` pero no `backend/scripts`. `tsconfig.scripts.json` pide
+    // `scripts/seed.ts`, asi que `tsc` se quedó sin ningun input:
+    //
+    //   error TS18003: No inputs were found in config file
+    //   'tsconfig.scripts.json'
+    //
+    // El build entero moría por un archivo que no participa de la app: se
+    // compila para el seed, que corre una vez a mano. Y el error no menciona
+    // al seed, dice "no encontré archivos", como si el tsconfig estuviera mal.
+    //
+    // El test anterior ("cada COPY apunta a algo que existe") no lo agarra:
+    // ese COPY faltaba, no apuntaba a algo inexistente. Lo que falta es
+    // comprobar que entre **todo** lo que los tsconfig piden.
+    const entradas = readdirSync(join(RAIZ, 'backend'))
+      .filter((n) => /^tsconfig.*\.json$/.test(n))
+      .flatMap((n) => leerJson<{ include?: string[] }>(`backend/${n}`).include ?? [])
+      // `src/**/*` y `scripts/seed.ts` alcanzan con el primer segmento
+      .map((patron) => patron.split('/').find((s) => !s.includes('*')) ?? '')
+
+    expect(entradas.length).toBeGreaterThan(0)
+
+    const sinCopiar = entradas.filter(
+      (raiz) => !fuentes.some((patron) => resuelve(patron).includes(raiz))
+    )
+
+    expect(sinCopiar).toEqual([])
+  })
+
   it('copia todos los tsconfig del backend, no solo tsconfig.json', () => {
     // `COPY backend/tsconfig.json ./` se lleva un archivo y deja afuera al
     // resto. Con `backend/tsconfig*.json ./` el patron cubre los que se

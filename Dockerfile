@@ -55,6 +55,17 @@ RUN npx prisma generate
 COPY backend/tsconfig*.json ./
 COPY backend/src ./src/
 
+# `scripts/` tambien entra, y no es opcional: `tsconfig.scripts.json` compila
+# `scripts/seed.ts` a `dist/scripts/seed.js`, que es lo que corre `npm run seed`
+# en el contenedor. Sin este COPY, `tsc -p tsconfig.scripts.json` se queda sin
+# ningun input y falla:
+#
+#   error TS18003: No inputs were found in config file 'tsconfig.scripts.json'
+#
+# O sea: el build entero muere por un archivo que ni se estaba compilando para
+# la app, y el error no menciona al seed.
+COPY backend/scripts ./scripts/
+
 RUN npm run build
 
 # ---- Runtime stage ----
