@@ -13,7 +13,12 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    # El Dockerfile vive en la raiz del repo y el contexto tambien. Ver el
+    # comentario de `Dockerfile`: es lo que hace que ningun proveedor de
+    # deploy necesite un "root directory" configurado a mano.
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       db:
         condition: service_healthy
@@ -27,6 +32,10 @@ services:
       STORAGE_BUCKET: wine-images
       STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-minioadmin}
       STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-minioadmin}
+      # Obligatoria desde 005/T1: es la que devuelve `POST /api/upload` y la
+      # que queda guardada en el vino. Con MinIO en local, la ruta publica de
+      # la imagen.
+      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:9000/wine-images}
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
       CORS_ORIGIN: http://localhost:5173
     ports: ['3000:3000']

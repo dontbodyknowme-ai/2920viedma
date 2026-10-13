@@ -1,0 +1,41 @@
+# El contexto de build es la RAIZ del repo, asi que entra todo: el frontend con
+# sus 384 MB de node_modules, el backend con otros 278, y .git. Sin esto el
+# contexto pesa 663 MB y se sube entero en cada build.
+#
+# **Todos los patrones que excluyen archivos del frontend llevan `/` adelante.**
+# Un patron sin barra inicial matchea en cualquier nivel, asi que `src` a secas
+# tambien se llevaria `backend/src` y el build se rompe sin avisar.
+/src
+/index.html
+/vite.config.ts
+/tailwind.config.js
+/postcss.config.js
+/components.json
+/tsconfig.json
+/tsconfig.node.json
+/public
+/eslint.config.js
+
+node_modules
+**/node_modules
+dist
+**/dist
+build
+**/build
+
+.git
+.gitignore
+
+# Config de deploy y docs: no hacen falta para construir el backend.
+/vercel.json
+/railway.json
+/docs
+/specs
+
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+.DS_Store
+.vscode
+.idea
