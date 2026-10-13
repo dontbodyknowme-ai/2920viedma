@@ -279,10 +279,31 @@ describe('comandos que se ejecutan dentro del contenedor', () => {
   })
 
   it('el seed se compila, no se interpreta con tsx', () => {
-    // Compilado a `dist/scripts/seed.js`, el Dockerfile lo copia sin tocar
-    // nada mas: `COPY --from=builder /app/dist ./dist`.
-    expect(packageJson.scripts.seed).toBe('node dist/scripts/seed.js')
+    // Compilado a `dist/scripts/*.js`, el Dockerfile lo copia sin tocar nada
+    // mas: `COPY --from=builder /app/dist ./dist`.
+    expect(packageJson.scripts.seed).toContain('node dist/scripts/seed.js')
+    expect(packageJson.scripts['seed:vinos']).toBe('node dist/scripts/seed-vinos.js')
     expect(packageJson.scripts.build).toContain('tsconfig.scripts.json')
+  })
+
+  it('todo script que apunte a dist/scripts tiene su fuente en el tsconfig', () => {
+    // `npm run seed` encadena dos scripts compilados. Si uno existiera en el
+    // `package.json` pero no en `tsconfig.scripts.json`, el `tsc` no lo genera
+    // y el comando muere con "Cannot find module" **en produccion**, no en el
+    // build: el build pasa igual porque compila lo que hay.
+    const tsconfigScripts = leerJson<{ include: string[] }>('backend/tsconfig.scripts.json')
+
+    const referenciados = Object.values(packageJson.scripts).flatMap((comando) =>
+      [...comando.matchAll(/dist\/scripts\/([\w-]+)\.js/g)].map((m) => m[1] ?? '')
+    )
+
+    expect(referenciados.length).toBeGreaterThan(1)
+
+    const sinFuente = referenciados.filter(
+      (nombre) => !tsconfigScripts.include.includes(`scripts/${nombre}.ts`)
+    )
+
+    expect(sinFuente).toEqual([])
   })
 
   it('el seed compilado no importa codigo que solo exista en el repo', () => {
