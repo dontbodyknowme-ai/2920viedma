@@ -375,6 +375,44 @@ describe('variables de entorno', () => {
     expect(envExample).toMatch(/SECRET[AS]/i)
   })
 
+  it('las migraciones usan una conexion SIN pooler', () => {
+    // Este bug costo el deploy entero dos veces. `migrate deploy` toma un
+    // advisory lock de sesion; con PgBouncer en modo transaction (el pooler de
+    // Neon), la conexion real vuelve al pool al terminar la transaccion **con
+    // el lock puesto**. Queda `idle`, retenida, y el siguiente `migrate deploy`
+    // no lo puede tomar:
+    //
+    //   Timed out trying to acquire a postgres advisory lock
+    //   (SELECT pg_advisory_lock(72707369)). Elapsed: 10000ms.
+    //
+    // Como las migraciones corren en el arranque, el segundo deploy ya moria.
+    // Y Render solo decia "Exited with status 1": el motivo estaba en el log
+    // del runtime, no en el del build.
+    //
+    // `directUrl` es lo que separa las dos conexiones: la app usa la pooled
+    // (`url`) y las migraciones la directa (`directUrl`).
+    const schema = leer('backend/prisma/schema.prisma')
+    const datasource = /datasource db \{[\s\S]*?\n\}/.exec(schema)?.[0] ?? ''
+
+    expect(datasource).toContain('url = env("DATABASE_URL")')
+    expect(datasource).toContain('directUrl = env("DIRECT_URL")')
+  })
+
+  it('DIRECT_URL esta documentada y separada de DATABASE_URL', () => {
+    // Una variable que el motor de migraciones lee directo del entorno, sin
+    // pasar por `env.ts`: si falta, el fallo sale de Prisma y no dice que
+    // variable falta.
+    const linea = envExample.split('\n').find((l) => l.startsWith('DIRECT_URL='))
+    expect(linea).toBeDefined()
+
+    const database = envExample.split('\n').find((l) => l.startsWith('DATABASE_URL='))
+    expect(linea).not.toBe(database)
+  })
+
+  it('docker-compose declara DIRECT_URL', () => {
+    expect(leer('docker-compose.yml')).toMatch(/DIRECT_URL/)
+  })
+
   it('.env no se commitea', () => {
     expect(gitignore).toMatch(/^\.env$/m)
   })

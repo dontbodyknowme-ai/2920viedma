@@ -4,7 +4,31 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+
+  // `url` es la **pooled**: la usa la aplicacion. Neon y cualquier proveedor
+  // con pooler cortan conexiones o limitan cuantas se pueden abrir, y Prisma
+  // con su propio pool encima las agota.
+  url = env("DATABASE_URL")
+
+  // `directUrl` es la **sin pooler**, y solo la usa `prisma migrate deploy`.
+  //
+  // No es una diferencia de rendimiento: es que el pooler de Neon es PgBouncer
+  // en modo *transaction*, que devuelve la conexion real al pool al terminar
+  // cada transaccion. `migrate deploy` toma un **advisory lock de sesion** con
+  // `pg_advisory_lock`, asi que:
+  //
+  //   1. el lock se toma en una conexion backend del PgBouncer
+  //   2. la transaccion termina, PgBouncer devuelve esa conexion al pool
+  //   3. el lock **se queda puesto** en esa conexion, que queda `idle`
+  //   4. el siguiente `migrate deploy` no lo puede tomar y revienta:
+  //
+  //      Timed out trying to acquire a postgres advisory lock
+  //      (SELECT pg_advisory_lock(72707369)). Elapsed: 10000ms.
+  //
+  // Como el deploy corre `migrate deploy` en el arranque, el segundo deploy ya
+  // moria. Y el error era invisible en el panel: Render solo decia
+  // "Exited with status 1" sin el motivo.
+  directUrl = env("DIRECT_URL")
 }
 
 enum WineCategory {

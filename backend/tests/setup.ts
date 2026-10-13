@@ -22,6 +22,8 @@ import { beforeAll, afterAll, beforeEach } from 'vitest'
 
 process.env.NODE_ENV ??= 'test'
 process.env.DATABASE_URL ??= 'postgresql://vinoteca:vinoteca@localhost:5432/vinoteca_test'
+// La usan solo las migraciones. Sin pooler (ver prisma/schema.prisma).
+process.env.DIRECT_URL ??= process.env.DATABASE_URL
 process.env.JWT_SECRET ??= 'test-secret-de-al-menos-32-caracteres-xxxxx'
 process.env.ACCESS_TOKEN_TTL ??= '15m'
 process.env.REFRESH_TOKEN_DAYS ??= '7'

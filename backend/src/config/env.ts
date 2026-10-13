@@ -52,6 +52,10 @@ const esquema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string().min(1),
+  // Conexion **sin pooler**, usada solo por `prisma migrate deploy`. Ver el
+  // comentario en `prisma/schema.prisma`: con la pooled, PgBouncer deja el
+  // advisory lock tomado en una sesion idle y el segundo deploy muere.
+  DIRECT_URL: z.string().min(1, 'DIRECT_URL es la conexion SIN pooler que usan las migraciones'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(7),

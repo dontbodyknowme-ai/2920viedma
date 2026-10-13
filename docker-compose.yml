@@ -26,6 +26,8 @@ services:
       NODE_ENV: development
       PORT: 3000
       DATABASE_URL: postgresql://vinoteca:vinoteca@db:5432/vinoteca
+      # Sin pooler: la usan solo las migraciones (ver prisma/schema.prisma).
+      DIRECT_URL: postgresql://vinoteca:vinoteca@db:5432/vinoteca
       # Default solo para desarrollo local. Produccion lo inyecta el deploy.
       JWT_SECRET: ${JWT_SECRET:-dev-secret-de-al-menos-32-caracteres-xxxx}
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://localhost:9000}
