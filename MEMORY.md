@@ -237,3 +237,21 @@ backend/
     - `PUBLIC_API_URL` apunta a un dominio que dio 404 al renombrar el servicio. Renombrar un servicio **libera su dominio autogenerado**.
     - Falta correr el seed (`railway ssh -s Vinoteca-1` y `npm run seed`).
     - T7 (Vercel) y T8 (verificacion integral) sin empezar.
+- *2026-10-13 (tarde):* **spec 005 T6 CERRADA. Primera API en produccion, verificada de punta a punta.**
+  - **Plataforma final: Neon (base) + Render (API) + Vercel (front) + R2 (imagenes). Todo $0.** Se salteo Koyeb porque su consola renderizaba vacia en este navegador, aunque su status estaba en verde (99,9% de uptime, sin avisos en 7 dias).
+  - **Verificado desde afuera:**
+    ```
+    /health          {"status":"ok","db":"connected","uptime":65.4}
+    /api/docs/       200 (Swagger)
+    /api/auth/login  accessToken + user con role: admin y email reales
+    ```
+    El `user` poblado es la prueba de que el arreglo de 004-d (los `response.schema` de Fastify que truncaban las respuestas) sigue en pie en produccion.
+  - **Cuatro bugs mas en el camino de hoy, todos del mismo tipo: algo mal configurado que no se ve hasta que corre en produccion.**
+    1. `Dockerfile` sin `COPY backend/scripts`. `tsconfig.scripts.json` pide `scripts/seed.ts` -> `error TS18003: No inputs were found`. **El build entero moria por un archivo que no participa de la app y el error no menciona al seed**, asi que Render solo pudo decir "Exited with status 1".
+    2. `CORS_ORIGIN` definida pero **vacia**: `z.string()` acepta `''`, el arranque pasaba, `/health` daba 200 y **cada request** devolvia 500 con `Invalid CORS origin option`. Tres capas de silencio.
+    3. `STORAGE_PUBLIC_URL` faltaba en `tests/setup.ts`. Localmente lo tapaba el `.env`; en CI (que solo define `DATABASE_URL` y no tiene `.env` porque esta gitignored) el job de backend moria al importar `env.ts`. **Encontrado revisando, no porque fallara.**
+    4. `ZodError` crudo al arrancar: 40 lineas de JSON con dos mitades que se pisan y corchetes sin cerrar, todo embarrado por `pino-pretty`. Ahora es una lista que nombra cada variable.
+  - **Regla nueva que sale de hoy:** toda variable de entorno tiene que **nombrarse a si misma** cuando falla. Un error de arranque que no dice cual variable falla obliga a adivinar entre 13.
+  - **Tests: 105 backend** (+15). Los dos que mas Travelingdan pesan: "cada COPY apunta a algo que existe en el repo" y "todo lo que los tsconfig declaran como entrada entra a la imagen". El segundo existe porque el primero no veia un COPY que **faltaba** (no apuntaba a algo inexistente: faltaba).
+  - **Verificacion sin Docker:** se simulo el layout del build (copia de lo que el Dockerfile copia + junction a `node_modules`) y se corrieron los dos `tsc` de verdad. Con `scripts/`: exit 0. Sin: TS18003. Docker Desktop estaba apagado y esperar un ciclo de Render por cada teoria no era una opcion.
+  - **Pendiente:** T7 (Vercel) y T8 (verificacion integral). En T7 hay que corregir dos variables de Render que quedaron apuntando a dominios que no existen: `CORS_ORIGIN` (hoy `http://localhost:5173`) y `PUBLIC_API_URL`.

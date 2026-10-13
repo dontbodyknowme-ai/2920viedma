@@ -1,19 +1,19 @@
 # Deploy a producción
 
-Frontend en **Vercel**, API en **Koyeb**, base en **Neon**, imágenes en **Cloudflare R2**.
+Frontend en **Vercel**, API en **Render**, base en **Neon**, imágenes en **Cloudflare R2**.
 
 ## Por qué estas y no otras
 
 | Pieza | Plataforma | Costo | Nota |
 |---|---|---|---|
 | Frontend | Vercel | $0 | Hobby alcanza de sobra para una SPA |
-| API | Koyeb | $0 | El free tier **se duerme** tras inactividad |
+| API | Render | $0 | El free tier **se duerme** tras inactividad |
 | Base | Neon | $0 | 500 MB, se auto-suspende |
 | Imágenes | Cloudflare R2 | $0 | Sin egress |
 
 Se empezó con **Railway** y se migró: la API sola cuesta $5/mes y su Postgres
-$10-20/mes, contra $0 de Koyeb + Neon. El precio a cambio es el **cold start**:
-si nadie entra a la API en un rato, Koyeb la duerme y el primer request tarda
+$10-20/mes, contra $0 de Render + Neon. El precio a cambio es el **cold start**:
+si nadie entra a la API en un rato, Render la duerme y el primer request tarda
 ~30 segundos en despertar.
 
 Si eso molesta, la única pieza que hay que cambiar es la API: Railway Hobby
@@ -24,7 +24,7 @@ Si eso molesta, la única pieza que hay que cambiar es la API: Railway Hobby
 ## 0. Lo que hay que tener
 
 - Node 24 (`.nvmrc`)
-- Una cuenta de [Neon](https://console.neon.tech), de Koyeb y de Vercel
+- Una cuenta de [Neon](https://console.neon.tech), de Render y de Vercel
 - Un bucket de R2 (paso 1)
 
 ---
@@ -93,23 +93,24 @@ resuelve a `::1` y el motor no llega por IPv6 aunque el puerto esté abierto.
 
 ---
 
-## 3. Koyeb — la API
+## 3. Render — la API
 
-1. [koyeb.com](https://koyeb.com) → **Create Service** → **GitHub** → repo
-   `Vinoteca-1`, rama `main`
-2. El builder lo detecta solo: hay un `Dockerfile` **en la raíz**. No toques el
-   "Root Directory" — justamente no hay nada que configurar, y ese campo es el
-   que se reseteaba solo en Railway y rompía el build en silencio
-3. Configurar:
+1. [render.com](https://render.com) → entrar con GitHub → **Create → Web Service**
+2. Repo `Vinoteca-1`, rama `main`
+3. Runtime **Docker**: detecta el `Dockerfile` de la raíz solo. **Root Directory vacío** ← importante. Ese campo es el que en Railway se reseteaba solo y rompía el build en silencio; con el `Dockerfile` en la raíz no hay nada que configurar
+4. Configurar:
 
 | Campo | Valor |
 |---|---|
-| **Instance type** | Free (`nano` / `free instance`) |
+| **Instance type** | Free |
 | **Health check path** | `/health` |
-| **Ports** | Koyeb inyecta `PORT`; no declarar nada |
+| **Ports** | Render inyecta `PORT`; no declarar nada |
 
 > El healthcheck va en `/health`, **sin** el prefijo `/api`. Ese prefijo es
 > solo de los endpoints de negocio.
+>
+> El plan Free **duerme el servicio a los 15 minutos** sin tráfico: el primer
+> request después tarda hasta un minuto. No es un error, es el free tier.
 
 4. **Variables de entorno** → copiar el bloque de abajo. **Empezá por
    `DATABASE_URL`**, que es la de Neon del paso 2.
@@ -132,7 +133,7 @@ STORAGE_ACCESS_KEY=<del token de R2>
 STORAGE_SECRET_KEY=<del token de R2>
 STORAGE_PUBLIC_URL=https://pub-<cuenta>.r2.dev
 
-PUBLIC_API_URL=https://<tu-api>.koyeb.app
+PUBLIC_API_URL=https://<tu-api>.onrender.com
 ```
 
 Para el `JWT_SECRET`:
@@ -178,7 +179,7 @@ que ya existen ni resetea contraseñas.
 
 1. [vercel.com](https://vercel.com) → **Add New → Project** → repo `Vinoteca-1`
 2. Framework: **Vite**. Se detecta solo
-3. **Environment Variables** → `VITE_API_URL` = la URL de Koyeb
+3. **Environment Variables** → `VITE_API_URL` = la URL de Render
 4. Deploy
 
 `vercel.json` ya tiene el rewrite de SPA. Sin él, recargar `/admin/catalogo`
@@ -196,7 +197,7 @@ npm run verificar:spa
 ## 5. Verificar
 
 ```bash
-curl https://<tu-api>.koyeb.app/health
+curl https://<tu-api>.onrender.com/health
 # {"status":"ok","db":"connected","uptime":12.3}
 ```
 

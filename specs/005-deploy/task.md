@@ -88,13 +88,15 @@
 
 ---
 
-## T6 — Neon + Koyeb
+## T6 — Neon + Render
 
 **Cubes:** RF-01, RF-02, RF-04, RF-05, RF-07, RF-08, RF-16, RF-19, RF-20, RF-21 · **CE-01, CE-06**
 
 > **Reescrito el 2026-10-13.** El plan original era Railway (ver D-A): costaba
 > $15-25/mes y su `railway.json` no podía declarar el contexto de build, así que
 > la parte que hacía funcionar el deploy vivía en el panel y se reseteaba sola.
+> La API terminó en **Render**, no en Koyeb: Koyeb estaba operativo pero su
+> consola no renderizaba en este navegador.
 
 - [x] `Dockerfile` movido a la raíz + `.dockerignore` (contexto raíz = 663 MB sin él)
 - [x] `.dockerignore` anclando los patrones que existen en frontend y backend
@@ -102,17 +104,29 @@
 - [x] Migraciones en el arranque (`prisma migrate deploy && node dist/main.js`)
 - [x] Seed compilado a `dist/scripts/seed.js` (sin `tsx`, que no existe en la imagen)
 - [x] `railway.json` y `backend/Dockerfile` eliminados
-- [ ] Base creada en **Neon**, con la connection string **pooled**
-- [ ] Servicio de API creado en **Koyeb** desde el `Dockerfile` de la raíz
-- [ ] Healthcheck en `/health`
-- [ ] Variables cargadas: `DATABASE_URL`, `JWT_SECRET`, `STORAGE_*`, `PUBLIC_API_URL`, `CORS_ORIGIN`, `NODE_ENV=production`
-- [ ] `JWT_SECRET` es nuevo, aleatorio y de 32+ caracteres
-- [ ] Migraciones aplicadas (automáticas en el arranque; verificar)
-- [ ] Seed ejecutado **a mano**, una vez
-- [ ] `GET /health` responde `200` con `db: connected`
+- [x] `CORS_ORIGIN` validada y obligatoria en producción
+- [x] Base creada en **Neon** (São Paulo, connection string **pooled**)
+- [x] Migraciones aplicadas y seed ejecutado contra Neon
+- [x] Servicio de API creado en **Render**, plan Free, healthcheck en `/health`
+- [x] Variables cargadas (13)
+- [x] `JWT_SECRET` nuevo, aleatorio y de 32+ caracteres
+- [x] `GET /health` responde `200` con `db: connected`
+- [x] `GET /api/docs/` responde `200`
+- [x] `POST /api/auth/login` devuelve `accessToken` y `user` con rol y email
 
-**Puerta:** `curl https://<api>.koyeb.app/health` desde una terminal, esperando
-`{"status":"ok","db":"connected"}`.
+**Puerta cumplida:**
+
+```
+https://vinoteca-cava.onrender.com/health
+{"status":"ok","db":"connected","uptime":65.4}
+```
+
+> La respuesta de `/api/auth/login` trae `user` **con `role` y `email`**. Eso
+> es la prueba de que el arreglo de 004-d —los `response.schema` de Fastify que
+> truncaban las respuestas— sigue en pie en producción. Cuando el rol venía
+> vacío, el botón de acceso al panel no aparecía y había que recargar.
+
+**Pendiente:** `PUBLIC_API_URL` quedó apuntando a un dominio de Koyeb que no existe; corregir con el de Render cuando se conecte Vercel.
 
 ---
 
@@ -122,9 +136,10 @@
 
 - [ ] Proyecto importado desde GitHub, rama `main`
 - [ ] Framework detectado como Vite
-- [ ] `VITE_API_URL` apunta a la URL de Koyeb
+- [ ] `VITE_API_URL` apunta a `https://vinoteca-cava.onrender.com`
 - [ ] `vercel.json` detectado
-- [ ] `CORS_ORIGIN` de Koyeb coincide con el dominio de Vercel, exacto
+- [ ] `CORS_ORIGIN` en Render pasa a ser el dominio de Vercel
+- [ ] `PUBLIC_API_URL` en Render pasa a ser la URL pública de Vercel
 - [ ] La tienda carga y muestra el catálogo desde la API real
 - [ ] El botón de acceso al panel **no** aparece en la tienda
 
