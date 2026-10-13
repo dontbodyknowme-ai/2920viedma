@@ -88,19 +88,31 @@
 
 ---
 
-## T6 — Railway
+## T6 — Neon + Koyeb
 
 **Cubes:** RF-01, RF-02, RF-04, RF-05, RF-07, RF-08, RF-16, RF-19, RF-20, RF-21 · **CE-01, CE-06**
 
-- [ ] Servicio Postgres creado
-- [ ] Servicio de API creado desde `backend/Dockerfile`
+> **Reescrito el 2026-10-13.** El plan original era Railway (ver D-A): costaba
+> $15-25/mes y su `railway.json` no podía declarar el contexto de build, así que
+> la parte que hacía funcionar el deploy vivía en el panel y se reseteaba sola.
+
+- [x] `Dockerfile` movido a la raíz + `.dockerignore` (contexto raíz = 663 MB sin él)
+- [x] `.dockerignore` anclando los patrones que existen en frontend y backend
+- [x] `docker-compose.yml` apuntando al contexto raíz y con `STORAGE_PUBLIC_URL`
+- [x] Migraciones en el arranque (`prisma migrate deploy && node dist/main.js`)
+- [x] Seed compilado a `dist/scripts/seed.js` (sin `tsx`, que no existe en la imagen)
+- [x] `railway.json` y `backend/Dockerfile` eliminados
+- [ ] Base creada en **Neon**, con la connection string **pooled**
+- [ ] Servicio de API creado en **Koyeb** desde el `Dockerfile` de la raíz
+- [ ] Healthcheck en `/health`
 - [ ] Variables cargadas: `DATABASE_URL`, `JWT_SECRET`, `STORAGE_*`, `PUBLIC_API_URL`, `CORS_ORIGIN`, `NODE_ENV=production`
 - [ ] `JWT_SECRET` es nuevo, aleatorio y de 32+ caracteres
-- [ ] Migraciones aplicadas
+- [ ] Migraciones aplicadas (automáticas en el arranque; verificar)
 - [ ] Seed ejecutado **a mano**, una vez
 - [ ] `GET /health` responde `200` con `db: connected`
 
-**Puerta:** `curl https://<backend>/health` desde una terminal.
+**Puerta:** `curl https://<api>.koyeb.app/health` desde una terminal, esperando
+`{"status":"ok","db":"connected"}`.
 
 ---
 
@@ -110,8 +122,9 @@
 
 - [ ] Proyecto importado desde GitHub, rama `main`
 - [ ] Framework detectado como Vite
-- [ ] `VITE_API_URL` apunta a la URL de Railway
+- [ ] `VITE_API_URL` apunta a la URL de Koyeb
 - [ ] `vercel.json` detectado
+- [ ] `CORS_ORIGIN` de Koyeb coincide con el dominio de Vercel, exacto
 - [ ] La tienda carga y muestra el catálogo desde la API real
 - [ ] El botón de acceso al panel **no** aparece en la tienda
 

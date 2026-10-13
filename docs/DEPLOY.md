@@ -1,61 +1,63 @@
-# Guía de deploy
+# Deploy a producción
 
-Paso a paso para llevar la app a producción: **Cloudflare R2 → Railway → Vercel**.
+Frontend en **Vercel**, API en **Koyeb**, base en **Neon**, imágenes en **Cloudflare R2**.
 
-Se puede seguir de principio a fin sin saber nada que no esté acá. Si en algún
-paso te trabás, el problema suele ser una variable de entorno mal puesta: el
-backend **se niega a arrancar** y dice exactamente cuál falta.
+## Por qué estas y no otras
 
----
+| Pieza | Plataforma | Costo | Nota |
+|---|---|---|---|
+| Frontend | Vercel | $0 | Hobby alcanza de sobra para una SPA |
+| API | Koyeb | $0 | El free tier **se duerme** tras inactividad |
+| Base | Neon | $0 | 500 MB, se auto-suspende |
+| Imágenes | Cloudflare R2 | $0 | Sin egress |
 
-## Antes de empezar
+Se empezó con **Railway** y se migró: la API sola cuesta $5/mes y su Postgres
+$10-20/mes, contra $0 de Koyeb + Neon. El precio a cambio es el **cold start**:
+si nadie entra a la API en un rato, Koyeb la duerme y el primer request tarda
+~30 segundos en despertar.
 
-| Requisito | Para qué |
-|---|---|
-| Cuenta en [Cloudflare](https://dash.cloudflare.com) | Bucket de imágenes (R2) |
-| Cuenta en [Railway](https://railway.app) | Backend + Postgres |
-| Cuenta en [Vercel](https://vercel.com) | Frontend |
-| Node 24 | Todo el proyecto exige `>=22.19` |
-| Docker Desktop | Railway compila el `Dockerfile` en la nube, pero `docker compose` es útil para probar local |
-
-Los tres tienen plan gratuito. **La app se puede desplegar sin pagar nada**
-mientras no pase los límites de los free tiers.
+Si eso molesta, la única pieza que hay que cambiar es la API: Railway Hobby
+($5) con Neon sigue dando una base gratis.
 
 ---
 
-## Paso 1 — Cloudflare R2 (las imágenes)
+## 0. Lo que hay que tener
 
-R2 es el storage compatible con S3 donde viven las fotos de los vinos.
+- Node 24 (`.nvmrc`)
+- Una cuenta de [Neon](https://console.neon.tech), de Koyeb y de Vercel
+- Un bucket de R2 (paso 1)
 
-### 1.1 Crear el bucket
+---
 
-1. **Storage & Databases → R2** en el panel de Cloudflare
-2. **Create bucket** → nombre `wine-images`
-3. Dejalo en `Location: Automatic`
+## 1. Cloudflare R2 — bucket
 
-### 1.2 Abrir el bucket a lectura
+1. [Cloudflare Dashboard](https://dash.cloudflare.com) → **R2** → **Create bucket**
+2. Nombre: `wine-images`
+3. **Settings → Public access** → **Connect to Worker** no: se usa
+   **r2.dev** → *Enable Public Bucket*
+4. Anotar tres valores:
+   - **Endpoint**: `https://<cuenta>.r2.cloudflarestorage.com`
+   - **Public URL**: `https://pub-<cuenta>.r2.dev`
+   - **Region**: `auto`
 
-El backend guarda en el vino una **URL pública y sin vencimiento**. Por eso el
-bucket tiene que permitir lectura anónima:
+### Token de API
 
-1. Bucket `wine-images` → **Settings → Public access**
-2. **Enable r2.dev subdomain** ( development) o associate un dominio propio
+**R2 → Manage API tokens → Create API Token** → plantilla *Object Read & Write*,
+limitado al bucket `wine-images`.
 
-> ⚠️ Esto hace que las fotos sean accesibles para quien tenga el link. Para un
-> catálogo de productos es lo esperable. Si alguna vez necesitás imágenes
-> privadas, hay que re-firmar la URL en cada lectura (ver "fuera de alcance" en
-> `specs/005-deploy/spec.md`).
+> **El primer token que se creó quedó expuesto en una captura de pantalla y hay
+> que revocarlo.** Lo mismo con cualquier valor que se haya pegado en un
+> chat o screenshot: rotables y se vuelven a generar.
 
-### 1.3 CORS (CE-04)
+### CORS
 
-Sin esto, el `<img>` del navegador no carga la imagen aunque la URL exista.
-
-Bucket → **Settings → CORS Policy**:
+El bucket tiene que permitir que el navegador lea las imágenes desde el
+frontend. En **R2 → bucket → Settings → CORS Policy**:
 
 ```json
 [
   {
-    "AllowedOrigins": ["https://tu-app.vercel.app", "http://localhost:5173"],
+    "AllowedOrigins": ["http://localhost:5173", "https://<tu-app>.vercel.app"],
     "AllowedMethods": ["GET", "HEAD"],
     "AllowedHeaders": ["*"],
     "ExposeHeaders": ["ETag"],
@@ -64,75 +66,73 @@ Bucket → **Settings → CORS Policy**:
 ]
 ```
 
-Guardá estos cuatro datos, los pide Railway:
+### Verificarlo
 
-| Dato | Dónde está | Variable |
-|---|---|---|
-| Endpoint de la API | `https://<cuenta>.r2.cloudflarestorage.com` | `STORAGE_ENDPOINT` |
-| URL pública | `https://pub-<cuente>.r2.dev` | `STORAGE_PUBLIC_URL` |
-| Access Key ID | R2 → **Manage R2 API Tokens** | `STORAGE_ACCESS_KEY` |
-| Secret Access Key | (aparece una sola vez) | `STORAGE_SECRET_KEY` |
+```bash
+cd backend && npm run verificar:storage
+```
 
-Para las credenciales: **R2 → Manage R2 API Tokens → Create Account API Token**,
-con permiso de lectura/escritura solo sobre `wine-images`.
-
-> `STORAGE_ENDPOINT` y `STORAGE_PUBLIC_URL` **no son lo mismo** y no se pueden
-> interchangeable. El endpoint es la API S3 (no se abre en un navegador); la
-> URL pública es lo que se guarda en el vino.
+Escribe un objeto de prueba, abre la URL pública, comprueba el CORS y lo borra.
+`TODO OK` es el resultado esperado. Distingue dos fallos a propósito:
+`AccessDenied` es token sin permisos de escritura; `SignatureDoesNotMatch` son
+credenciales mal pegadas.
 
 ---
 
-## Paso 2 — Railway (el backend)
+## 2. Neon — la base
 
-### 2.1 Crear el proyecto y la base
+1. [console.neon.tech](https://console.neon.tech) → **Create project**: `vinoteca`
+2. **Connection string** → copiar la de **Pooled**
+3. La base se llama algo como `ep-xxx-pooler.region.aws.neon.tech`
 
-1. **New Project → Deploy from GitHub repo** → elegí `Vinoteca-1`
-2. Railway detecta el `railway.json` y usa `backend/Dockerfile`
-3. **Settings → Source → Root Directory = `backend`** ← **importante**
-4. **Add New → Database → PostgreSQL**
-5. Railway crea la variable `DATABASE_URL` solo. **No la toques a mano.**
+⚠️ **Pooled, no directa.** La directa es un proxy y corta conexiones a los
+minutos; Prisma con pool de conexiones se cuelga en producción a las horas.
 
-> ### ⚠️ Root Directory tiene que ser `backend`
->
-> El `Dockerfile` hace `COPY prisma ./prisma/` y espera encontrarlo en el
-> **contexto de build**. Con el contexto en la raíz del repo, eso falla con:
->
-> ```
-> failed to compute cache key: ... "/prisma": not found
-> ```
->
-> Y falla **tarde y con una confusión**: `package.json`, `tsconfig.json` y
-> `src/` existen en la raíz (son los del frontend), así que el build los copia
-> sin quejarse y recién se rompe cuando llega a `prisma`, que solo está en
-> `backend/`. La imagen queda mezclando el backend con el frontend.
->
-> Con `Root Directory = backend`, el contexto es `backend/`, que es
-> exactamente lo que hace `docker build ./backend` en local.
+⚠️ **En Windows la conexión es por `127.0.0.1`, no `localhost`**: `localhost`
+resuelve a `::1` y el motor no llega por IPv6 aunque el puerto esté abierto.
 
-### 2.2 Cargar las variables
+---
 
-En el servicio del backend, **Variables → Raw editor**:
+## 3. Koyeb — la API
+
+1. [koyeb.com](https://koyeb.com) → **Create Service** → **GitHub** → repo
+   `Vinoteca-1`, rama `main`
+2. El builder lo detecta solo: hay un `Dockerfile` **en la raíz**. No toques el
+   "Root Directory" — justamente no hay nada que configurar, y ese campo es el
+   que se reseteaba solo en Railway y rompía el build en silencio
+3. Configurar:
+
+| Campo | Valor |
+|---|---|
+| **Instance type** | Free (`nano` / `free instance`) |
+| **Health check path** | `/health` |
+| **Ports** | Koyeb inyecta `PORT`; no declarar nada |
+
+> El healthcheck va en `/health`, **sin** el prefijo `/api`. Ese prefijo es
+> solo de los endpoints de negocio.
+
+4. **Variables de entorno** → copiar el bloque de abajo. **Empezá por
+   `DATABASE_URL`**, que es la de Neon del paso 2.
 
 ```bash
 NODE_ENV=production
 
-# Railway ya la inyecta: no la pegues acá
-# DATABASE_URL=postgresql://...
-
-JWT_SECRET=<generalo con el comando de abajo>
+JWT_SECRET=<generalo>
 ACCESS_TOKEN_TTL=15m
 REFRESH_TOKEN_DAYS=7
 
-CORS_ORIGIN=https://tu-app.vercel.app
+CORS_ORIGIN=https://<tu-app>.vercel.app
+
+DATABASE_URL=<la de Neon>
 
 STORAGE_ENDPOINT=https://<cuenta>.r2.cloudflarestorage.com
 STORAGE_REGION=auto
 STORAGE_BUCKET=wine-images
-STORAGE_ACCESS_KEY=<de R2>
-STORAGE_SECRET_KEY=<de R2>
+STORAGE_ACCESS_KEY=<del token de R2>
+STORAGE_SECRET_KEY=<del token de R2>
 STORAGE_PUBLIC_URL=https://pub-<cuenta>.r2.dev
 
-PUBLIC_API_URL=<la URL que Railway le dio al backend>
+PUBLIC_API_URL=https://<tu-api>.koyeb.app
 ```
 
 Para el `JWT_SECRET`:
@@ -141,175 +141,85 @@ Para el `JWT_SECRET`:
 node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 ```
 
-> **No uses el `JWT_SECRET` de desarrollo.** Si se repite, los tokens que se
-> generaron en desarrollo valen en producción.
+> **Ningún secreto va en un chat.** Se generan en tu máquina y se pegan
+> directo en el panel.
 
-> `PORT` **no se carga**: Railway lo inyecta y el servidor lo toma del entorno.
+### Las migraciones
 
-### 2.3 Configuración del servicio
+No hay paso previo: el `Dockerfile` arranca con
+`prisma migrate deploy && node dist/main.js`. Las tablas se crean en cada
+arranque, antes de levantar el server.
 
-`railway.json` ya lo define, pero conviene confirmarlo en el panel:
+Es seguro correrlas siempre porque `migrate deploy` toma un advisory lock.
+Y es **mejor** que hacerlo a mano por un motivo concreto: `/health` hace
+`SELECT 1`, que no toca ninguna tabla. Con las tablas sin crear la base
+responde, el healthcheck pasa y el deploy queda "sano"; la primera consulta
+real revienta con `relation does not exist`.
 
-| Campo | Valor | Por qué |
-|---|---|---|
-| Healthcheck Path | `/health` | **No** `/api/health`: ese no existe (CE-02) |
-| Pre-deploy Command | `npm run db:deploy` | Corre las migraciones **antes** de arrancar |
-| Start Command | `npm run start` | |
-| Restart Policy | On Failure, 3 reintentos | |
+### Seed (una vez)
 
-> Las migraciones usan `prisma migrate deploy`, nunca `migrate dev`: `dev`
-> abre un prompt y el deploy se queda esperando una respuesta.
-
-### 2.4 Primer deploy
-
-`Deployments → Deploy`. El log tiene que mostrar, en orden:
-
-```
-[predeploy] prisma migrate deploy   ✅
-[build] tsc -p tsconfig.json        ✅
-[start] Servidor escuchando en ...   ✅
-```
-
-Comprobalo:
+Crea `admin@vinoteca.local`, `gestor@vinoteca.local` y
+`vendedor@vinoteca.local`, todos con `admin123`. **No corre solo en cada
+arranque**: es un paso manual.
 
 ```bash
-curl https://tu-backend.up.railway.app/health
-# {"status":"ok","db":"connected",...}
-```
-
-Si responde `db: disconnected`, la `DATABASE_URL` apunta a otro lado.
-
-### 2.5 Seed (una sola vez, a mano)
-
-Crea los tres usuarios. **No va en el arranque**: en cada deploy pisaría los
-datos que hayas cargado.
-
-En el panel de Railway, sobre el servicio → **Settings → Custom Command**:
-
-```bash
+# en la máquina, con DATABASE_URL de Neon en el entorno
+cd backend
+npm run db:deploy     # por si las tablas no estan
 npm run seed
 ```
 
-| Email | Password | Rol |
-|---|---|---|
-| `admin@vinoteca.local` | `admin123` | admin |
-| `gestor@vinoteca.local` | `admin123` | gestor |
-| `vendedor@vinoteca.local` | `admin123` | vendedor |
-
-> **Cambiá esas contraseñas antes de usar la app de verdad.**
+`seed.ts` usa `upsert` con `update: {}`: correrlo de nuevo no toca los usuarios
+que ya existen ni resetea contraseñas.
 
 ---
 
-## Paso 3 — Vercel (el frontend)
+## 4. Vercel — el frontend
 
-1. **Add New → Project** → importá `Vinoteca-1`
-2. Framework preset: **Vite** (se detecta solo)
-3. En **Settings → Environment Variables**:
+1. [vercel.com](https://vercel.com) → **Add New → Project** → repo `Vinoteca-1`
+2. Framework: **Vite**. Se detecta solo
+3. **Environment Variables** → `VITE_API_URL` = la URL de Koyeb
+4. Deploy
 
-```
-VITE_API_URL=https://tu-backend.up.railway.app
-```
+`vercel.json` ya tiene el rewrite de SPA. Sin él, recargar `/admin/catalogo`
+da 404: Vercel busca el archivo en disco antes de aplicar los rewrites, y ese
+path no existe como archivo.
 
-4. **Deploy**
-
-Vercel lee el `vercel.json` de la raíz, que ya trae el `buildCommand`, el
-`outputDirectory` y el rewrite de SPA.
-
-### 3.1 Verificar el panel
-
-En la URL de Vercel:
-
-- `/` carga el catálogo → ✅ si la API responde
-- **`/admin/catalogo` y recargá (F5)** → tiene que seguir en el panel.
-  Si da 404, el rewrite de `vercel.json` no se aplicó.
-- Entrá a `/admin` con `admin@vinoteca.local` / `admin123`
-
-> **En el panel no hay botón de acceso.** A propósito: un enlace en la tienda
-> le diría a cualquier visitante que hay una sección restringida y que está a
-> un click (decisión de la spec 004-a).
-
-### 3.2 Subir una imagen y comprobar que no caduca
-
-Panel → Catálogo → editar un vino → subir foto.
-
-Mirá la URL que se guarda: tiene que **no** tener `X-Amz-Signature` ni
-`X-Amz-Expires`. Si aparecen, la imagen se va a romper en una hora.
-
----
-
-## Variables de entorno, de un vistazo
-
-| Variable | Secreta | Railway | Vercel |
-|---|---|---|---|
-| `NODE_ENV=production` | no | ✅ | — |
-| `DATABASE_URL` | **sí** | ✅ (automática) | — |
-| `JWT_SECRET` | **sí** | ✅ | — |
-| `ACCESS_TOKEN_TTL` | no | ✅ | — |
-| `REFRESH_TOKEN_DAYS` | no | ✅ | — |
-| `CORS_ORIGIN` | no | ✅ | — |
-| `RATE_LIMIT_MAX` | no | opcional | — |
-| `RATE_LIMIT_WINDOW` | no | opcional | — |
-| `LOGIN_RATE_MAX` | no | opcional | — |
-| `UPLOAD_MAX_BYTES` | no | opcional | — |
-| `STORAGE_ENDPOINT` | no | ✅ | — |
-| `STORAGE_REGION` | no | ✅ | — |
-| `STORAGE_BUCKET` | no | ✅ | — |
-| `STORAGE_ACCESS_KEY` | **sí** | ✅ | — |
-| `STORAGE_SECRET_KEY` | **sí** | ✅ | — |
-| `STORAGE_PUBLIC_URL` | no | ✅ | — |
-| `PUBLIC_API_URL` | no | ✅ | — |
-| `VITE_API_URL` | no | — | ✅ |
-
-Sin defaults para lo sensible: si falta una, **el backend no arranca** y dice
-cuál. Es preferible a que quede andando con la configuración de desarrollo.
-
----
-
-## Desarrollo local
+Verificar el rewrite sin desplegar:
 
 ```bash
-# 1. Base de datos
-cd backend && docker compose up -d db
-
-# 2. Backend
-cd backend
-cp .env.example .env        # primera vez
-npm run db:migrate          # crea el esquema
-npm run seed                # crea los usuarios
-npm run dev                 # http://localhost:3000
-
-# 3. Frontend (otra terminal)
-npm install
-echo "VITE_API_URL=http://localhost:3000" > .env
-npm run dev                 # http://localhost:5173
+npm run verificar:spa
 ```
 
-> En Windows, `DATABASE_URL` tiene que usar **`127.0.0.1`**, no `localhost`:
-> `localhost` resuelve a `::1` y Prisma no conecta por ahí.
+---
+
+## 5. Verificar
+
+```bash
+curl https://<tu-api>.koyeb.app/health
+# {"status":"ok","db":"connected","uptime":12.3}
+```
+
+`db: connected` es la parte que importa: significa que las migraciones
+corrieron y la base está viva.
+
+| | |
+|---|---|
+| **CA-01** | `/health` → 200 con `db: connected` |
+| **CA-02** | El catálogo del frontend muestra vinos |
+| **CA-03** | `/admin` acepta login y entra al panel |
 
 ---
 
-## Problemas frecuentes
+## Troubleshooting
 
-| Síntoma | Causa probable | Qué hacer |
+| Síntoma | Causa | Arreglo |
 |---|---|---|
-| El deploy falla en el predeploy | `prisma: not found` | `prisma` tiene que estar en `dependencies`, no en `devDependencies` |
-| El deploy se queda colgado | Corriste `prisma migrate dev` | Usar `npm run db:deploy` |
-| El deploy falla y dice `/prisma: not found` | **Root Directory no es `backend`** | Settings → Source → Root Directory |
-| El deploy falla aunque la app ande | Healthcheck en `/api/health` | Va en `/health` |
-| El backend no arranca, dice qué falta | Falta una variable | Completar las de la tabla de arriba |
-| El contenedor no levanta en Railway | `NODE_ENV` sin poner | `NODE_ENV=production` |
-| Las imágenes no cargan en el navegador | CORS del bucket o bucket privado | Revisar paso 1.2 y 1.3 |
-| La imagen se rompe al día siguiente | Se guardó una URL firmada | `STORAGE_PUBLIC_URL` sin firma |
-| El navegador bloquea todo, consola llena de CORS | `CORS_ORIGIN` mal | Debe ser el dominio de Vercel, sin barra final |
-| `/admin/catalogo` da 404 al recargar | El rewrite no se aplicó | Verificar `vercel.json` en Settings del proyecto |
-
----
-
-## Rollback
-
-Railway conserva los despliegues anteriores: **Deployments → ⋯ → Rollback**.
-Los datos no se pierden (Postgres es un servicio aparte).
-
-> Un rollback **no** revierte el esquema. Si un deploy aplicó una migración, hay
-> que revertir el código **y** la migración a mano.
+| `"/prisma": not found` en el build | Contexto de build apuntando a la raíz | El `Dockerfile` está en la raíz: no hay nada que configurar. Si aparece, es que se editaron los `COPY` |
+| El build falla pero `/health` da 200 | Se está sirviendo el deploy anterior | Un deploy fallido **no** levanta la imagen nueva. El único síntoma es que "los cambios no aplican" |
+| `tsc: not found` / `prisma: not found` | Herramienta en `devDependencies` | La imagen final instala con `--omit=dev`. Hay un test que lo cubre |
+| `/health` con `db: disconnected` | `DATABASE_URL` mal o base dormida | Neon se auto-suspende: la primera conexión la despierta y puede tardar |
+| `relation does not exist` | Las migraciones no corrieron | Ver el paso 3: son automáticas. Si pasan, el `start` está mal |
+| El frontend no llama a la API | `CORS_ORIGIN` no coincide | Tiene que ser el dominio de Vercel, exacto, sin barra final |
+| `AccessDenied` al subir imagen | Token de R2 sin escritura | Recrear el token con *Object Read & Write* |
+| La imagen se rompe al día siguiente | URLs firmadas guardadas en el vino | Ya no pasa: el backend devuelve la URL pública del bucket |

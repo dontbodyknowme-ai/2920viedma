@@ -180,26 +180,14 @@
     importar el módulo y el backend no levanta. La guarda es **disponibilidad**, no solo `NODE_ENV` — si
     `NODE_ENV` queda en `development` (que es lo que dice `.env.example`) la app tampoco arranca.
     Por eso `logger.ts` hace `require.resolve('pino-pretty')` antes de usarlo.
-19. **`railway.json` NO puede declarar el contexto de build** (2026-10-12). El schema oficial solo tiene
-    `build.dockerfilePath`; el contexto es siempre el **Root Directory**, que es un ajuste **del panel**.
-    Nuestro `backend/Dockerfile` hace `COPY prisma ./prisma/`, así que el Root Directory tiene que ser
-    `backend`. Si queda en `/`, el build falla con `"/prisma": not found` — y falla **tarde**: `package.json`,
-    `tsconfig.json` y `src/` existen en la raíz (son los del frontend), así que se copian sin quejarse y la
-    imagen queda mezclando backend con frontend. **Se resetea solo** al renombrar el servicio o recargar el repo.
-    *Pendiente:* mover el `Dockerfile` a la raíz copiando desde `backend/`, para que el contexto sea la raíz por
-    definición y no haya nada que configurar en el panel.
-20. **Un build fallido deja sirviendo el deploy anterior, con.exito** (2026-10-12). Railway no levanta la imagen
-    nueva y conserva la vieja: `/health` da 200, la API responde y la tarjeta dice "Deployment successful"
-    —refiriéndose al deploy viejo. El único síntoma es que **los cambios del repo "no aplican"**.
-    Por eso "el healthcheck da 200" **no** significa "el deploy se aplicó".
-21. **El botón `Redeploy` de Railway re-ejecuta el mismo commit**, no vuelve a resolver la cabeza de la rama.
-    Repeatinlo da el mismo `snapshot sha256` y el mismo `image digest`: es literalmente el mismo build.
-    Para traer un commit nuevo hay que disparar el deploy desde el evento del push.
-22. **Prisma Client no loguea nada por defecto** (2026-10-12). `new PrismaClient()` sin `log` no emite ni los
-    errores de conexión. Hay que registrar los eventos con `log: [{ emit: 'event', level: 'error' }]` **y**
-    `$on(...)`Listeners antes de la primera query, porque Prisma lanza si un evento se emite sin listener.
-    Los listeners van al `logger` del proyecto, no a stdout, por el mismo motivo que `logger: false` en Fastify.
-    Cuidado: los mocks de `@prisma/client` en los tests tienen que exponer `$on` o revientan.
-23. **Renombrar un servicio en Railway libera su dominio autogenerado** (2026-10-12). El dominio viejo pasa a
-    404 y `PUBLIC_API_URL` queda apuntando a la nada. Si ya hay dominio cargado, renombrar es caro.
-
+19. **El `Dockerfile` tiene que estar en la raiz del repo, no en `backend/`** (2026-10-12, corregido 2026-10-13). Railway y Koyeb toman el **contexto de build** del "Root Directory", que es un ajuste **del panel**. Ninguno de los dos deja declararlo en un archivo (el schema de `railway.json` solo tiene `dockerfilePath`), asi que con el Dockerfile en `backend/` habia que configurarlo a mano: se reseteo solo tres veces.
+    El reset es **silencioso**. El contexto cae a la raiz, donde `package.json`, `tsconfig.json` y `src/` existen **pero son los del frontend**, asi que el build los copia sin quejarse y solo revienta cuando llega a `prisma/`, que existe unicamente en `backend/`:
+    ```
+    failed to compute cache key: ... "/prisma": not found
+    ```
+    Con el `Dockerfile` en la raiz, el contexto es la raiz **por definicion** y no hay nada que configurar en ningun panel. Hay un test que resuelve **cada `COPY` contra el disco**, que detecta esta clase de error sin buildear nada. `.dockerignore` en la raiz es obligatorio (los dos `node_modules` son 663 MB) y **los patrones de archivos que existen en los dos lados van con `/` adelante**: sin barra matchean en cualquier nivel y un `src` a secas se lleva `backend/src`.
+20. **Un build fallido deja sirviendo el deploy anterior, con exito** (2026-10-12). La plataforma no levanta la imagen nueva y conserva la vieja: `/health` da 200, la API responde y el panel dice "Deployment successful" —refiriéndose al deploy viejo. El unico sintoma es que **los cambios del repo "no aplican"**. Por eso "el healthcheck da 200" **no** significa "el deploy se aplicó".
+21. **Un "redeploy" no es "traé lo nuevo"** (2026-10-12). El botón `Redeploy` de Railway re-ejecuta el **mismo commit**, no resuelve la cabeza de la rama: repetirlo da el mismo `snapshot sha256` y el mismo `image digest`, es literalmente el mismo build. Para traer un commit nuevo hay que disparar el deploy desde el evento del push.
+22. **Prisma Client no loguea nada por defecto** (2026-10-12). `new PrismaClient()` sin `log` no emite ni los errores de conexion. Hay que registrar los eventos con `log: [{ emit: 'event', level: 'error' }]` **y** `$on(...)` listeners antes de la primera query, porque Prisma lanza si un evento se emite sin listener. Los listeners van al `logger` del proyecto, no a stdout, por el mismo motivo que `logger: false` en Fastify. Cuidado: los mocks de `@prisma/client` en los tests tienen que exponer `$on` o revientan.
+23. **Renombrar un servicio libera su dominio autogenerado** (2026-10-12). El dominio viejo pasa a 404 y `PUBLIC_API_URL` queda apuntando a la nada. Si ya hay dominio cargado, renombrar es caro.
+24. **Un healthcheck con `SELECT 1` no detecta que falten las tablas** (2026-10-13). Por eso las migraciones corren en el arranque y no a mano: con el esquema sin crear la base responde, el healthcheck pasa, el deploy queda "sano" y la primera consulta real revienta con `relation does not exist`. `prisma migrate deploy` toma un advisory lock, asi que correrlas en cada arranque es seguro.

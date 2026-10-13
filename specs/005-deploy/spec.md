@@ -33,12 +33,12 @@ Tener la app **en producción, con HTTPS, base de datos real y archivos reales**
 
 ## 4. Requisitos funcionales
 
-### Backend en Railway
+### Backend
 
-- **RF-01** El backend se construye desde `backend/Dockerfile`, que ya quedó verificado (`node:24-slim`, Prisma y `sharp` operativos).
-- **RF-02** El servidor escucha en el puerto que Railway inyecta. `env.ts` ya lee `PORT` con default 3000 y `HOST` con default `0.0.0.0`.
-- **RF-03** El healthcheck de Railway apunta a `GET /health` (**no** a `/api/health`, que no existe: el prefijo `/api` solo aplica a los endpoints de negocio).
-- **RF-04** Las migraciones se aplican con `prisma migrate deploy` (`npm run db:deploy`), **nunca** con `migrate dev`: `migrate dev` abre un prompt y no es apto para un despliegue.
+- **RF-01** El backend se construye desde el `Dockerfile` de la **raíz del repo** (`node:24-slim`, Prisma y `sharp` operativos). Está en la raíz y no en `backend/` para que el contexto de build sea la raíz por definición: las plataformas no dejan declararlo en un archivo y configurarlo en el panel se reseteaba en silencio.
+- **RF-02** El servidor escucha en el puerto que inyecta la plataforma. `env.ts` ya lee `PORT` con default 3000 y `HOST` con default `0.0.0.0`.
+- **RF-03** El healthcheck apunta a `GET /health` (**no** a `/api/health`, que no existe: el prefijo `/api` solo aplica a los endpoints de negocio).
+- **RF-04** Las migraciones se aplican con `prisma migrate deploy`, **nunca** con `migrate dev`: `migrate dev` abre un prompt y no es apto para un despliegue. Corren en el arranque, antes de levantar el server, porque la plataforma no ofrece un paso previo y hacerlas a mano es peligroso: `/health` hace `SELECT 1`, que no toca ninguna tabla, así que con el esquema sin crear el deploy pasa como sano y la primera consulta real revienta.
 - **RF-05** El seed se ejecuta **a mano, una vez**, no en cada arranque. Un seed en cada deploy reinicia los datos de prueba.
 - **RF-06** El arranque falla rápido si falta una variable de entorno: el comportamiento de `config/env.ts` (validación eager con Zod) se mantiene.
 
