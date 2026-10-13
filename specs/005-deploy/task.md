@@ -134,14 +134,39 @@ https://vinoteca-cava.onrender.com/health
 
 **Cubre:** RF-13, RF-14, RF-16 · **CE-05, CE-07**
 
-- [ ] Proyecto importado desde GitHub, rama `main`
-- [ ] Framework detectado como Vite
-- [ ] `VITE_API_URL` apunta a `https://vinoteca-cava.onrender.com`
-- [ ] `vercel.json` detectado
-- [ ] `CORS_ORIGIN` en Render pasa a ser el dominio de Vercel
-- [ ] `PUBLIC_API_URL` en Render pasa a ser la URL pública de Vercel
-- [ ] La tienda carga y muestra el catálogo desde la API real
-- [ ] El botón de acceso al panel **no** aparece en la tienda
+- [x] Proyecto importado desde GitHub, rama `main`
+- [x] Framework detectado como Vite
+- [x] `VITE_API_URL` = `https://vinoteca-cava.onrender.com`
+- [x] `vercel.json` detectado
+- [x] `CORS_ORIGIN` en Render = `https://vinoteca-cava.vercel.app`
+- [x] `PUBLIC_API_URL` en Render = `https://vinoteca-cava.vercel.app`
+- [x] La tienda carga y muestra el catálogo
+- [x] El botón de acceso al panel **no** aparece en la tienda
+- [x] Las 6 rutas de `/admin/*` devuelven `index.html` al recargar (rewrite de SPA)
+- [x] Login real contra producción: `POST /api/auth/login` → 200 y el panel carga
+- [x] `/api/metrics` → 200 **con datos** (ceros), no `{}`
+
+**Verificación en navegador real** (no con `curl`): la tienda renderiza, `/admin`
+muestra el gate, el login entra al panel, el sidebar carga las 5 secciones y el
+dashboard muestra las métricas.
+
+> **Importante sobre `CORS_ORIGIN`.** Render **no redeploya solo** al guardar
+> una variable de entorno: el valor queda guardado pero el contenedor sigue
+> corriendo con el anterior. El síntoma es el peor posible — la tienda carga
+> entera y vacía, sin un error en el servidor. Hubo que apretar **Save Changes**
+> y verificar con el `uptime` de `/health` que el contenedor realmente había
+> reiniciado.
+>
+> La verificación que lo confirma en un comando:
+> ```
+> curl -s -D - -o /dev/null -H "Origin: https://vinoteca-cava.vercel.app" \
+>   https://vinoteca-cava.onrender.com/health | grep -i access-control-allow-origin
+> ```
+> Y el contrapruebo: un origen no permitido tiene que **no** devolver la cabecera.
+
+**Pendiente para T8:** el catálogo en producción está vacío (el seed solo crea
+usuarios, no vinos). No es un bug: la tienda muestra las botellas destacadas
+desde los datos locales del frontend, y el catálogo del panel mostraría 0.
 
 **Puerta:** abrir la URL de producción y ver el catálogo con vinos.
 
