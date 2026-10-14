@@ -1,13 +1,24 @@
 /**
- * Sube una imagen real a la API de produccion y deja la URL registrada.
+ * Sube una imagen real a la API de produccion y deja el reloj anotado.
  *
- * Es el reloj de CA-06: la imagen tiene que seguir visible 24 h despues. Hoy
- * solo se puede **arrancar** el reloj; el ticks final es de manana.
+ * Es el reloj de CA-06: la imagen tiene que seguir visible 24 h despues. Este
+ * script solo puede **arrancar** el reloj; cerrarlo es `npm run verificar:ca06`,
+ * que se niega a dar por buena una comprobacion hecha antes de las 24 h.
+ *
+ * El estado queda en `specs/005-deploy/ca06.json` para que el cierre no
+ * dependa de que alguien recuerde una URL que nadie copio.
  *
  * No imprime el accessToken en ningun momento.
  */
 
+import { writeFileSync, mkdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 const API = process.argv[2] ?? 'https://vinoteca-cava.onrender.com'
+
+const AQUI = dirname(fileURLToPath(import.meta.url))
+const RUTA_ESTADO = resolve(AQUI, '..', 'specs', '005-deploy', 'ca06.json')
 
 const USUARIO = 'admin@vinoteca.local'
 const CLAVE = 'admin123'
@@ -61,11 +72,12 @@ if (subida.status !== 201 || !resultado?.url) {
 
 const url = resultado.url
 const ahora = new Date()
+const vence = new Date(ahora.getTime() + 24 * 3600 * 1000)
 
 console.log(`\n  upload ok`)
 console.log(`  url:    ${url}`)
 console.log(`  ahora:  ${ahora.toISOString()}`)
-console.log(`  vence:  ${new Date(ahora.getTime() + 24 * 3600 * 1000).toISOString()}`)
+console.log(`  vence:  ${vence.toISOString()}`)
 
 // Que sirva de verdad ahora: si la URL publica no abre, el reloj no sirve.
 const imagen = await fetch(url, { signal: AbortSignal.timeout(30_000) })
@@ -78,4 +90,21 @@ console.log(`\n  GET ${imagen.status}  ${imagen.headers.get('content-type')}  ${
 const conFirma = /[?&](X-Amz-|Expires=|Signature=)/i.test(url)
 console.log(`  url con firma o caducidad: ${conFirma ? 'SI  <-- D-G roto' : 'no'}`)
 
-console.log(`\nCA-06 queda armed. Re-verificar despues de las 24 h.`)
+// El estado queda anotado para que `verificar:ca06` sepa qué revisar y cuándo.
+// Sin esto, cerrar CA-06 depende de que alguien recuerde una URL que nadie
+// copió: y un chequeo que depende de la memoria es un chequeo que no se hace.
+const estado = {
+  url,
+  subido: ahora.toISOString(),
+  vence: vence.toISOString(),
+  contentTypeAlSubir: imagen.headers.get('content-type'),
+  bytesAlSubir: bytes.length,
+  conFirmaAlSubir: conFirma
+}
+
+mkdirSync(dirname(RUTA_ESTADO), { recursive: true })
+writeFileSync(RUTA_ESTADO, JSON.stringify(estado, null, 2) + '\n')
+
+console.log(`\n  estado guardado en ${RUTA_ESTADO}`)
+console.log(`\nCA-06 queda armado. Para cerrarlo, despues de las 24 h:`)
+console.log(`\n  npm run verificar:ca06\n`)

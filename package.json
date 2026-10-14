@@ -15,7 +15,8 @@
     "test": "vitest run",
     "preview": "vite preview",
     "verificar:produccion": "node scripts/verificar-produccion.mjs",
-    "armar:ca06": "node scripts/armar-ca06.mjs"
+    "armar:ca06": "node scripts/armar-ca06.mjs",
+    "verificar:ca06": "node scripts/verificar-ca06.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.102.0",
