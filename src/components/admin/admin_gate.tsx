@@ -18,7 +18,11 @@ import { primeraVisible } from '../../utils/permisos'
 
 export const AdminGate = () => {
   const [clave, setClave] = useState('')
-  const [email, setEmail] = useState('admin@vinoteca.local')
+  // Vacio a proposito. Dejaba `admin@vinoteca.local` puesto, y con tres
+  // cuentas eso obliga a cada vendedor a borrarlo a mano: un campo con texto
+  // parece un valor real, no una sugerencia. El `placeholder` de mas abajo
+  // sigue diciendo que formato se espera, que es para eso que esta el.
+  const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [fallando, setFallando] = useState(false)
   const { login } = useAuth()

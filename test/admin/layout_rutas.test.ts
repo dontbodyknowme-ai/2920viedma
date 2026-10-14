@@ -257,6 +257,49 @@ describe('el login manda a donde el rol puede estar', () => {
  * Montando el gate solo, el unico que decide el destino es el gate, y la
  * pregunta tiene respuesta.
  */
+/**
+ * ## El gate arranca limpio (T6)
+ *
+ * Dejaba `admin@vinoteca.local` en el campo. Con tres cuentas, el que entraba
+ * como gestor o vendedor tenia que borrar ese texto a mano — y un campo con
+ * texto puesto **parece un valor real**, no una sugerencia.
+ */
+describe('el gate arranca limpio', () => {
+  it('el email empieza vacio', async () => {
+    vi.stubGlobal('fetch', fetchDeSesion(null))
+    const montaje = await montarGate()
+
+    const campo = montaje.contenedor.querySelector('#email-admin')
+    expect(campo).toBeInstanceOf(HTMLInputElement)
+    expect((campo as HTMLInputElement).value).toBe('')
+
+    await desmontarAdmin(montaje)
+  })
+
+  it('el placeholder sigue diciendo que formato se espera', async () => {
+    // Campo vacio no es campo sin pistas: sin el placeholder, "admin@vinoteca.local"
+    // se puede escribir a mano y cada quien se lo busca como puede.
+    vi.stubGlobal('fetch', fetchDeSesion(null))
+    const montaje = await montarGate()
+
+    const campo = montaje.contenedor.querySelector('#email-admin')
+    expect(campo?.getAttribute('placeholder')).toBe('admin@vinoteca.local')
+
+    await desmontarAdmin(montaje)
+  })
+
+  it('"Entrar" arranca deshabilitado, y con el boton deshabilitado nadie empiesa', async () => {
+    vi.stubGlobal('fetch', fetchDeSesion(null))
+    const montaje = await montarGate()
+
+    const boton = montaje.contenedor.querySelector('button[type="submit"]')
+    expect(boton).toBeInstanceOf(HTMLButtonElement)
+    expect((boton as HTMLButtonElement).disabled).toBe(true)
+
+    await desmontarAdmin(montaje)
+  })
+})
+
 describe('el gate elige el destino', () => {
   const entrarAlGate = async (rol: Rol) => {
     vi.stubGlobal('fetch', fetchConLogin(USUARIOS[rol]))
