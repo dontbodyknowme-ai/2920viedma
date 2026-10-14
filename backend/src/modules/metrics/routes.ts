@@ -84,7 +84,18 @@ export const metricsRoutes = async (fastify: FastifyInstance): Promise<void> => 
   fastify.get(
     '/api/metrics',
     {
-      preHandler: requireRole('admin', 'gestor'),
+      // El unico `requireRole` que cambia en toda la spec 006. El dashboard
+      // muestra **facturacion de la tienda entera**: ventas de los ultimos 30
+      // dias, ticket promedio, clientes recurrentes. El `gestor` opera el
+      // catalogo y los pedidos, y no tiene por que ver cuanto factura el
+      // negocio.
+      //
+      // Ojo con lo que NO se cambia: `admin` sigue viendo las cinco secciones,
+      // y `/api/orders` —que si ve el `gestor`— sigue igual. Sacar al `gestor`
+      // de las metricas no es sacarlo de los pedidos: los pedidos ya traen
+      // `customer: { id, name, email }` adentro (`orders/routes.ts:38`), asi
+      // que sigue viendo a quien compro sin entrar a `/api/customers`.
+      preHandler: requireRole('admin'),
       schema: jsonSchemas.metrics.get
     },
     async () => {

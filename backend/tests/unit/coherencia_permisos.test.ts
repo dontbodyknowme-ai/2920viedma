@@ -27,36 +27,62 @@ const leer = (ruta: string): string => readFileSync(join(RAIZ, ruta), 'utf8')
 
 type Rol = 'admin' | 'gestor' | 'vendedor'
 
-/** Los roles que el backend acepta en cada endpoint de lectura, por prefijo. */
+const METODOS = /fastify\.(get|post|patch|put|delete)\s*\(/g
+
+/**
+ * Los roles de cada **declaracion de ruta**, por metodo.
+ *
+ * La clave es `METODO ruta` y no la ruta sola, porque no todos los metodos de
+ * una misma ruta permiten lo mismo: `PATCH /api/wines/:id` es admin+gestor y
+ * `DELETE /api/wines/:id` es **solo admin**. Aplanar a la ruta pierde esa
+ * distincion —y es justo la que importa cuando se pregunta "quien puede
+ * borrar un vino".
+ *
+ * ## Por que no se usa un `[\s\S]{0,N}?` entre la ruta y el `requireRole`
+ *
+ * Porque el limite de distancia se rompe con un comentario. La primera version
+ * de este archivo emparejaba `'/api/...'` con el `requireRole` de a 400
+ * caracteres, y **un comentario de ocho lineas explicando por que el `gestor`
+ * no ve la facturacion** —es decir, justo el comentario que explica el cambio
+ * de la spec— dejo a `/api/metrics` sin leer. El test seguia verde: la tabla
+ * del frontend y el backend "coincidian" porque el backend no estaba.
+ *
+ * Ahora se parte el archivo por declaraciones `fastify.<metodo>(` y se busca
+ * el `requireRole` dentro del tramo, que no tiene tope.
+ */
 const leerRequireRole = (): Map<string, Set<Rol>> => {
-  const porRuta = new Map<string, Set<Rol>>()
+  const porDeclaracion = new Map<string, Set<Rol>>()
 
   const modulos = readdirSync(join(RAIZ, 'backend', 'src', 'modules'), {
     withFileTypes: true
   })
 
   for (const mod of modulos) {
-    const archivo = join(RAIZ, 'backend', 'src', 'modules', mod.name, 'routes.ts')
-    const fuente = readFileSync(archivo, 'utf8')
+    const fuente = readFileSync(join(RAIZ, 'backend', 'src', 'modules', mod.name, 'routes.ts'), 'utf8')
 
-    // `fastify.get('/api/orders', { ... preHandler: requireRole('admin', 'gestor', 'vendedor') ... })`
-    // Se empareja cada ruta con el requireRole que la sigue, que es como
-    // Fastify los declara siempre juntos.
-    const bloques = [...fuente.matchAll(/'(\/api\/[^']*)'[\s\S]{0,400}?requireRole\(([^)]*)\)/g)]
+    const cortes = [...fuente.matchAll(METODOS)]
 
-    for (const [, ruta, roles] of bloques) {
-      const lista = [...roles.matchAll(/'(admin|gestor|vendedor)'/g)].map((m) =>
-        m[1]
-      ) as Rol[]
+    for (const [indice, corte] of cortes.entries()) {
+      const desde = (corte.index ?? 0) + corte[0].length
+      const hasta = cortes[indice + 1]?.index ?? fuente.length
+      const bloque = fuente.slice(desde, hasta)
 
-      // El primer `requireRole` de una ruta es el que manda: los endpoints
-      // con `requireRole('admin')` mas adentro son parte de uno mas abierto.
-      if (!porRuta.has(ruta)) porRuta.set(ruta, new Set(lista))
+      const ruta = /'([^']+)'/.exec(borrrar(bloque))?.[1]
+      if (ruta === undefined || !ruta.startsWith('/')) continue
+
+      const roles = /requireRole\(([^)]*)\)/.exec(bloque)
+      if (roles === null) continue
+
+      const lista = [...roles[1].matchAll(/'(admin|gestor|vendedor)'/g)].map((m) => m[1]) as Rol[]
+
+      porDeclaracion.set(`${corte[1].toUpperCase()} ${ruta}`, new Set(lista))
     }
   }
 
-  return porRuta
+  return porDeclaracion
 }
+
+const borrrar = (bloque: string): string => bloque.replace(/\/\*[\s\S]*?\*\//g, ' ')
 
 /** La tabla del frontend, leida del fuente para no duplicarla aca. */
 const leerTablaFrontend = (): Map<string, Set<Rol>> => {
@@ -75,11 +101,11 @@ const leerTablaFrontend = (): Map<string, Set<Rol>> => {
 
 /** Que endpoint del backend sirve cada seccion del panel. */
 const RUTA_POR_SECCION: Record<string, string> = {
-  '/admin': '/api/metrics',
-  '/admin/catalogo': '/api/wines',
-  '/admin/pedidos': '/api/orders',
-  '/admin/clientes': '/api/customers',
-  '/admin/configuracion': '/api/wines'
+  '/admin': 'GET /api/metrics',
+  '/admin/catalogo': 'GET /api/wines',
+  '/admin/pedidos': 'GET /api/orders',
+  '/admin/clientes': 'GET /api/customers',
+  '/admin/configuracion': 'GET /api/wines'
 }
 
 describe('la tabla del frontend coincide con el requireRole del backend', () => {
@@ -111,3 +137,89 @@ describe('la tabla del frontend coincide con el requireRole del backend', () => 
     })
   }
 })
+
+/**
+ * ## La lista exacta de roles por endpoint
+ *
+ * El test de arriba compara la tabla contra el backend, asi que los dos pueden
+ * desincronizarse **juntos** y quedar de acuerdo en algo equivocado. Esto los
+ * fija contra la lista escrita a mano.
+ *
+ * La razon de fijarlos: la spec 006 toco **una** linea de las siete. Un cambio
+ * de rol en cualquiera de las otras seis no es un refactor, es una decision de
+ * negocio —"dejar que el vendedor borre vinos" no es lo mismo que "arreglar un
+ * typo"— y tiene que fallar el build para que alguien la tome a proposito.
+ *
+ * Ojo con el formato: sale de `leerRequireRole()`, que ya se leia para el test
+ * de arriba. Si esa lectura se rompe, **los dos** tests avisan por la misma
+ * razon y no por separado.
+ */
+describe('los roles de cada endpoint son los declarados aca', () => {
+  /**
+   * La lista completa de declaraciones con `requireRole`, escrita a mano.
+   *
+   * El test de arriba compara la tabla del frontend contra el backend, asi que
+   * los dos pueden desincronizarse **juntos** y quedar de acuerdo en algo
+   * equivocado. Esto los fija contra la lista.
+   *
+   * La razon de fijarlos: la spec 006 toco **una** linea de estas catorce. Un
+   * cambio de rol en cualquiera de las otras trece no es un refactor, es una
+   * decision de negocio —"dejar que el vendedor borre vinos" no es lo mismo que
+   * "arreglar un typo"— y tiene que romper el build para que alguien la tome a
+   * proposito.
+   *
+   * Dos asimetrías que parecen olvidos y **no lo son**:
+   *
+   * - `PATCH /api/wines/:id` es admin+gestor pero `DELETE` es **solo admin**.
+   *   Editar un vino es parte del trabajo del gestor; borrarlo no.
+   * - `POST /api/upload` es admin+gestor pero `DELETE /api/upload/:id` es **solo
+   *   admin**. El gestor sube la foto de un vino nuevo; borrar imagenes es
+   *   limpieza.
+   *
+   * Si alguna de las dos se quiere cambiar, se cambia **aca** y en el
+   * `requireRole`, en el mismo commit.
+   */
+  const ESPERADO: Record<string, Rol[]> = {
+    'GET /api/metrics': ['admin'],
+    'GET /api/wines': ['admin', 'gestor'],
+    'POST /api/wines': ['admin', 'gestor'],
+    'PATCH /api/wines/:id': ['admin', 'gestor'],
+    'DELETE /api/wines/:id': ['admin'],
+    'POST /api/wines/import': ['admin', 'gestor'],
+    'GET /api/orders': ['admin', 'gestor', 'vendedor'],
+    'GET /api/orders/:id': ['admin', 'gestor', 'vendedor'],
+    'PATCH /api/orders/:id': ['admin', 'gestor', 'vendedor'],
+    'GET /api/customers': ['admin', 'gestor'],
+    'GET /api/customers/:id': ['admin', 'gestor'],
+    'PATCH /api/customers/:id': ['admin', 'gestor'],
+    'POST /api/upload': ['admin', 'gestor'],
+    'DELETE /api/upload/:id': ['admin']
+  }
+
+  const backend = leerRequireRole()
+
+  it('se encontraron todas las declaraciones', () => {
+    // Un `toEqual` sobre un objeto vacio pasa. Esto es lo que hace que los
+    // tests de abajo no sean afirmaciones sobre nada: si el parser se rompe y
+    // no lee ninguno, el mapa queda vacio y esto falla primero.
+    expect([...backend.keys()].sort()).toEqual(Object.keys(ESPERADO).sort())
+  })
+
+  for (const [declaracion, roles] of Object.entries(ESPERADO)) {
+    it(`${declaracion} es ${roles.join(', ')}`, () => {
+      expect([...(backend.get(declaracion) as Set<Rol>)].sort(), declaracion).toEqual(
+        [...roles].sort()
+      )
+    })
+  }
+
+  it('ninguna declaracion se queda sin requireRole', () => {
+    // Una ruta de lectura sin `requireRole` devolveria el catalogo entero a
+    // cualquier usuario autenticado. El token es valido, asi que no habria ni
+    // un error en los logs: solo datos de mas.
+    const sinProteccion = [...backend.entries()].filter(([, roles]) => roles.size === 0)
+
+    expect(sinProteccion.map(([k]) => k)).toEqual([])
+  })
+})
+
