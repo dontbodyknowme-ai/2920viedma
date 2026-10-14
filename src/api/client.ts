@@ -71,7 +71,26 @@ async function request<T>(
     credentials: 'include'
   })
 
-  if (response.status === 401 && retry) {
+  // Un `401` no siempre es "la sesión se venció".
+  //
+  // En `/api/auth/me` **sí** lo es, y el refresh es lo único que hace que la
+  // sesión sobreviva a un F5: al recargar, este módulo no tiene token en
+  // memoria, así que sin esta rama la cookie de 7 días no serviría para nada y
+  // habría que volver a escribir la contraseña en cada recarga.
+  //
+  // En `/api/auth/login` el `401` **es la respuesta**: no hay sesión que renovar,
+  // hay una contraseña que no es. Antes esta rama se ejecutaba también ahí, el
+  // refresh fallaba, y el `throw` de abajo tapaba el mensaje del backend: **una
+  // contraseña incorrecta se reportaba como "Sesión expirada"**. El caso mas
+  // probable de todos con tres cuentas y tres contraseñas distintas (RF-07 de la
+  // spec 006).
+  //
+  // La condición es por **ruta**, no por "no hay token en memoria": después de
+  // un F5 no hay token, y esa es justamente la situación que el refresh existe
+  // para arreglar.
+  const esLogin = path.startsWith('/api/auth/login')
+
+  if (response.status === 401 && retry && !esLogin) {
     const refreshed = await refreshToken()
     if (refreshed) {
       return request(path, options, false)

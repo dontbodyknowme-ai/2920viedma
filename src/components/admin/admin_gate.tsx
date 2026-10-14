@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { KeyRound, Wine } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { primeraVisible } from '../../utils/permisos'
+import { ApiError } from '../../api/client'
 
 /**
  * Pantalla de acceso al panel.
@@ -15,6 +16,59 @@ import { primeraVisible } from '../../utils/permisos'
  * apareciera arriba, el usuario tendria que volver a buscar el input. Con el
  * foco de vuelta, alcanza con escribir de nuevo.
  */
+
+/**
+ * El texto que ve la persona cuando el login falla.
+ *
+ * Es una funcion pura y exportada, no una constante: hay que poder probarla sin
+ * montar el formulario entero, y los casos que importan —un `code` desconocido,
+ * un error de red— no se reproducen tampoco desde el navegador.
+ *
+ * ## Por que traduce **aca** y no en `app.ts`
+ *
+ * `code` y `message` cumplen papeles distintos. El `code` es para que el
+ * frontend **brinque** —`if (code === 'INVALID_CREDENTIALS')`—, y para eso tiene
+ * que ser estable y legible por una máquina. El `message` es lo que lee una
+ * persona, y solo el frontend sabe quien la esta mirando. Meter el texto humano
+ * en el backend obliga a que cada consumidor pase por alto un `message` que ya
+ * no es un codigo, que es justo la forma en que un `code` deja de ser confiable.
+ *
+ * ## La regla de fondo
+ *
+ * **Una persona nunca lee un identificador en este panel.** Por eso el
+ * `default` es una frase en español y no el `message` crudo: cuando el backend
+ * responde `401` con `{ code: 'INVALID_CREDENTIALS', message:
+ * 'INVALID_CREDENTIALS' }` —y `app.ts:147` manda `message: error.message`, que
+ * en `UnauthorizedError` **es** el codigo— el texto crudo seria el codigo. Con
+ * el `default` generico, un `code` nuevo del backend degrada a una frase en vez
+ * de filtrar un `CODIGO_NUEVO` a la pantalla.
+ *
+ * Un `Map` y no un objeto porque `code in MENSAJES` daria `true` para
+ * `'constructor'`, `'toString'` y cualquier otro codigo que se colara.
+ */
+const MENSAJES = new Map<string, string>([
+  ['INVALID_CREDENTIALS', 'Email o contrasena incorrectos.'],
+  ['VALIDATION_ERROR', 'Revisa el email: no parece una direccion valida.'],
+  ['FST_ERR_RATE_LIMIT', 'Demasiados intentos. Espera un minuto e intenta de nuevo.']
+])
+
+const GENERICO = 'No pudimos iniciar sesion. Revisa el email y la contrasena.'
+
+export const mensajeDeLoginFallido = (error: unknown): string => {
+  // La red se cayo antes de que el backend respondiera, o el navegador lo
+  // bloqueo. `fetch` tira `TypeError` para eso en todos los navegadores, y no
+  // hay ningun `code`: es el unico caso en que el problema **no** son las
+  // credenciales, asi que decir "revisa la contrasena" seria mandar a buscar en
+  // el lugar equivocado — otra vez.
+  if (error instanceof TypeError) {
+    return 'No pudimos contactar al servidor. Intenta de nuevo en un momento.'
+  }
+
+  const code = error instanceof ApiError ? error.code : undefined
+  if (code !== undefined) return MENSAJES.get(code) ?? GENERICO
+
+  return GENERICO
+}
 
 export const AdminGate = () => {
   const [clave, setClave] = useState('')
@@ -47,8 +101,7 @@ export const AdminGate = () => {
       const usuario = await login(email, clave)
       navigate(primeraVisible(usuario.role) ?? '/admin', { replace: true })
     } catch (err: unknown) {
-      const mensaje = err instanceof Error ? err.message : 'Contrasena incorrecta.'
-      setError(mensaje)
+      setError(mensajeDeLoginFallido(err))
       setClave('')
       setFallando(true)
     }
