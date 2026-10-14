@@ -7,6 +7,7 @@ import { AdminHeader } from './admin_header'
 import { AdminSidebar } from './admin_sidebar'
 import { useEsMovil } from '../../hooks/useMediaQuery'
 import { useAuth } from '../../hooks/useAuth'
+import { SECCIONES, primeraVisible, puedeVer } from '../../utils/permisos'
 
 /**
  * Layout del panel de administracion.
@@ -32,23 +33,40 @@ import { useAuth } from '../../hooks/useAuth'
  * La tienda publica no menciona el panel en ningun lado. Un boton "Modo Admin"
  * en la navbar le diria a cualquier visitante que hay una seccion restringida y
  * que esta a un clic.
+ *
+ * ## Y con sesion pero sin permiso, si hay redirect
+ *
+ * El filtro del menu (T2) no alcanza: la URL se puede escribir a mano. Con
+ * sesion de `gestor`, `/admin` montaba el Dashboard, el dashboard pedia
+ * `/api/metrics` y la pantalla era un error de 403. El backend hacia bien su
+ * trabajo; **la interfaz lo llevo a una seccion que no puede usar**.
+ *
+ * Asi que el redirect va aca, que es el unico ancestro de las cinco rutas.
+ *
+ * ## Que se dibuja mientras se redirige: nada
+ *
+ * Durante el frame del redirect el layout devuelve `null`. Si montara el
+ * `<Outlet>` mientras tanto, la pagina vedada se pediria a la API y el 403
+ * apareceria un instante antes de la pagina buena: un error que no ocurrio, a la
+ * vista de todos. Cuesta un frame en blanco, que no se nota.
  */
 
-const TITULOS: Record<string, string> = {
-  '/admin': 'Dashboard',
-  '/admin/catalogo': 'Catalogo',
-  '/admin/pedidos': 'Pedidos',
-  '/admin/clientes': 'Clientes',
-  '/admin/configuracion': 'Configuracion'
-}
-
-const tituloDe = (ruta: string): string => TITULOS[ruta] ?? 'Administracion'
+/**
+ * El titulo de cada ruta sale de la **tabla de permisos**, no de un mapa propio.
+ *
+ * Antes `admin_layout.tsx` tenia su `TITULOS` y `admin_sidebar.tsx` su lista de
+ * enlaces, y las dos copias de la misma correspondencia ruta → nombre se
+ * desincronizaban solas: se agregaba una seccion y el menu laenia pero el
+ * titulo decia "Administracion".
+ */
+const tituloDe = (ruta: string): string =>
+  SECCIONES.find((seccion) => seccion.ruta === ruta)?.etiqueta ?? 'Administracion'
 
 export const AdminLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const esMovil = useEsMovil()
-  const { isAuthenticated, isLoading, logout } = useAuth()
+  const { isAuthenticated, isLoading, logout, user } = useAuth()
 
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [colapsado, setColapsado] = useState(false)
@@ -57,6 +75,25 @@ export const AdminLayout = () => {
   useEffect(() => {
     setAutorizado(isAuthenticated)
   }, [isAuthenticated])
+
+  /**
+   * Donde va a caer este rol si la ruta actual no la puede ver.
+   *
+   * `null` cuando no hay ninguna seccion visible para el rol. Hoy no existe
+   * ninguno —`test/permisos.test.ts` lo verifica para los tres— y en ese caso
+   * **no se redirige**: se deja que el backend conteste con su `403`.
+   *
+   * Redirigir ahi seria un bucle: el destino seria `null` otra vez, y asi
+   * hasta que el navegador se canse. Un `403` feo es mejor que una pagina en
+   * blanco que se recarga sola.
+   */
+  const destino = user !== null && !puedeVer(user.role, location.pathname)
+      ? primeraVisible(user.role)
+      : null
+
+  useEffect(() => {
+    if (destino !== null) navigate(destino, { replace: true })
+  }, [destino, navigate])
 
   // En movil el drawer se cierra solo al cambiar de seccion: si no, el usuario
   // navega y el menu le queda tapando el contenido.
@@ -71,6 +108,9 @@ export const AdminLayout = () => {
 
   if (isLoading) return null
   if (!autorizado) return <AdminGate />
+
+  // Un frame en blanco mientras se redirige, antes que montar la pagina vedada.
+  if (destino !== null) return null
 
   return (
     <div className='min-h-screen bg-charcoal-900 text-cream-100'>

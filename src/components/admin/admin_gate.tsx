@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { KeyRound, Wine } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { primeraVisible } from '../../utils/permisos'
 
 /**
  * Pantalla de acceso al panel.
@@ -34,8 +35,13 @@ export const AdminGate = () => {
       // sigue en `false`, `AdminLayout` vuelve a renderizar `<AdminGate />` y
       // el formulario se limpia: bucle infinito **con la password correcta**.
       // Ese fue el bug que hacia el panel inaccesible.
-      await login(email, clave)
-      navigate('/admin', { replace: true })
+      //
+      // El `login` devuelve el usuario, y no se lee del contexto, porque dentro
+      // del mismo `await` el `user` del closure es el de antes del login, o sea
+      // `null`. Mandarlo siempre a `/admin`eria funcionar: el layout redirige
+      // igual. Pero seria mandarlo a una URL que **sabe** que no puede ver.
+      const usuario = await login(email, clave)
+      navigate(primeraVisible(usuario.role) ?? '/admin', { replace: true })
     } catch (err: unknown) {
       const mensaje = err instanceof Error ? err.message : 'Contrasena incorrecta.'
       setError(mensaje)

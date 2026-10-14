@@ -112,6 +112,44 @@ Object.defineProperty(globalThis, 'IntersectionObserver', {
   writable: true
 })
 
+/**
+ * `matchMedia` tampoco existe en jsdom, y `useEsMovil` lo necesita para decidir
+ * entre sidebar fija y drawer.
+ *
+ * El stub **lee `window.innerWidth`** en vez de devolver `false` fijo: con el
+ * `375` de arriba responde `true` a `(max-width: 767px)`, que es lo que hace un
+ * navegador de verdad. Un stub que devuelve `false` siempre probaria el panel
+ * como si estuviera en un monitor de 2000 px, y el drawer de movil —con su boton
+ * de cerrar y su fondo oscurecido— no se veria nunca.
+ *
+ * `addEventListener` es un no-op: estos tests no redimensionan la ventana, y un
+ * stub que re-renderiza en cada resize haria mas dificil de leer un fallo.
+ */
+Object.defineProperty(window, 'matchMedia', {
+  value: (consulta: string): MediaQueryList => {
+    const ancho = window.innerWidth
+    const maximo = /\(max-width:\s*(\d+)px\)/.exec(consulta)
+    const minimo = /\(min-width:\s*(\d+)px\)/.exec(consulta)
+
+    const coincide =
+      (maximo === null || ancho <= Number(maximo[1])) &&
+      (minimo === null || ancho >= Number(minimo[1]))
+
+    return {
+      matches: coincide,
+      media: consulta,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false
+    } as unknown as MediaQueryList
+  },
+  configurable: true,
+  writable: true
+})
+
 export const CLAVE_VINOS = 'vinoteca_wines'
 export const CLAVE_CARRITO = 'vinoteca_cart'
 
