@@ -48,6 +48,12 @@ export const AdminHeader = ({
   const email = user?.email ?? ''
   const rol = user ? ROLES[user.role] ?? user.role : null
 
+  // Cuando el nombre **es** el rol —"Gestor", "Vendedor"—, la etiqueta de rol
+  // repetiria la misma palabra en la misma pantalla. No se dibuja: informa de
+  // algo que ya esta a la vista. Para "Manuel" si aparece, porque ahi el rol
+  // es informacion que el nombre no da.
+  const rolRedundante = rol !== null && rol === nombre
+
   return (
     <header className='sticky top-0 z-30 border-b border-wine-900/50 bg-charcoal-950/90 backdrop-blur'>
       <div className='flex items-center justify-between gap-4 px-4 py-4 md:px-6'>
@@ -103,7 +109,7 @@ export const AdminHeader = ({
                   {email && (
                     <p className='truncate text-xs text-neutral-500'>{email}</p>
                   )}
-                  {rol && (
+                  {rol && !rolRedundante && (
                     <p className='mt-1 inline-flex items-center gap-1 rounded-full bg-wine-900/60 px-2 py-0.5 text-[11px] font-medium text-wine-200'>
                       <Shield className='h-3 w-3' aria-hidden='true' />
                       {rol}

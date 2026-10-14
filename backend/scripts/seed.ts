@@ -48,30 +48,32 @@ const leerClave = (variable: string): { valor: string; esDev: boolean } => {
 }
 
 async function main() {
-  // Nombres de persona, no el nombre del rol.
+  // Nombres de persona, no el nombre del rol — con una excepcion.
   //
-  // Con `name: 'Administrador'` el panel no podia distinguir "quien estas
-  // conectado" de "que rol tenes": el menu de usuario muestra ambos y decia
-  // "Administrador" dos veces, en dos lugares distintos. Con nombre real el
-  // menu dice **Ana Ruiz · admin@vinoteca.local · Administradora**, y se lee
-  // de un vistazo que son tres datos y no dos.
+  // `Gestor` y `Vendedor` **son** el rol, y estan bien: el menu de usuario
+  // muestra nombre, email y rol, y con "Gestor" dos veces se ve cual es cual
+  // de un vistazo. Para eso `admin_header.tsx` no dibuja la etiqueta de rol
+  // cuando coincide con el nombre.
+  //
+  // El admin si lleva nombre propio ("Manuel"), porque "Administrador"
+  // no dice quien esta operando.
   const users = [
     {
       email: 'admin@vinoteca.local',
       clave: leerClave('SEED_ADMIN_PASSWORD'),
-      name: 'Ana Ruiz',
+      name: 'Manuel',
       role: 'admin' as const
     },
     {
       email: 'gestor@vinoteca.local',
       clave: leerClave('SEED_GESTOR_PASSWORD'),
-      name: 'Bruno Diaz',
+      name: 'Gestor',
       role: 'gestor' as const
     },
     {
       email: 'vendedor@vinoteca.local',
       clave: leerClave('SEED_VENDEDOR_PASSWORD'),
-      name: 'Carla Suarez',
+      name: 'Vendedor',
       role: 'vendedor' as const
     }
   ]
