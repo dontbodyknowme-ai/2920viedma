@@ -45,7 +45,7 @@ Tener la app **en producción, con HTTPS, base de datos real y archivos reales**
 ### Base de datos
 
 - **RF-07** El esquema se crea con las migraciones ya versionadas de `backend/prisma/migrations`, no con `prisma db push`.
-- **RF-08** `DATABASE_URL` la inyecta Railway; nunca se escribe a mano ni se commitea.
+- **RF-08** `DATABASE_URL` es la conexión **pooled** de Neon y `DIRECT_URL` la **directa**, que es la que usan las migraciones. Ninguna de las dos se commitea. (Revisado el 2026-10-13: con la pooled, PgBouncer deja el advisory lock tomado y el segundo deploy muere — ver D-B y la nota 25 de AGENTS.md)
 
 ### Storage en Cloudflare R2
 
@@ -57,7 +57,7 @@ Tener la app **en producción, con HTTPS, base de datos real y archivos reales**
 ### Frontend en Vercel
 
 - **RF-13** El frontend se despliega desde `main` con `npm run build` y publica `dist/`.
-- **RF-14** `VITE_API_URL` apunta a la URL pública de Railway.
+- **RF-14** `VITE_API_URL` apunta a la URL pública de la API.
 - **RF-15** **Las rutas del panel funcionan con recarga directa.** `/admin`, `/admin/catalogo`, `/admin/pedidos`, `/admin/clientes` y `/admin/configuracion` devuelven `index.html`, no un 404. Sin esto, recargar el panel rompe — y con `createBrowserRouter` es exactamente lo que pasa.
 - **RF-16** El frontend **no** lleva un botón de acceso al panel en la tienda pública. Se sigue entrando escribiendo `/admin`.
 
