@@ -59,22 +59,27 @@ como parte de `puedeVer`, que no conoce esa ruta y redirige.
 
 ## T4 — El backend saca al gestor de las métricas
 
-**Cubre:** RF-01 (backend) · **D-B**
+**Cubre:** RF-01 (backend) · **D-B** — ✅ `8be193a`
 
-- [ ] `metrics/routes.ts:87`: `requireRole('admin', 'gestor')` → `requireRole('admin')`
-- [ ] Un test que cubra el caso `gestor` → `403` en `GET /api/metrics`
-- [ ] Los demás `requireRole` **sin tocar**: se verifica con un test que los
-      recorre y falla si alguno cambió de rol sin querer
+- [x] `metrics/routes.ts`: `requireRole('admin', 'gestor')` → `requireRole('admin')`
+- [x] Un test que cubra el caso `gestor` → `403` en `GET /api/metrics`, por la
+      app real con `inject` y no por el middleware suelto
+- [x] Los demás `requireRole` **sin tocar**: los 13 restantes están fijados en
+      una lista escrita a mano que rompe el build si cambian
 
-**Nota:** una línea de producción, pero es la única. Verificar a mano contra
-producción: entrar como `gestor` y pedir `/api/metrics` tiene que dar `403`.
+**Nota:** la verificación contra producción queda pendiente. El código está en
+`spec-006`, no en `main`.
 
-**Por qué puede ir ahora:** el test cruzado de T1
-(`coherencia_permisos.test.ts`) mapea `/admin` a `/api/metrics` y verifica que
-la tabla no prometa más de lo que el backend permite. Hoy ese caso **pasa por el
-lado que el test no tapa** — el backend todavía acepta al gestor y la tabla
-promete menos — o sea que `/admin` no tiene cobertura real. Recién con esta línea
-el quinto de los cinco pares queda verificado en los dos sentidos.
+**Extra — dos cosas que aparecieron al escribir el test:**
+
+- **La asimetría `PATCH`/`DELETE`**: `PATCH /api/wines/:id` es admin+gestor y
+  `DELETE /api/wines/:id` es **solo admin**. El parser viejo aplanaba a la ruta
+  y perdía esa distinción. Está anotada en el test para que el próximo que la
+  lea no la "arregle".
+- **El parser del cruce estaba roto**: emparejaba `'/api/...'` con el
+  `requireRole` de a 400 caracteres, y el comentario que escribí en
+  `metrics/routes.ts` dejó a `/api/metrics` sin leer. El test seguía verde
+  porque los dos lados "coincidían" con el backend ausente del mapa.
 
 ---
 
@@ -110,53 +115,102 @@ correr sin ellas.
 
 ## T6 — El email del gate arranca vacío
 
-**Cubre:** RF-06
+**Cubre:** RF-06 — ✅ `f8f34ad`
 
-- [ ] `admin_gate.tsx:20`: el estado inicial del email es `''`
-- [ ] El `placeholder` se queda, para que se vea qué formato se espera
-- [ ] Test del gate: el campo arranca vacío
+- [x] El estado inicial del email es `''`
+- [x] El `placeholder` se queda, para que se vea qué formato se espera
+- [x] Test del gate: el campo arranca vacío
+- [x] Test del control: el botón "Entrar" arranca deshabilitado, así que el
+      campo vacío no es solo cosmético
 
-**Nota:** se hace antes que T7 y no al final como decía la versión original:
-T7 también toca `admin_gate.tsx`, y las dos cosas son cambios distintos que se
-leen mejor en commits separados que en uno.
+**Nota:** va antes que T7 y no al final como decía la versión original: los dos
+tocan `admin_gate.tsx` y son cambios distintos que se leen mejor en commits
+separados.
 
 ---
 
 ## T7 — La contraseña incorrecta se reporta como contraseña incorrecta
 
-**Cubre:** RF-07 · **D-G, D-H**
+**Cubre:** RF-07 · **D-G, D-H** — ✅ `5c048e7`
 
 Bug **preexistente**, encontrado escribiendo los tests de T3. No estaba en el
 encargo; entra porque esta spec crea tres cuentas con tres contraseñas
 distintas, que es justo cuando más se va a confundir una.
 
-- [ ] `client.ts`: un `401` de `/api/auth/login` **no** intenta refrescar
-- [ ] `/api/auth/me` **sí** lo intenta — es lo que hace que la sesión sobreviva
+- [x] `client.ts`: un `401` de `/api/auth/login` **no** intenta refrescar
+- [x] `/api/auth/me` **sí** lo intenta — es lo que hace que la sesión sobreviva
       a un F5, y no se toca
-- [ ] El gate traduce `code` conocido a texto en español
-- [ ] Un `code` **desconocido** cae en una frase genérica, **no** en el código:
+- [x] El gate traduce `code` conocido a texto en español
+- [x] Un `code` **desconocido** cae en una frase genérica, **no** en el código:
       una persona nunca lee un identificador en este panel
-- [ ] Un error de red (`Failed to fetch`) también sale en español, no en inglés
-- [ ] La función de traducción es **pura y exportada**, testeable sin montar
-- [ ] El backend **no** se toca
-- [ ] Test: contraseña incorrecta → el gate dice contraseña incorrecta
-- [ ] Test: `/api/auth/me` `401` + refresh `200` → **restaura** la sesión
+- [x] Un error de red (`Failed to fetch`) sale en español, y **no** dice "revisa
+      la contraseña": ahí el problema no son las credenciales
+- [x] La función de traducción es **pura y exportada**, testeable sin montar
+- [x] El backend **no** se toca
+- [x] Test: contraseña incorrecta → el gate dice contraseña incorrecta
+- [x] Test: `/api/auth/me` `401` + refresh `200` → **restaura** la sesión
+- [x] Test del otro lado: `401` + refresh `401` → **vuelve** al gate
+- [x] Test de control: el `me` del arranque **sí** refresca
+- [x] Test de control: el "no refresca" mira las llamadas **después** del login,
+      no todas — el `me` del arranque sí refresca, y negar cualquier refresh en
+      la página haría el test pasar por el motivo equivocado
 
-> El segundo test es el importante. La confusión natural después de D-G es
-> "los `401` ya no se refrescan nunca", y sin ese test el error pasa inadvertido:
-> el síntoma es que la sesión no sobrevive a la recarga, y en desarrollo local
-> se siente como que "a veces funciona".
+> Los dos tests de "vuelve al gate" y "el `me` sí refresca" importan tanto como
+> el de "restaura": sin ellos, el primero pasaría también con el refresh roto,
+> porque significaría que nunca se intentó.
 
 ---
 
 ## Al terminar
 
-- [ ] `npm run typecheck`, `npm run lint`, `npm test` en verde
-- [ ] `cd backend && npm run typecheck && npm run test` en verde
-- [ ] Los once chequeos de `specs/006-permisos-rol/spec.md` sección 7
-- [ ] Verificación manual contra producción con los tres roles
+- [x] `npm run typecheck`, `npm run lint`, `npm test` en verde
+- [x] `cd backend && npm run typecheck && npm run test && npm run build` en verde
+- [x] Los trece chequeos de `specs/006-permisos-rol/spec.md` sección 7
+- [ ] Verificación manual contra producción con los tres roles — **requiere
+      merge**: el código está en `spec-006`
 - [ ] `AGENTS.md` y `MEMORY.md` actualizados
 - [ ] **PR a `main`**, y merge **solo** si lo pide el usuario
+
+### Lo que queda, y por qué
+
+**La verificación contra producción no se puede hacer todavía.** T2, T3, T4, T6
+y T7 son cambios de comportamiento que no existen en `main`. V-03, V-06 y V-12
+—los tres que dependen del comportamiento nuevo— solo se pueden afirmar después
+del merge.
+
+Lo que **sí** se verificó contra producción, sin mergear:
+
+| | | |
+|---|---|---|
+| V-08 | los tres usuarios existen, con rol y nombre correctos, y las tres contraseñas funcionan | ✅ `verificar:logins` → 200/200/200 |
+| V-09 | `npm run seed` no imprime contraseñas | ✅ el seed imprime solo emails |
+| V-10 | ninguna de las tres claves aparece en `git grep` | ⚠️ **parcial**, ver abajo |
+| CA-06 | la imagen de R2 sigue viva a las 24 h | ⏳ faltan 4,6 h |
+
+### V-10 no cumple tal como está escrita
+
+El checklist decía *"aparece en `.env.example` y en tests, y en ningún otro
+lado"*. La realidad de `git grep admin123`:
+
+```
+backend/scripts/seed.ts          <-- el fallback de desarrollo
+AGENTS.md, MEMORY.md, docs/DEPLOY.md
+scripts/armar-ca06.mjs
+backend/tests/**  (5 archivos)
+specs/004-a, 004-b, 004-c, 005  (documentación de specs viejas)
+```
+
+Ni `.env.example` ni `ningún otro lado` son exactos. Lo que **sí** se cumple,
+que es lo que importa, es lo que el usuario pidió: **las tres contraseñas
+reales no están en el repo**. Se verifica estructuralmente en
+`seed_passwords.test.ts` —`las tres claves salen de leerClave(), y solo de ahí`—
+y no con un `grep` de un valor que el agente no debe ver nunca.
+
+`admin123` es el fallback de desarrollo documentado (`CLAVE_DEV`), no un
+secreto: está en el `AGENTS.md` de la 004-b como credencial de prueba, y sin él
+el seed no correría en CI. Que aparezca en `seed.ts` es **por diseño** (D-D/D-E),
+no una fuga. El checklist estaba mal escrito y queda corregido acá en vez de
+marcar la casilla.
 
 ---
 
