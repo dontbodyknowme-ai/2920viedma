@@ -35,6 +35,19 @@ RUN apt-get update \
 
 WORKDIR /app
 
+# Placeholders para que `prisma generate` pueda **validar** el schema.
+#
+# `generate` no se conecta a la base, pero lee y valida el datasource, y
+# `directUrl = env("DIRECT_URL")` hace que la variable tenga que existir. Sin
+# esto el build muere con:
+#
+#   error: Environment variable not found: DIRECT_URL.   (P1012)
+#
+# Solo viven en la etapa builder: la runner no hereda este `ENV`, asi que en
+# produccion mandan las variables de verdad y estos no llegan a la imagen final.
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+ENV DIRECT_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+
 # `COPY package*.json` primero para que `npm ci` se cachee y no se repita en
 # cada cambio de codigo. El `*.json` agarra el lockfile tambien: si faltara,
 # `npm ci` se niega a instalar.

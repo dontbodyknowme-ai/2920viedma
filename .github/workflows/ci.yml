@@ -55,6 +55,19 @@ jobs:
     defaults:
       run:
         working-directory: ./backend
+    # A nivel de job y no por paso. Repetirla paso por paso es justamente como
+    # una variable nueva se propaga a todos los lugares menos a uno: al agregar
+    # `directUrl` al datasource de Prisma (las migraciones no pueden ir por el
+    # pooler, por el advisory lock) el CI se rompio con
+    #
+    #   error: Environment variable not found: DIRECT_URL.   (P1012)
+    #
+    # en `Run migrations`, y tardamos tres commits en notarlo.
+    env:
+      DATABASE_URL: postgresql://vinoteca:vinoteca@localhost:5432/vinoteca
+      # Sin pooler. En el CI no hay pooler, pero Prisma exige que la variable
+      # exista: `directUrl` no es opcional en el schema.
+      DIRECT_URL: postgresql://vinoteca:vinoteca@localhost:5432/vinoteca
     services:
       postgres:
         image: postgres:16-alpine
@@ -84,13 +97,14 @@ jobs:
 
       - name: Generate Prisma Client
         run: npm run db:generate
-        env:
-          DATABASE_URL: postgresql://vinoteca:vinoteca@localhost:5432/vinoteca
 
+      # `db:deploy` = `prisma migrate deploy`, no `db:migrate` = `migrate dev`.
+      # `migrate dev` abre un prompt interactivo y crea una base sombra: en un
+      # runner sin TTY se cuelga o falla por un motivo que no tiene que ver con
+      # el codigo. La version applied de las migraciones la decide el repo, no
+      # el estado de la base.
       - name: Run migrations
-        run: npm run db:migrate
-        env:
-          DATABASE_URL: postgresql://vinoteca:vinoteca@localhost:5432/vinoteca
+        run: npm run db:deploy
 
       - name: Typecheck
         run: npm run typecheck
@@ -100,8 +114,6 @@ jobs:
 
       - name: Test
         run: npm run test
-        env:
-          DATABASE_URL: postgresql://vinoteca:vinoteca@localhost:5432/vinoteca
 
   docker:
     name: Docker build
@@ -111,8 +123,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Contexto en la **raiz**, no en `./backend`: el `Dockerfile` vive en la
+      # raiz para que el contexto sea la raiz por definicion y ningun proveedor
+      # de deploy necesite configurar un "root directory". Con `./backend` el
+      # build falla sin encontrar el Dockerfile.
       - name: Build backend image
-        run: docker build -t vinoteca-backend ./backend
+        run: docker build -t vinoteca-backend .
 
       - name: Build frontend image (placeholder)
         run: echo "Frontend Docker build would go here"

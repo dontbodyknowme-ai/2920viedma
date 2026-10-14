@@ -413,6 +413,57 @@ describe('variables de entorno', () => {
     expect(leer('docker-compose.yml')).toMatch(/DIRECT_URL/)
   })
 
+  it('el CI define todas las variables que el schema de Prisma exige', () => {
+    // `prisma generate` y `prisma migrate` **validan** el datasource aunque no
+    // se conecten a nada, y `directUrl = env("DIRECT_URL")` hace que la
+    // variable tenga que existir. Agregarla al schema la obligo a declararla en
+    // todas partes: `.env.example`, `docker-compose.yml`, Render... y el CI,
+    // que es el que mas se olvida porque no tiene `.env` y nadie lo ve local.
+    //
+    // El costo real de olvidarlo: `Error: Environment variable not found:
+    // DIRECT_URL` (P1012) en `Run migrations`, con el job **verde en el
+    // frontend** y el backend en rojo. Se vio tres commits seguidos.
+    const schema = leer('backend/prisma/schema.prisma')
+    const exigidas = [...schema.matchAll(/env\("([A-Z_]+)"\)/g)].map((m) => m[1] ?? '')
+
+    expect(exigidas).toContain('DATABASE_URL')
+    expect(exigidas).toContain('DIRECT_URL')
+
+    const workflow = leer('.github/workflows/ci.yml')
+
+    // El job de backend es el que corre Prisma. El fragmento va de `backend:`
+    // hasta `docker:`, que es donde empieza el job siguiente.
+    const jobBackend = workflow.slice(
+      workflow.indexOf('\n  backend:'),
+      workflow.indexOf('\n  docker:')
+    )
+
+    const faltantes = exigidas.filter((v) => !new RegExp(`^\\s*${v}:`, 'm').test(jobBackend))
+
+    expect(faltantes).toEqual([])
+  })
+
+  it('el CI construye la imagen desde la raiz', () => {
+    // El `Dockerfile` esta en la raiz a proposito (el contexto tiene que ser la
+    // raiz). Un `docker build ./backend` en el workflow no lo encuentra y el
+    // job falla en el primer paso, que es facil de pasar por alto porque el
+    // error dice "Dockerfile not found" y no "el contexto esta mal".
+    const workflow = leer('.github/workflows/ci.yml')
+
+    expect(workflow).toContain('docker build -t vinoteca-backend .')
+    expect(workflow).not.toMatch(/docker build[^\n]*\.\/backend/)
+  })
+
+  it('el CI aplica migraciones con `migrate deploy`', () => {
+    // `migrate dev` abre un prompt interactivo y crea una base sombra. En un
+    // runner sin TTY eso se cuelga o falla por un motivo que no tiene nada que
+    // ver con el codigo que se quiere probar.
+    const workflow = leer('.github/workflows/ci.yml')
+
+    expect(workflow).toContain('npm run db:deploy')
+    expect(workflow).not.toContain('npm run db:migrate')
+  })
+
   it('.env no se commitea', () => {
     expect(gitignore).toMatch(/^\.env$/m)
   })
