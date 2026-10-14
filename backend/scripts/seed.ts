@@ -4,23 +4,30 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
+  // Nombres de persona, no el nombre del rol.
+  //
+  // Con `name: 'Administrador'` el panel no podia distinguir "quien estas
+  // conectado" de "que rol tenes": el menu de usuario muestra ambos y decia
+  // "Administrador" dos veces, en dos lugares distintos. Con nombre real el
+  // menu dice **Ana Ruiz · admin@vinoteca.local · Administradora**, y se lee
+  // de un vistazo que son tres datos y no dos.
   const users = [
     {
       email: 'admin@vinoteca.local',
       password: 'admin123',
-      name: 'Administrador',
+      name: 'Ana Ruiz',
       role: 'admin' as const
     },
     {
       email: 'gestor@vinoteca.local',
       password: 'admin123',
-      name: 'Gestor',
+      name: 'Bruno Diaz',
       role: 'gestor' as const
     },
     {
       email: 'vendedor@vinoteca.local',
       password: 'admin123',
-      name: 'Vendedor',
+      name: 'Carla Suarez',
       role: 'vendedor' as const
     }
   ]
@@ -28,7 +35,10 @@ async function main() {
   for (const user of users) {
     await prisma.user.upsert({
       where: { email: user.email },
-      update: {},
+      // `name` y `role` si se actualizan: son datos de demostracion y el seed
+      // es la fuente de verdad de ellos. `passwordHash` **no**: re-seedear no
+      // puede resetear una contrasena que alguien haya cambiado.
+      update: { name: user.name, role: user.role },
       create: {
         email: user.email,
         name: user.name,
