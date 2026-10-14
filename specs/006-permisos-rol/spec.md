@@ -142,9 +142,50 @@ credenciales en la consola de quien lo corre. Pasa a mostrar solo los emails.
 `admin_gate.tsx:20` deja `admin@vinoteca.local` puesto. Con tres personas eso
 obliga a cada vendedor a borrarlo a mano. Campo vacío.
 
+### RF-07 — Una contraseña incorrecta se reporta como contraseña incorrecta
+
+Bug encontrado **escribiendo los tests de T3**, no estaba en el encargo. Se
+incluye porque esta spec crea las tres cuentas con tres contraseñas distintas: es
+justo el escenario en que más se va aEQUIVocar una al entrar, y hoy el panel
+responde con un mensaje que no corresponde.
+
+El camino real, de punta a punta:
+
+| | |
+|---|---|
+| `POST /api/auth/login` con contraseña incorrecta | backend: `401 { code: 'INVALID_CREDENTIALS' }` |
+| `client.ts:74` | ve `401` → intenta refrescar el token → falla → `throw new Error('Sesión expirada. Inicie sesión nuevamente.')` |
+| lo que ve la persona | **"Sesión expirada. Inicie sesión nuevamente."** |
+
+Es decir: **la contraseña incorrecta se reporta como sesión vencida**. Con tres
+usuarios, el que se confunde de contraseña/no de usuario ve un mensaje que lo
+manda a buscar el problema en el lugar equivocado — a recargar la página, que es
+exactamente lo que la persona ya hizo.
+
+Y el arreglo no es de una línea: si solo se saca el refresh, el gate pasa a
+mostrar **`INVALID_CREDENTIALS`**, porque `app.ts:147` manda
+`message: error.message` y en `UnauthorizedError('INVALID_CREDENTIALS')` el
+`message` **es** el código. El texto legible no existe en ninguna de las dos
+capas.
+
+Requisitos:
+
+- Un `401` de `/api/auth/login` **no** dispara el intento de refresh: ahí no hay
+  sesión que renovar, hay una contraseña que no es.
+- El `401` de `/api/auth/me` **sí** lo dispara. Es el caso donde el refresh por
+  cookie es lo único que hace que la sesión sobreviva a un F5, y esta spec no
+  lo toca.
+- Lo que se ve en pantalla es un texto en español. **Nunca un código**: si el
+  backend devuelve un código que el gate no conoce, sale un texto genérico, no
+  `CODIGO_DESCONOCIDO`.
+- El backend **no** cambia. Los códigos existen para que el frontend branche;
+  el texto para una persona va en el frontend, que es el único que sabe quién
+  lo lee.
+
 ---
 
 ## 5. Fuera de alcance (a propósito)
+
 
 | | Por qué |
 |---|---|
@@ -165,6 +206,7 @@ obliga a cada vendedor a borrarlo a mano. Campo vacío.
 | Filtrar el sidebar y olvidar el layout | El redirect de RF-02 vive en `admin_layout.tsx`, no en el sidebar. Test que cubre la URL directa |
 | Un rol se queda sin ninguna sección | Ninguno: a `vendedor` siempre le queda Pedidos, a `gestor` le quedan cuatro |
 | Cambiar `TIENDA` a async rompe todos los `Intl.NumberFormat` | No se toca `TIENDA` en esta spec |
+| Sacar el refresh del login rompe la restauración de sesión tras F5 | El cambio es **quirIT el refresh solo en `/api/auth/login`**. `/api/auth/me` lo mantiene, que es donde el refresh por cookie hace su trabajo. Hay un test que lo verifica (V-13), porque la confusión natural es pensar "los 401 no se refrescan nunca" |
 
 ---
 
@@ -183,6 +225,8 @@ obliga a cada vendedor a borrarlo a mano. Campo vacío.
 | V-09 | `npm run seed` no imprime contraseñas |
 | V-10 | ninguna de las tres aparece en `git grep` |
 | V-11 | tests, typecheck, lint, build en verde |
+| V-12 | contraseña incorrecta: el gate dice **contraseña incorrecta**, no "sesión expirada" ni `INVALID_CREDENTIALS` |
+| V-13 | con la cookie de refresco puesta, un F5 en `/admin` **restaura** la sesión (el `401` de `/api/auth/me` sigue refrescando) |
 
 ---
 
