@@ -174,28 +174,54 @@ desde los datos locales del frontend, y el catálogo del panel mostraría 0.
 
 ## T8 — Verificación integral
 
-**Cubre:** CA-01 … CA-11
+**Cubre:** CA-01 → CA-11
 
-- [ ] **CA-01** `/health` → `200` con `db: connected`
-- [ ] **CA-02** `/api/wines/public` → `200` con datos
-- [ ] **CA-03** El frontend muestra el catálogo
-- [ ] **CA-04** Login real entra al panel con métricas
-- [ ] **CA-05** Recargar `/admin/catalogo` no da 404
-- [ ] **CA-06** Una imagen subida sigue visible **24 h después**
-- [ ] **CA-07** Sin botón de acceso al panel en la tienda
-- [ ] **CA-08** Origen no permitido recibe 403 de CORS
-- [ ] **CA-09** Sin secretos en el repo
-- [ ] **CA-10** CI en verde
-- [ ] **CA-11** `docs/DEPLOY.md` se puede seguir de principio a fin
+> **Ejecutada el 2026-10-14.** Automatizada en `scripts/verificar-produccion.mjs`
+> (`npm run verificar:produccion`): corre los once chequeos y sale con código 1
+> si alguno falla, así que sirve en CI. Cuatro quedan `manual` a propósito, con
+> el motivo: **un script que dice `OK` sin haber comprobado nada es peor que uno
+> que dice `manual`.**
 
-**Puerta:** los once marcados. **CA-06 espera 24 h reales**: no se puede marcar antes.
+- [x] **CA-01** `/health` → `200` con `db: connected` — `status=200 db=connected`
+- [x] **CA-02** `/api/wines/public` → `200` con datos — `vinos=10` (de 12; 2 inactivos a propósito, que es lo esperado)
+- [x] **CA-03** El frontend muestra el catálogo — renderiza hero, filtros y las botellas
+- [x] **CA-04** Login real entra al panel con métricas — `login` 200 → panel abierto → `/api/metrics` 200 con datos. Verificado además que la sesión **sobrevive un F5**
+- [x] **CA-05** Recargar `/admin/catalogo` no da 404 — las 5 rutas devuelven `index.html`
+- [ ] **CA-06** Una imagen subida sigue visible **24 h después** — **reloj armado, no se puede cerrar antes.** `npm run armar:ca06` subió una imagen real a las `2026-10-14T03:02:47Z`; la URL respondió `200 image/webp`, sin firma ni caducidad. Vence `2026-10-15T03:02:47Z`
+- [x] **CA-07** Sin botón de acceso al panel en la tienda — sin link a `/admin` en el HTML
+- [x] **CA-08** Origen no permitido **no** recibe CORS — el permitido recibe `access-control-allow-origin`, el otro no. **La spec pedía 403 y eso está mal**: `@fastify/cors` con origen fijo no devuelve 403, directamente omite la cabecera y el navegador bloquea. Un 403 sería peor: mezclaría "CORS te rechazó" con "tu sesión venció"
+- [x] **CA-09** Sin secretos en el repo — bundle de 1,5 MB sin connection strings, sin claves de R2, sin claves privadas
+- [x] **CA-10** CI en verde — los tres jobs en `success` sobre `a0375e7`. **Estaba en rojo desde hacía tres commits**
+- [x] **CA-11** `docs/DEPLOY.md` se puede seguir de principio a fin — reescrito con los seis huecos que aparecieron al seguirlo de verdad hoy
+
+**Resultado:** `7 OK · 0 fallas · 4 manuales` (CA-06 esperando las 24 h; los otros tres verificados a mano y marcados arriba).
+
+### Lo que encontró la verificación
+
+**El CI estaba en rojo desde tres commits.** `DIRECT_URL` se había agregado al
+datasource de Prisma y el workflow no la declaraba:
+
+```
+Error: Environment variable not found: DIRECT_URL.   (P1012)
+```
+
+`prisma generate` y `prisma migrate` **validan** el schema aunque no se conecten
+a nada. Localmente no se ve porque el `.env` local lo tapaba, y **el CI no tiene
+`.env`**. El frontend en verde y el backend en rojo durante tres pushes.
+
+Dos cosas más en el mismo workflow, de las que tampoco sabíamos:
+
+- `npm run db:migrate` (= `prisma migrate dev`) en vez de `db:deploy`. `migrate dev` abre un prompt y crea una base sombra: en un runner sin TTY falla por un motivo que no tiene que ver con el código. D-B pedía `migrate deploy` desde el principio
+- `docker build ./backend` después de mover el `Dockerfile` a la raíz
+
+Los tres con tests que los cubren, probados en contra.
 
 ---
 
 ## Al terminar
 
-- [ ] `npm run typecheck`, `npm run lint`, `npm test` en verde
-- [ ] `cd backend && npm run typecheck && npm run test` en verde
-- [ ] `AGENTS.md` y `MEMORY.md` actualizados
-- [ ] **Un solo commit**, con el mensaje explicando el porqué de cada decisión
-- [ ] PR a `main`, y merge **solo** si lo pide el usuario
+- [x] `npm run typecheck`, `npm run lint`, `npm test` en verde
+- [x] `cd backend && npm run typecheck && npm run test` en verde — **119 backend + 105 frontend**
+- [x] `AGENTS.md` y `MEMORY.md` actualizados
+- [ ] **PR a `main`**, y merge **solo** si lo pide el usuario
+- [ ] **CA-06** cerrado mañana `2026-10-15` a las 03:02 UTC
