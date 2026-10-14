@@ -38,9 +38,12 @@
 | **Estado tienda** | `localStorage`: `vinoteca_wines` y `vinoteca_cart` (sin librería global) |
 | **Estado admin (frontend)** | Sin estado local: `accessToken` solo en memoria del módulo `src/api/client.ts`, refresh en cookie httpOnly |
 | **Auth real (backend)** | JWT access 15min + refresh rotativo 7d cookie httpOnly, roles admin/gestor/vendedor |
+| **Permisos del panel (006)** | **Una tabla**: `src/utils/permisos.ts` → `puedeVer(rol, ruta)`, `seccionesVisibles(rol)`, `primeraVisible(rol)` |
+| **Login con clave incorrecta (006)** | Un `401` de `/api/auth/login` **no** refresca; el gate traduce el `code` a texto. `/api/auth/me` **sí** refresca (gotcha 28) |
 | **API real (frontend)** | Cliente HTTP propio en `src/api/client.ts`: intercepta 401 → refresh rotativo → reintenta una vez |
 | **API real (backend)** | Fastify REST en `http://localhost:3000` (spec 004-b completa) |
 | **Datos mock** | Generados con PRNG sembrado (`scripts/generar-mocks.mjs`) para consistencia |
+| **Matriz de permisos (006)** | Dashboard **solo admin**; Catálogo/Clientes/Configuración admin+gestor; **Pedidos los tres**. El backend la aplica con `requireRole`; el frontend la *muestra* |
 | **Gráficos** | Recharts con `import()` diferido (chunk aparte de ~376 kB) |
 | **Tablas** | TanStack Table modo manual (`manualPagination/Sorting/Filtering`) |
 | **Fechas** | `Date` nativo; **nunca `toISOString()` para `YYYY-MM-DD`** (UTC-3 rompe rangos). Usar `aIsoLocal` de `src/utils/fechas.ts` |
@@ -65,6 +68,11 @@
 **Común:**
 - `AdminWine` extiende `Wine` (agrega `stock` y `activo`); formulario separado: `AdminWineForm` ≠ `ProductForm`
 - 5 módulos: Dashboard, Catálogo, Pedidos, Clientes CRM, Configuración
+- **Cada módulo se filtra por rol (spec 006)**: el sidebar lee
+  `seccionesVisibles(user.role)` y `admin_layout.tsx` redirige a
+  `primeraVisible(rol)` si la URL escrita a mano no la puede ver. **La defensa es
+  el `requireRole` del backend**; la tabla es la vista, y se mantienen los dos
+  lugares a propósito: si se desincronizan, el síntoma es un `403` visible
 - `DataTable` genérica con paginación/filtrado/orden en servidor (backend real)
 - `DateRangePicker` con react-day-picker v9 (tema oscuro, dos meses)
 - Offline: `src/utils/offline.ts` guarda último response por URL; banner `AvisoOffline` + "Reintentar"
@@ -80,16 +88,54 @@
 
 ## Tests
 
+> **Regla general:** un test que afirma cubrir algo que no cubre es **peor que
+> no tener test**. Se verifica en contra: se sabotea el código y se comprueba
+> que el test falla. Ya pasó cuatro veces (ver gotchas 28-31).
+
 ### Frontend (`npm test` → `vitest run`)
 
 - **Ubicación**: `test/**/*.test.ts` (no `.test.tsx`; JSX no compila en `.ts`)
-- **Entorno**: jsdom con stubs para `ResizeObserver`, `IntersectionObserver`, `innerWidth=375` (evita Three.js)
+- **Entorno**: jsdom con stubs para `ResizeObserver`, `IntersectionObserver`,
+  `matchMedia` (006), `innerWidth=375` (evita Three.js). Todos en `test/andamiaje.ts`.
+  El stub de `matchMedia` **lee `innerWidth`**, no devuelve `false` fijo: si
+  devuelve `false`, el panel se prueba siempre como en un monitor de 2000 px y el
+  drawer de móvil no se ve nunca
 - **Montaje**: `montarApp()` en `test/andamiaje.ts` (sin StrictMode; evita doble sincronización a localStorage)
 - **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
-- **Cobertura**: 105 tests en 6 archivos (`csv`, `data_table`, `dashboard`, `date_range`,
-  `integridad_datos_vino`, `validadores`); `npm test` pasa en modo no interactivo (`watch: false`)
+- **Cobertura**: 160 tests en 10 archivos (`csv`, `data_table`, `dashboard`,
+  `date_range`, `integridad_datos_vino`, `validadores`, `permisos`,
+  `admin/sidebar`, `admin/layout_rutas`, `admin/login_fallido`);
+  `npm test` pasa en modo no interactivo (`watch: false`)
 - **Nota 004-c**: se borraron los tests que dependían de `src/mocks/*` y de `admin_acceso.ts`.
   Con MSW eliminado no queda nada que probar ahí; la cobertura de API real vive en el backend.
+- **Nota 006**: `tsconfig.json` incluye `test/` **desde la 006**. Antes era
+  `["src"]` solo y el docstring de `test/andamiaje.ts` afirmaba lo contrario
+  desde la spec 001 — era falso. Al incluirlo aparecieron diez `TS2339` dormidos
+  en `data_table.test.ts`.
+
+### Tests del panel (`test/admin/`)
+
+Montan componentes de verdad. El camino no es montando `App` (necesita un
+servidor) sino **interceptando `fetch`**, no el módulo `api`:
+
+- `test/admin/andamiaje_admin.ts`: `montarAdmin`, `montarLayout`, `montarGate`,
+  `fetchDeSesion`, `fetchConLogin`, `entrarPorElGate`
+- Se intercepta `fetch` y no `api` a propósito: el `AuthProvider` real corre y el
+  cliente HTTP real corre, y solo la red se responde con lo que el test quiere.
+  Un `vi.mock` del cliente pasaría igual y dejaría en verde un `useAuth` roto
+- Lo que no sea `/api/auth/*` responde **404 a propósito**: si una página pide
+  datos, el test falla con el error de la API en vez de mostrar una pantalla
+  vacía que el test tomaría por una pantalla correcta
+- `montarGate()` existe **sin** el `AdminLayout` alrededor, y no es redundante:
+  dentro del layout, mandar al gate a `/admin` y mandar a `primeraVisible(rol)`
+  dan el mismo lugar en pantalla, porque el layout redirige igual. Aislado, el
+  gate es lo único que decide y la pregunta tiene respuesta (comprobado: con el
+  gate saboteado, los tests de punta a punta pasaban en verde)
+- Las páginas del panel son **de mentira** (`<p id="pagina">`) salvo
+  `montarLayoutReal`, que usa el `Dashboard` real. Va por la API, no por el DOM:
+  "el dashboard no se monta ni un instante" es una afirmación sobre el frame
+  intermedio, y ese frame ya pasó cuando el test mira el DOM. Con la página real
+  la pregunta es "¿se pidió `/api/metrics`?", que sí tiene respuesta
 
 ### Backend (`cd backend && npm run test` → `vitest run`)
 
@@ -98,9 +144,19 @@
   mock corre antes que los `const`; sin `hoisted` revienta por TDZ)
 - **`tests/setup.ts`** pone los defaults de `process.env` **antes** de importar el servidor:
   `config/env.ts` valida el entorno de forma eager y sin ellos no arranca ningún test
-- **Cobertura**: 42 tests en 3 archivos (`unit/esquemas`, `modules/autenticacion`, `modules/roles`)
-- `backend/tsconfig.json` incluye solo `src/**/*`: los tests **no** entran al `typecheck` ni al `build`
+- **Cobertura**: 166 tests en 14 archivos
+- `backend/tsconfig.json` incluye solo `src/**/*`: los tests **no** entran al `typecheck` ni al `build`.
+  Es a propósito (el build de la imagen no debe typecheckear tests) y **no** es el
+  olvido que había en el frontend. Si se cambia, va un `tsconfig` aparte, no
+  agregar `tests` al de `src`
 - Integraciones reales (con `DATABASE_URL_TEST`) se limpian en `beforeEach` por orden de FK
+- **Los mocks de Prisma necesitan `$on`** (gotcha 22): Prisma lanza si emite un
+  evento sin listener
+- **`coherencia_permisos.test.ts`** cruza la tabla del frontend con los
+  `requireRole` del backend, y fija los 14 contra una lista escrita a mano. El
+  parser parte por declaraciones `fastify.<método>(`, **sin límite de distancia**:
+  la versión anterior emparejaba con `[\s\S]{0,400}?` y un comentario de ocho
+  líneas dejó `/api/metrics` sin leer, con el test en verde (gotcha 30)
 
 ## Convenciones de archivos
 
@@ -199,3 +255,8 @@
     O sea que **el primer deploy funciona y el segundo muere siempre**. Se separa con `directUrl` en el datasource: la app usa `url` (pooled), las migraciones usan `directUrl`. Y si ya quedó un lock huérfano, hay que cerrarle la sesión a mano (`pg_terminate_backend`): los locks son de base de datos, no de conexión, así que **arreglar el código no deshace el estado que dejó el bug anterior**.
 26. **`SameSite=Lax` mata la sesión en cuanto el frontend y la API están en dominios distintos** (2026-10-13). `Lax` manda la cookie solo en navegaciones de primer nivel, no en un `fetch` desde JavaScript. Con la tienda en `vercel.app` y la API en `onrender.com` (sitios distintos), `/api/auth/refresh` llegaba sin cookie → 401 → el gate volvía a pedir la contraseña en cada recarga. En local `localhost:5173` y `localhost:3000` son el mismo sitio y **el bug es invisible**. Necesita `SameSite=None` **con** `Secure`: los navegadores rechazan `None` sin `Secure`.
 27. **Una variable de entorno con el valor equivocado no rompe nada, apaga cosas** (2026-10-13). `NODE_ENV` sin poner en Render hizo que la cookie saliera `SameSite=Lax` y sin `Secure`, y que `CORS_ORIGIN` dejara de ser obligatoria. Los dos fallos son silenciosos: la app levanta, `/health` da 200, y el síntoma aparece del lado del navegador. Por eso `env.ts` avisa por `stderr` cuando `NODE_ENV !== production` pero `PUBLIC_API_URL` es `https://`.
+28. **Un `401` del login se reportaba como "sesión expirada"** (2026-10-14, spec 006/T7). `client.ts` refrescaba ante **todo** `401`. En `/api/auth/login` un `401` **es la respuesta**, no el síntoma: no hay sesión que renovar. El refresh fallaba y el `throw` tapaba el mensaje del backend, así que la contraseña incorrecta llegaba a pantalla como *"Sesión expirada. Inicie sesión nuevamente."* — que manda a recargar la página, justo lo que ya se hizo. Y el arreglo no era de una línea: `app.ts` manda `message: error.message`, y en `UnauthorizedError('INVALID_CREDENTIALS')` el `message` **es** el código, así que sin traducción el gate pasaba a mostrar `INVALID_CREDENTIALS`. La regla que quedó: **una persona nunca lee un identificador en este panel**. Y la condición es **por ruta**, no "si no hay token en memoria": después de un F5 no hay token, y esa es exactamente la razón por la que el refresh por cookie existe.
+29. **`tsconfig.json` no incluía `test/`, y el docstring decía que sí** (2026-10-14, spec 006). `include` era `["src"]` desde el proyecto, y `test/andamiaje.ts` afirmaba que `tsc` detectaba los errores de tipos de los tests "porque `tsconfig.json` incluye `test/` (RF-10, CA-10)". No lo incluía. Se comprobó de la peor forma: un test llamaba a `entrarCon`, definido dentro de otro `describe`, y **`npm run typecheck` pasó en verde**; lo reventó `npm test` con un `ReferenceError`. Al incluir `test/` aparecieron diez `TS2339` dormidos en `data_table.test.ts` (`disabled` y `options` no existen en `HTMLElement`). **Un comentario que afirma algo que no existe es la misma mentira que la UI, y más chica: se lee una vez y no molesta a nadie.**
+30. **El parser del cruce de permisos se rompió con un comentario** (2026-10-14, spec 006/T4). `coherencia_permisos.test.ts` emparejaba `'/api/...'` con el `requireRole` de a 400 caracteres. **El comentario de ocho líneas explicando por qué el `gestor` no ve la facturación dejó a `/api/metrics` sin leer.** El test seguía verde: la tabla del frontend y el backend "coincidían" porque el backend no estaba en el mapa. Además aplanaba a la ruta, y perdía que `DELETE /api/wines/:id` es **solo admin** mientras `PATCH /api/wines/:id` es admin+gestor. Ahora parte por declaraciones `fastify.<método>(`, sin tope. **Un parser que depende de la distancia entre dos cosas se rompe con el primer comentario útil.**
+31. **Dos mecanismos redundantes hacen indistinguibles los tests** (2026-10-14, spec 006/T3). El layout redirige a `primeraVisible(rol)` y el gate navega al destino permitido: los dos dan **el mismo lugar en pantalla**. Un test de punta a punta ("entrar como gestor y ver dónde queda") pasaba en verde con cualquiera de los dos. Recién con el gate montado **aislado** (`montarGate()`, sin `AdminLayout`) la pregunta tuvo respuesta. Y hay un caso donde dos mecanismos se cubren: `return null` durante el redirect se verifica por la **API** ("¿se pidió `/api/metrics`?"), no por el DOM — el frame intermedio ya pasó cuando el test mira el DOM.
+32. **`/admin/*` con `path: '*'` montaba el Dashboard para cualquiera** (2026-10-14, spec 006/T3). `router.tsx` tenía `{ path: '*', element: <Dashboard /> }` dentro del panel, así que `/admin/secreto` le daba el dashboard a un `vendedor`: una sección vedada servida por un atajo. `puedeVer` no conoce esa ruta y por eso redirige. Un `catchAll` que sirve contenido en vez de una página vacía es un permiso con otro nombre.

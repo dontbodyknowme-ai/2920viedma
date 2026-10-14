@@ -3,7 +3,9 @@
 ## Contexto del Proyecto
 - **Nombre:** Vinoteca High-End E-Commerce
 - **Proposito:** Sitio web interactivo para una vinoteca de alta gama con catalogo de productos, carrito de compras, carga de articulos en tiempo real y navegacion con animaciones de scroll.
-- **Estado Actual:** **004-c COMPLETA y mergeada a `main`** (commits `575cb29`, `a6dc1ce`). Frontend consumiendo la API real; MSW eliminado. Pendiente: deploy.
+- **Estado Actual:** **specs 001-006 COMPLETAS y mergeadas a `main`.** En producción en `$0/mes` (Neon + Render + Vercel + R2): tienda en `vinoteca-cava.vercel.app`, API en `vinoteca-cava.onrender.com`. Lo último: la **006 (permisos por rol)** — el `gestor` no ve el Dashboard, y hay tres usuarios con tres contraseñas distintas.
+- **Sesión del panel (006):** `accessToken` **solo en memoria** del módulo `src/api/client.ts`; el refresh viaja en cookie `httpOnly` (`SameSite=None` + `Secure` en producción, porque la tienda y la API están en dominios distintos). No hay clave en el bundle ni en `sessionStorage`, y **no existe** ningún flag de admin en `localStorage`.
+- **Los tres usuarios:** `admin@vinoteca.local` (Manuel, admin), `gestor@vinoteca.local` (Gestor), `vendedor@vinoteca.local` (Vendedor). Sus contraseñas salen de `backend/.env` (`SEED_*_PASSWORD`) y **nunca del repo**. El seed no las imprime, y re-correrlo **no** cambia el hash de nadie.
 
 ## Decisiones de Arquitectura y Stack
 - **Framework / Bundler:** React 18 con Vite 5 y TypeScript strict.
