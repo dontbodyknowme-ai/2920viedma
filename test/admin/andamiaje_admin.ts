@@ -313,7 +313,7 @@ export const entrarPorElGate = async (
 
 export const urlsPeticionadas = (mock: unknown): string[] =>
   vi.isMockFunction(mock)
-    ? mock.mock.calls.map(([entrada]: [RequestInfo | URL]) => String(entrada))
+    ? (mock.mock.calls as unknown[][]).map(([entrada]) => String(entrada))
     : []
 
 /** Monta `AdminLayout` con el arbol de rutas del panel, entrando por `ruta`. */

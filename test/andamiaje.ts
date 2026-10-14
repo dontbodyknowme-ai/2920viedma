@@ -4,7 +4,10 @@
  * No es un archivo de test: no termina en `.test.ts`, asi que `vitest.config.ts`
  * no lo recolecta como suite (D-7 y la nota de §2.1 del plan sobre el modo de
  * fallo silencioso). Si este archivo tiene un error de tipos, `tsc` lo detecta
- * igual, porque `tsconfig.json` incluye `test/` (RF-10, CA-10).
+ * igual, porque `tsconfig.json` incluye `test/` — **eso antes no era verdad**:
+ * el `include` era `["src"]` solo, y el docstring de aca afirmaba lo contrario
+ * desde la spec 001. Corregido en la 006, y por el camino aparecieron diez
+ * `TS2339` dormidos en `data_table.test.ts`.
  *
  * Vive aparte de los dos archivos de test por una sola razon: D-P define un
  * `montarApp` y cuatro helpers, y los dos archivos de suite los necesitan. Copiar

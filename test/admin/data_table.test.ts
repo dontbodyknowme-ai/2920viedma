@@ -91,9 +91,21 @@ const montar = (
 }
 
 const texto = (): string => contenedor.textContent ?? ''
-const nodos = (selector: string): HTMLElement[] => [...contenedor.querySelectorAll<HTMLElement>(selector)]
-const botonPorTexto = (textoBoton: string): HTMLElement | undefined =>
-  nodos('button').find((boton) => boton.textContent?.trim() === textoBoton)
+
+/**
+ * `nodos` es **generico** a proposito: devolver `HTMLElement[]` obliga a
+ * Narrowing en cada uso, y los usos lo necesitan —`disabled` solo existe en
+ * `HTMLButtonElement`, `options` solo en `HTMLSelectElement`.
+ *
+ * Antes `tsconfig.json` no incluía `test/`, asi que ninguno de esos accesos se
+ * verificaba y el archivo tenia diez `TS2339` acumulados que nadie veia.
+ */
+const nodos = <T extends HTMLElement = HTMLElement>(selector: string): T[] => [
+  ...contenedor.querySelectorAll<T>(selector)
+]
+
+const botonPorTexto = (textoBoton: string): HTMLButtonElement | undefined =>
+  nodos<HTMLButtonElement>('button').find((boton) => boton.textContent?.trim() === textoBoton)
 
 const pulsar = (elemento: HTMLElement): void => {
   act(() => {
@@ -184,7 +196,7 @@ describe('DataTable: paginacion', () => {
     montar({ total: 240, page: 1, limit: 25 })
 
     expect(botonPorTexto('Primera')?.disabled).toBe(true)
-    expect(nodos('[aria-label="Pagina anterior"]')[0].disabled).toBe(true)
+    expect(nodos<HTMLButtonElement>('[aria-label="Pagina anterior"]')[0].disabled).toBe(true)
     expect(botonPorTexto('Ultima')?.disabled).toBe(false)
   })
 
@@ -192,7 +204,7 @@ describe('DataTable: paginacion', () => {
     montar({ total: 240, page: 10, limit: 25 })
 
     expect(botonPorTexto('Ultima')?.disabled).toBe(true)
-    expect(nodos('[aria-label="Pagina siguiente"]')[0].disabled).toBe(true)
+    expect(nodos<HTMLButtonElement>('[aria-label="Pagina siguiente"]')[0].disabled).toBe(true)
   })
 
   it('vuelve a la pagina 1 al cambiar la cantidad de filas por pagina', () => {
@@ -256,9 +268,7 @@ describe('DataTable: filtros de columna', () => {
   it('emite onFilterChange con la columna y el valor elegidos', () => {
     montar()
 
-    const select = nodos('tbody')[0]?.closest('div') === null ? null : null
-    void select
-    const desplegables = nodos('select').filter((s) => s.getAttribute('aria-label') !== 'Filas por pagina')
+    const desplegables = nodos<HTMLSelectElement>('select').filter((s) => s.getAttribute('aria-label') !== 'Filas por pagina')
     const desplegableCategoria = desplegables.find((s) =>
       [...s.options].some((o) => o.textContent === 'Tinto')
     )
@@ -275,7 +285,7 @@ describe('DataTable: filtros de columna', () => {
   it('quita la clave del filtro cuando se vuelve a "Todos"', () => {
     montar()
 
-    const desplegable = nodos('select').find((s) =>
+    const desplegable = nodos<HTMLSelectElement>('select').find((s) =>
       [...s.options].some((o) => o.textContent === 'Tinto')
     ) as HTMLSelectElement
 
@@ -304,7 +314,7 @@ describe('DataTable: busqueda y limpieza', () => {
   it('el boton "Limpiar filtros" restablece busqueda, filtros y orden', () => {
     montar()
 
-    const desplegable = nodos('select').find((s) =>
+    const desplegable = nodos<HTMLSelectElement>('select').find((s) =>
       [...s.options].some((o) => o.textContent === 'Tinto')
     ) as HTMLSelectElement
     act(() => {
@@ -346,7 +356,7 @@ describe('DataTable: estados de carga y vacio', () => {
 
     montar({ data: [], total: 0, page: 1, limit: 10 })
     act(() => {
-      const desplegable = nodos('select').find((s) =>
+      const desplegable = nodos<HTMLSelectElement>('select').find((s) =>
         [...s.options].some((o) => o.textContent === 'Tinto')
       ) as HTMLSelectElement
       desplegable.value = 'Tinto'
