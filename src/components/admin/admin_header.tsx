@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { LogOut, Menu, Shield, X } from 'lucide-react'
+import { useAuth } from '../../hooks/useAuth'
 
 /**
  * Header del panel de administracion: boton de menu en movil, titulo de la
@@ -7,6 +8,12 @@ import { LogOut, Menu, Shield, X } from 'lucide-react'
  *
  * El titulo sale de la ruta, no de un prop: el header no lo recibe de nadie, y
  * cada pagina Podria mostrar un titulo distinto al suyo y desincronizarse.
+ *
+ * El menu de usuario muestra **quien esta conectado de verdad**: antes tenia
+ * "Administrador" y "admin@vinoteca.local" escritos a mano, asi que entrar con
+ * `gestor@vinoteca.local` seguia mostrando que estabas como administrador. No
+ * era un problema de seguridad — el permiso lo decide el backend — sino que el
+ * panel miente sobre la sesion, y eso hace imposible ver con que rol se opera.
  */
 
 interface AdminHeaderProps {
@@ -17,6 +24,14 @@ interface AdminHeaderProps {
   onSalirDelModoAdmin: () => void
 }
 
+/** Como se escribe cada rol. Es presentacion: el permiso lo decide
+ *  `hasRole` y el backend, no esta etiqueta. */
+const ROLES: Record<'admin' | 'gestor' | 'vendedor', string> = {
+  admin: 'Administrador',
+  gestor: 'Gestor',
+  vendedor: 'Vendedor'
+}
+
 export const AdminHeader = ({
   titulo,
   esMovil,
@@ -24,6 +39,14 @@ export const AdminHeader = ({
   onSalirDelModoAdmin
 }: AdminHeaderProps) => {
   const [menuAbierto, setMenuAbierto] = useState(false)
+  const { user } = useAuth()
+
+  // El header solo se dibuja dentro del panel, que ya exige sesion. Pero si
+  // `user` fuera `null` por una carrera, mostrar el dato de otro usuario seria
+  // peor que mostrar un guion.
+  const nombre = user?.name ?? '—'
+  const email = user?.email ?? ''
+  const rol = user ? ROLES[user.role] ?? user.role : null
 
   return (
     <header className='sticky top-0 z-30 border-b border-wine-900/50 bg-charcoal-950/90 backdrop-blur'>
@@ -76,8 +99,16 @@ export const AdminHeader = ({
                 className='absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-neutral-700 bg-charcoal-900 shadow-2xl'
               >
                 <div className='border-b border-neutral-800 px-4 py-3'>
-                  <p className='text-sm font-semibold text-cream-100'>Administrador</p>
-                  <p className='truncate text-xs text-neutral-500'>admin@vinoteca.local</p>
+                  <p className='text-sm font-semibold text-cream-100'>{nombre}</p>
+                  {email && (
+                    <p className='truncate text-xs text-neutral-500'>{email}</p>
+                  )}
+                  {rol && (
+                    <p className='mt-1 inline-flex items-center gap-1 rounded-full bg-wine-900/60 px-2 py-0.5 text-[11px] font-medium text-wine-200'>
+                      <Shield className='h-3 w-3' aria-hidden='true' />
+                      {rol}
+                    </p>
+                  )}
                 </div>
                 <button
                   type='button'
