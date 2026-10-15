@@ -94,7 +94,7 @@ export const AdminSidebar = ({
         }`}
       >
         <span className='font-serif text-lg font-bold tracking-wider text-gold-500'>
-          CAVA &amp; CO.
+          2920
         </span>
         {!colapsado && (
           <span className='rounded-full border border-gold-500/40 bg-wine-900/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-gold-400'>
@@ -175,7 +175,7 @@ export const AdminSidebar = ({
         )}
 
         {!colapsado && (
-          <p className='px-4 pt-2 text-[10px] text-neutral-500'>CAVA &amp; CO. v1.0</p>
+          <p className='px-4 pt-2 text-[10px] text-neutral-500'>2920 v1.0</p>
         )}
       </div>
     </div>

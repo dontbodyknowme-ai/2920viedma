@@ -3,7 +3,7 @@ import { Wine, CartItem } from './types/vino'
 import { INITIAL_WINES } from './datos/vino'
 import { Navbar } from './components/barra_de_navegacion'
 import { Hero } from './components/hero'
-import { BotellasDestacadas } from './components/botellas_destacadas'
+
 import { ProductCatalog } from './components/carta_de_catalogo'
 import { CartDrawer } from './components/carrito_de_compras'
 import { ProductForm } from './components/editor_formador_productos'
@@ -150,12 +150,7 @@ export default function App() {
       {/* El hero no lleva `AnimatedSection`: es la primera pantalla y tiene su
           propia animacion de entrada. Envolverlo haria que el reveal por scroll
           lo mantuviera fuera de vista al cargar. */}
-      <Hero />
-
-      {/* Las botellas destacadas van inmediatamente despues, en su propia
-          seccion y en flujo normal. Antes estaban en `absolute bottom-24` dentro
-          del hero y tapaban la animacion 3D. */}
-      <BotellasDestacadas wines={wines} onSelectWine={setSelectedWine} />
+      <Hero wines={wines} onSelectWine={setSelectedWine} />
 
       <AnimatedSection>
         <ProductCatalog
