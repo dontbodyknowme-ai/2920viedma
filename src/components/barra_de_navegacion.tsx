@@ -65,9 +65,11 @@ export const Navbar = ({
       >
         <div className='max-w-7xl mx-auto px-6 flex items-center justify-between'>
           <a href='#' className='flex items-center gap-2'>
-            <span className='text-gold-500 font-serif text-2xl font-bold tracking-wider'>
-              CAVA & CO.
-            </span>
+            <img
+              src='/logo-2920.svg'
+              alt='2920'
+              className='h-10 w-auto'
+            />
           </a>
 
           <nav className='flex-1 max-w-md mx-8 hidden md:block'>
