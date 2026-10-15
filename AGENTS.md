@@ -144,7 +144,7 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
   mock corre antes que los `const`; sin `hoisted` revienta por TDZ)
 - **`tests/setup.ts`** pone los defaults de `process.env` **antes** de importar el servidor:
   `config/env.ts` valida el entorno de forma eager y sin ellos no arranca ningún test
-- **Cobertura**: 166 tests en 14 archivos
+- **Cobertura**: 165 tests en 14 archivos
 - `backend/tsconfig.json` incluye solo `src/**/*`: los tests **no** entran al `typecheck` ni al `build`.
   Es a propósito (el build de la imagen no debe typecheckear tests) y **no** es el
   olvido que había en el frontend. Si se cambia, va un `tsconfig` aparte, no

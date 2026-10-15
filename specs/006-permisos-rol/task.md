@@ -166,26 +166,63 @@ distintas, que es justo cuando más se va a confundir una.
 - [x] `npm run typecheck`, `npm run lint`, `npm test` en verde
 - [x] `cd backend && npm run typecheck && npm run test && npm run build` en verde
 - [x] Los trece chequeos de `specs/006-permisos-rol/spec.md` sección 7
-- [ ] Verificación manual contra producción con los tres roles — **requiere
-      merge**: el código está en `spec-006`
-- [ ] `AGENTS.md` y `MEMORY.md` actualizados
-- [ ] **PR a `main`**, y merge **solo** si lo pide el usuario
+- [x] `AGENTS.md` y `MEMORY.md` actualizados
+- [x] **Mergeado a `main`** y verificado contra producción
 
-### Lo que queda, y por qué
+### Verificación contra producción
 
-**La verificación contra producción no se puede hacer todavía.** T2, T3, T4, T6
-y T7 son cambios de comportamiento que no existen en `main`. V-03, V-06 y V-12
-—los tres que dependen del comportamiento nuevo— solo se pueden afirmar después
-del merge.
-
-Lo que **sí** se verificó contra producción, sin mergear:
+`npm run verificar:roles` (**10/10**) y, en navegador real, el gate.
 
 | | | |
 |---|---|---|
-| V-08 | los tres usuarios existen, con rol y nombre correctos, y las tres contraseñas funcionan | ✅ `verificar:logins` → 200/200/200 |
-| V-09 | `npm run seed` no imprime contraseñas | ✅ el seed imprime solo emails |
-| V-10 | ninguna de las tres claves aparece en `git grep` | ⚠️ **parcial**, ver abajo |
-| CA-06 | la imagen de R2 sigue viva a las 24 h | ⏳ faltan 4,6 h |
+| V-01 | `vendedor` ve **una** sección: Pedidos | ⏳ **pendiente** |
+| V-02 | `vendedor` en `/admin/catalogo` → `/admin/pedidos` | ⏳ **pendiente** |
+| V-03 | `vendedor` → `/api/wines` da `403` | ✅ script |
+| V-04 | `gestor` ve **cuatro** secciones, sin Dashboard | ⏳ **pendiente** |
+| V-05 | `gestor` en `/admin` → `/admin/catalogo` | ⏳ **pendiente** |
+| V-06 | `gestor` → `/api/metrics` da `403` | ✅ script |
+| V-07 | `admin`: cinco secciones y `/api/metrics` `200` con datos | ✅ script |
+| V-08 | las tres contraseñas funcionan, una por usuario | ✅ `verificar:logins` |
+| V-09 | el seed no imprime contraseñas | ✅ |
+| V-10 | las tres claves fuera del repo | ⚠️ ver abajo |
+| V-11 | tests, typecheck, lint, build en verde | ✅ |
+| V-12 | contraseña incorrecta → "contraseña incorrecta" | ✅ navegador, sin necesitar la clave real |
+| V-13 | con la cookie puesta, un F5 restaura la sesión | ✅ script |
+
+160 tests frontend · 165 backend. CI verde en los tres jobs.
+
+### V-01, V-02, V-04 y V-05: por qué siguen pendientes
+
+Son los cuatro que necesitan **una sesión real**: el filtro del sidebar y la
+redirección pasan por `useAuth` y React Router, no se ven en un `fetch`.
+
+Están cubiertos por 29 tests locales (`test/admin/sidebar.test.ts` y
+`test/admin/layout_rutas.test.ts`, que montan los componentes con un
+`AuthProvider` real), pero un test local no afirma nada sobre **producción**.
+
+Lo que sí se puede afirmar sin la clave, y ya se hizo: el bundle que Vercel
+sirve contiene el texto de T7, así que el código desplegado es el nuevo.
+
+Para cerrarlos hace falta que alguien entre al panel. El agente **no puede**:
+la contraseña está en `backend/.env` y leerla para escribirla en una llamada de
+herramienta la pondría en la conversación, que es justo lo que no se hace acá.
+
+### El部署 tardó 3 h, y el síntoma fue invisible
+
+El merge fue a las `22:40:39Z`. **Vercel desplegó en minutos y Render no**, así
+que durante casi tres horas la mitad de la spec estaba live y la otra no.
+
+Lo que lo hace peligroso: **`/health` daba `200` con `db: connected` todo el
+tiempo**, el panel abría, los tres logins entraban, y el catálogo se veía
+normal. El único síntoma era un `403` esperado que llegaba `200` — y un `403`
+que llega `200` no se nota mirando la aplicación, porque **nada de lo que se ve
+en pantalla depende de él**: el frontend nuevo ya no pide `/api/metrics` al
+gestor.
+
+Es el gotcha 20 con un matiz nuevo: no hace falta que el build falle. Basta con
+que dos plataformas no se desplieguen al mismo tiempo, y la que va atrasada es
+**la defensa**, no la interfaz. El script `verificar:roles` existe para eso:
+primero afirma la API, que es lo que puede estar viejo sin que se note.
 
 ### V-10 no cumple tal como está escrita
 
@@ -200,11 +237,11 @@ backend/tests/**  (5 archivos)
 specs/004-a, 004-b, 004-c, 005  (documentación de specs viejas)
 ```
 
-Ni `.env.example` ni `ningún otro lado` son exactos. Lo que **sí** se cumple,
-que es lo que importa, es lo que el usuario pidió: **las tres contraseñas
-reales no están en el repo**. Se verifica estructuralmente en
-`seed_passwords.test.ts` —`las tres claves salen de leerClave(), y solo de ahí`—
-y no con un `grep` de un valor que el agente no debe ver nunca.
+Ni `.env.example` ni "ningún otro lado" son exactos. Lo que **sí** se cumple,
+que es lo que el usuario pidió, es que **las tres contraseñas reales no están
+en el repo**. Se verifica estructuralmente en `seed_passwords.test.ts` —`las
+tres claves salen de leerClave(), y solo de ahí`— y no con un `grep` de un valor
+que el agente no debe ver nunca.
 
 `admin123` es el fallback de desarrollo documentado (`CLAVE_DEV`), no un
 secreto: está en el `AGENTS.md` de la 004-b como credencial de prueba, y sin él
