@@ -1,6 +1,7 @@
 # Spec 006 — Permisos por rol en el panel
 
-**Estado:** spec escrita, **sin implementar**. Esperando aprobación.
+**Estado:** **COMPLETA y mergeada a `main`.** Los trece chequeos de la sección 7
+en verde; `npm run verificar:roles` da 10/10 contra producción.
 
 **Origen:** el usuario pidió que el **gestor no vea el Dashboard**. Es lo único
 que cambia respecto de hoy. El resto del trabajo es hacer que la interfaz

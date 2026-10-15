@@ -175,37 +175,33 @@ distintas, que es justo cuando más se va a confundir una.
 
 | | | |
 |---|---|---|
-| V-01 | `vendedor` ve **una** sección: Pedidos | ⏳ **pendiente** |
-| V-02 | `vendedor` en `/admin/catalogo` → `/admin/pedidos` | ⏳ **pendiente** |
-| V-03 | `vendedor` → `/api/wines` da `403` | ✅ script |
-| V-04 | `gestor` ve **cuatro** secciones, sin Dashboard | ⏳ **pendiente** |
-| V-05 | `gestor` en `/admin` → `/admin/catalogo` | ⏳ **pendiente** |
-| V-06 | `gestor` → `/api/metrics` da `403` | ✅ script |
-| V-07 | `admin`: cinco secciones y `/api/metrics` `200` con datos | ✅ script |
+| V-01 | `vendedor` ve **una** sección: Pedidos | ✅ navegador, usuario |
+| V-02 | `vendedor` en `/admin/catalogo` → `/admin/pedidos` | ✅ navegador, usuario |
+| V-03 | `vendedor` → `/api/wines` da `403` | ✅ `verificar:roles` |
+| V-04 | `gestor` ve **cuatro** secciones, sin Dashboard | ✅ navegador, usuario |
+| V-05 | `gestor` en `/admin` → `/admin/catalogo` | ✅ navegador, usuario |
+| V-06 | `gestor` → `/api/metrics` da `403` | ✅ `verificar:roles` |
+| V-07 | `admin`: cinco secciones y `/api/metrics` `200` con datos | ✅ `verificar:roles` |
 | V-08 | las tres contraseñas funcionan, una por usuario | ✅ `verificar:logins` |
 | V-09 | el seed no imprime contraseñas | ✅ |
 | V-10 | las tres claves fuera del repo | ⚠️ ver abajo |
 | V-11 | tests, typecheck, lint, build en verde | ✅ |
 | V-12 | contraseña incorrecta → "contraseña incorrecta" | ✅ navegador, sin necesitar la clave real |
-| V-13 | con la cookie puesta, un F5 restaura la sesión | ✅ script |
+| V-13 | con la cookie puesta, un F5 restaura la sesión | ✅ `verificar:roles` |
 
 160 tests frontend · 165 backend. CI verde en los tres jobs.
 
-### V-01, V-02, V-04 y V-05: por qué siguen pendientes
+### De dónde sale cada verificación, y por qué importa
 
-Son los cuatro que necesitan **una sesión real**: el filtro del sidebar y la
-redirección pasan por `useAuth` y React Router, no se ven en un `fetch`.
+Los cuatro de interfaz los chequeó **el usuario en su navegador**, no el agente.
+El motivo no es falta de permiso: la contraseña está en `backend/.env` y leerla
+para escribirla en una llamada de herramienta la pondría en la conversación.
 
-Están cubiertos por 29 tests locales (`test/admin/sidebar.test.ts` y
-`test/admin/layout_rutas.test.ts`, que montan los componentes con un
-`AuthProvider` real), pero un test local no afirma nada sobre **producción**.
-
-Lo que sí se puede afirmar sin la clave, y ya se hizo: el bundle que Vercel
-sirve contiene el texto de T7, así que el código desplegado es el nuevo.
-
-Para cerrarlos hace falta que alguien entre al panel. El agente **no puede**:
-la contraseña está en `backend/.env` y leerla para escribirla en una llamada de
-herramienta la pondría en la conversación, que es justo lo que no se hace acá.
+Queda dicho con nombre y apellido porque **un check sin quien lo hizo y cómo es
+un check que el próximo asume que automática**. V-12 sí lo verificó el agente, en
+navegador, y sin credenciales: se puede probar la cadena completa del login
+fallido con una contraseña incorrecta cualquiera, que es justamente el caso que se
+arregló.
 
 ### El部署 tardó 3 h, y el síntoma fue invisible
 
