@@ -4,5 +4,11 @@
   "vence": "2026-10-15T03:02:47.722Z",
   "contentTypeAlSubir": "image/webp",
   "bytesAlSubir": 96,
-  "conFirmaAlSubir": false
+  "conFirmaAlSubir": false,
+  "verificado": "2026-10-15T03:04:41.137Z",
+  "resultado": {
+    "status": 200,
+    "contentType": "image/webp",
+    "bytes": 96
+  }
 }

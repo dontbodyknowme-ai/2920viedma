@@ -1,6 +1,6 @@
 # Cierre 005 — Deploy a producción
 
-**Estado:** T1–T8 ejecutadas. **CA-06 abierto** hasta `2026-10-15 00:02` Argentina.
+**Estado:** T1-T8 ejecutadas. **CA-06 CERRADA** el `2026-10-15 00:04` Argentina: la imagen subió a las `2026-10-14T03:02:47Z` y a las 24 h seguía sirviendo `200 image/webp`, 96 bytes, sin firma ni caducidad.
 
 **Resultado en producción:**
 
@@ -97,7 +97,10 @@ Anotado en la sección 8 de `spec.md`:
 
 1. **`scripts/generar-mocks.mjs` está muerto.** Escribe a `src/mocks/data.ts`, que no existe desde 004-c. Su catálogo ya vive en `backend/scripts/seed-vinos.ts`. Conviene borrarlo.
 2. **Los deploys de preview de Vercel van a fallar con CORS.** Su dominio es impredecible y no está en `CORS_ORIGIN`. O se los agrega, o se desactivan.
-3. **`/admin` muestra las credenciales de prueba** (`admin@vinoteca.local` / `admin123`) y dice "Acceso de prueba". La spec 006 lo elimina; hasta entonces está a la vista de cualquiera que escriba `/admin`.
+3. ~~**`/admin` muestra las credenciales de prueba**~~ - **parcialmente resuelto por la 006.** El email ya **no** viene puesto (`useState('')`), que era lo que un usuario tiene que borrar a mano para entrar con su cuenta. **Quedan dos cosas:**
+   - el `placeholder` sigue diciendo `admin@vinoteca.local`, que es deliberado de T6 (campo vacío no es campo sin pistas) pero **señala una cuenta real**;   - el pie sigue diciendo *"Acceso de prueba"*, y desde la 006 **ya no es verdad**: las tres cuentas son reales, de producción, con contraseñas distintas que están en `backend/.env`.
+
+   Ninguna de las dos está en el alcance de la 006 (RF-06 pedía solo el estado inicial del campo). Queda abierto para cuando el usuario decida.
 
 ### Y una deuda que sí conviene mirar
 
