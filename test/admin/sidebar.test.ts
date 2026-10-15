@@ -129,7 +129,7 @@ describe('sin sesion', () => {
     vi.stubGlobal('fetch', fetchDeSesion(null))
     const montaje = await montarSidebar()
 
-    expect(montaje.contenedor.textContent).toContain('CAVA & CO.')
+    expect(montaje.contenedor.textContent).toContain('2920')
     expect(montaje.contenedor.querySelector('a[href="/"][title="Ver tienda"]')).not.toBeNull()
 
     await desmontarAdmin(montaje)

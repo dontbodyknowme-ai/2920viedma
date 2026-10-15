@@ -85,7 +85,7 @@ const crearTexturaEtiqueta = (): THREE.CanvasTexture => {
     ctx.fillStyle = PALETA.vino700
     ctx.textAlign = 'center'
     ctx.font = '600 54px Georgia, "Times New Roman", serif'
-    ctx.fillText('CAVA & CO.', 512, 250)
+    ctx.fillText('2920', 512, 250)
 
     ctx.fillStyle = PALETA.oro500
     ctx.font = '500 26px system-ui, sans-serif'
