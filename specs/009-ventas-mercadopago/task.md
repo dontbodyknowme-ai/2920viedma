@@ -151,11 +151,11 @@
 
 ## Al terminar
 
-- [ ] `npm run typecheck && npm run lint && npm test` en verde
-- [ ] `cd backend && npm run typecheck && npm run test` en verde
-- [ ] Los criterios de `spec.md` §10
-- [ ] `AGENTS.md` y `MEMORY.md` actualizados
-- [ ] Merge **solo** si lo pide el usuario
+- [x] `npm run typecheck && npm run lint && npm test` en verde — **305 tests**, 17 archivos
+- [x] `cd backend && npm run typecheck && npm run test` en verde — **326 tests**, 22 archivos
+- [x] Los criterios de `spec.md` §7 — 6 de 8; los 2 restantes son las credenciales
+- [x] `AGENTS.md` y `MEMORY.md` actualizados
+- [x] Merge **solo** si lo pide el usuario — el usuario dijo que **no**, y por qué
 
 ## Antes de empezar
 
@@ -164,3 +164,36 @@
 
 > Sin los dos, T1, T2, T5, T6, T7 y T8 se pueden hacer y verificar enteras. T3 y
 > T4 se escriben pero no se pueden probar contra la pasarela real.
+
+---
+
+## Estado al 2026-10-16
+
+**T1 a T8 hechas y verificadas una por una**, con sabotage en cada una. Después
+del plan original se agregaron, por cosas que aparecieron al verificar:
+
+| Commit | Qué |
+|---|---|
+| `218588e` | T6 y T7 — el checkout y la confirmación |
+| `09be4e3` | T8 — el panel ve el pago y el envío por separado |
+| `e412a18` | La costura entre las dos puntas, y el bug de `Invalid Date` |
+| `d36b58c` | El nombre de la tienda seguía siendo "Cava & Co" en Configuración |
+| `602b0c8` | El nombre del cliente salía vacío en tabla, drawer y CSV |
+| `30d9cd5` | El filtro multi-select no andaba con dos estados (`400`) |
+| `48282e7` | D-10 resuelta — el panel filtra por pago |
+
+**Nada de esto estaba en el plan y los tres primeros eran bugs de producción
+preexistentes** (004-c) que aparecieron al verificar la integración. No se
+arreglaron de paso: se pararon, se midieron, y se documentaron por separado.
+
+## Lo que falta, en orden
+
+1. **`MERCADO_PAGO_ACCESS_TOKEN` y `MERCADO_PAGO_WEBHOOK_SECRET`** en `backend/.env`.
+   Sin esto la app **levanta** y todo funciona menos los pagos, que quedan colgados
+   esperando una webhook que nunca llega.
+2. **Registrar la `notification_url`** en el panel de Mercado Pago apuntando a
+   `https://vinoteca-cava.onrender.com/api/orders/webhook` (ver `spec.md` §2.6).
+3. **Aplicar dos migraciones** en Neon: `20261016132000_pago_estado_y_pago_id` y
+   `20261016190000_timeline_pagos`. Están en el Postgres local y **no** en producción.
+4. **Probar contra la pasarela** un pago completo, con sandbox.
+5. **Merge**, cuando lo pida. No antes.

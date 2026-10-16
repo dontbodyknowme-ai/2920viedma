@@ -181,7 +181,7 @@ webhook llegue de verdad. Necesita credencial real.
 - **`localStorage` NO existe sin importar `test/andamiaje.ts`** (gotcha 33): el
   stub va en el import, no en un `setupFiles`.
 - **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
-- **Cobertura**: 305 tests en 18 archivos (`csv`, `data_table`, `dashboard`,
+- **Cobertura**: 305 tests en 17 archivos (`csv`, `data_table`, `dashboard`,
   `date_range`, `integridad_datos_vino`, `validadores`, `permisos`,
   `admin/sidebar`, `admin/layout_rutas`, `admin/login_fallido`,
   `admin/pago_en_el_panel`, `admin/cliente_del_pedido`, `checkout_reglas`,
