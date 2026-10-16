@@ -155,6 +155,7 @@ export default function App() {
       <AnimatedSection>
         <ProductCatalog
           searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           onAddToCart={agregarAlCarrito}
           onSelectWine={setSelectedWine}
           onEditWine={editarWine}

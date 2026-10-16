@@ -8,11 +8,39 @@ import type { Wine } from '../types/vino'
  * para poder verificar los datos reales con `expect`.
  */
 
-export const CATEGORIAS_VALIDAS = ['Tinto', 'Blanco', 'Rosado', 'Espumante'] as const
+/**
+ * Longitud maxima de una categoria.
+ *
+ * No es arbitraria: es lo que hace que el boton del filtro quepa en una linea en
+ * movil. Una categoria mas larga que esto es probablemente un nombre de producto
+ * cargado en el campo equivocado.
+ */
+export const CATEGORIA_MAX_LONGITUD = 40
 
-// involuntarily duplica la lista para poder compararla sin castear a string[],
-// lo cual mantiene la type safety en tiempo de compilacion.
-export type CategoriaValida = (typeof CATEGORIAS_VALIDAS)[number]
+/**
+ * Valida la **forma** de una categoria, no su valor.
+ *
+ * Antes comparaba contra `CATEGORIAS_VALIDAS`, una lista fija de cuatro. Con el
+ * enum del backend eliminado (spec 011) no hay lista que valga: la categoria la
+ * elige el admin y puede ser la que necesite.
+ *
+ * Lo que si se sigue exigiendo, porque es lo que la lista fija cubria sin
+ * querer:
+ *
+ * - **no vacia**, ni con espacios alrededor
+ * - **empieza en mayuscula**: `'tinto'` y `'Tinto'` serian dos categorias
+ *   distintas en el filtro, y el usuario veria el mismo vino dos veces al
+ *   filtrar. La lista fija hacia esto imposible por construccion; ahora lo
+ *   hace esta linea.
+ */
+export const esCategoriaValida = (valor: unknown): valor is string => {
+  if (typeof valor !== 'string') return false
+
+  const limpia = valor.trim()
+  if (limpia.length === 0 || limpia.length > CATEGORIA_MAX_LONGITUD) return false
+
+  return limpia[0] === limpia[0]?.toUpperCase()
+}
 
 export const CAMPOS_REQUERIDOS: ReadonlyArray<keyof Wine> = [
   'id',
@@ -36,10 +64,6 @@ export const ANIO_MAXIMO_TOLERANCIA = 1
 
 export const esTextoNoVacio = (valor: unknown): valor is string =>
   typeof valor === 'string' && valor.trim().length > 0
-
-export const esCategoriaValida = (valor: unknown): valor is CategoriaValida =>
-  typeof valor === 'string' &&
-  (CATEGORIAS_VALIDAS as ReadonlyArray<string>).includes(valor)
 
 export const esPrecioValido = (valor: unknown): boolean =>
   typeof valor === 'number' && Number.isFinite(valor) && valor > 0

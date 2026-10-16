@@ -1,4 +1,17 @@
-export type WineCategory = 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
+/**
+ * La categoria de un producto.
+ *
+ * **Es `string`, no una union de literales.** Antes era
+ * `'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'`, y eso obliga a editar el codigo
+ * para agregar una categoria. Como el backend tampoco las restringe (el campo es
+ * `String` en Prisma), el tipo de TypeScript era la unica restriccion y hacia
+ * imposible cargar un queso o una cerveza.
+ *
+ * El costo de esta decision es que un typo (`'tinto'`) compila y no lo detecta
+ * TypeScript. Lo cubre `esCategoriaValida` en `utils/validadores.ts`, que es el
+ * unico lugar que puede mirarlo ahora que no hay una lista fija.
+ */
+export type WineCategory = string
 
 export interface Wine {
   id: string

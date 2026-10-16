@@ -60,8 +60,15 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
     { campo: 'name', valor: '' },
     { campo: 'winery', valor: '   ' },
     { campo: 'varietal', valor: undefined },
-    { campo: 'category', valor: 'Naranja' },
-    { campo: 'category', valor: 'Todos' },
+    // Desde la spec 011 la categoria es texto libre, asi que `'Naranja'` y
+    // `'Todos'` ya no son invalidas: son categorias bien formadas. Lo que sigue
+    // siendo invalido es la **forma** —vacia, en minuscula, o demasiado larga—
+    // y lo que la lista fija cubria sin querer era justamente evitar que
+    // `'tinto'` y `'Tinto'` fueran dos categorias distintas en el filtro.
+    { campo: 'category', valor: '' },
+    { campo: 'category', valor: '   ' },
+    { campo: 'category', valor: 'tinto' },
+    { campo: 'category', valor: 'A'.repeat(41) },
     { campo: 'vintage', valor: 1700 },
     { campo: 'vintage', valor: '2020' },
     { campo: 'price', valor: 0 },
@@ -85,7 +92,7 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
       name: '',
       price: 0,
       imageUrl: 'nope',
-      category: 'Rosa'
+      category: 'rosa'
     }
 
     expect(camposRequeridosInvalidos(roto as Wine).sort()).toEqual(

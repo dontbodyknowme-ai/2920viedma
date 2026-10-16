@@ -8,7 +8,7 @@ import {
 import { StatusBadge } from '../../components/admin/status_badge'
 import { ConfirmDialog } from '../../components/admin/confirm_dialog'
 import { AdminWineForm } from '../../components/admin/admin_wine_form'
-import { CATEGORIAS, ESTADOS, useCatalogo } from '../../hooks/useCatalogo'
+import { ESTADOS, useCatalogo } from '../../hooks/useCatalogo'
 import type { AdminWine } from '../../types/admin'
 
 /**
@@ -28,7 +28,13 @@ const dinero = (valor: number): string =>
     maximumFractionDigits: 0
   }).format(valor)
 
-const columnas = [
+/**
+ * Las columnas dependen de las categorias en uso, asi que son una funcion y no
+ * una constante: antes el filtro de la columna "Categoria" salia de la lista fija
+ * `CATEGORIAS`, y una categoria nueva no aparecia en el desplegable del filtro
+ * hasta que alguien editara el codigo.
+ */
+const columnas = (categorias: readonly string[]) => [
   columnaHelper<AdminWine>().accessor('name', {
     header: 'Nombre',
     cell: (info) => (
@@ -51,7 +57,7 @@ const columnas = [
   }),
   columnaHelper<AdminWine>().accessor('varietal', { header: 'Cepa' }),
   columnaConFiltro(columnaHelper<AdminWine>().accessor('category', { header: 'Categoria' }),
-    CATEGORIAS.map((categoria) => ({ valor: categoria, etiqueta: categoria }))
+    categorias.map((categoria) => ({ valor: categoria, etiqueta: categoria }))
   ),
   columnaHelper<AdminWine>().accessor('vintage', { header: 'Cosecha' }),
   columnaHelper<AdminWine>().accessor('price', {
@@ -87,6 +93,7 @@ const columnas = [
 
 export const CatalogoAdmin = () => {
   const catalogo = useCatalogo()
+  const columnasCatalogo = columnas(catalogo.categorias)
 
   const [formAbierto, setFormAbierto] = useState(false)
   const [vinoEnEdicion, setVinoEnEdicion] = useState<AdminWine | null>(null)
@@ -235,7 +242,7 @@ export const CatalogoAdmin = () => {
       )}
 
       <DataTable<AdminWine>
-        columns={columnas}
+        columns={columnasCatalogo}
         data={catalogo.vinos}
         total={catalogo.total}
         page={catalogo.page}
@@ -308,6 +315,7 @@ export const CatalogoAdmin = () => {
       <AdminWineForm
         isOpen={formAbierto}
         vino={vinoEnEdicion}
+        categoriasExistentes={catalogo.categorias}
         onClose={() => setFormAbierto(false)}
         onGuardar={guardar}
       />

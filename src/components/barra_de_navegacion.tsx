@@ -21,7 +21,7 @@ export const Navbar = ({
   searchQuery,
   onSearchChange
 }: NavbarProps) => {
-  const { user, isLoading, isAuthenticated, logout, hasRole } = useAuth()
+  const { user, isLoading, isAuthenticated, logout } = useAuth()
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -93,31 +93,19 @@ export const Navbar = ({
               type='text'
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder='Buscar por etiqueta, cepa o bodega...'
+              placeholder='Buscar por nombre, marca o categoría...'
               className='w-full bg-charcoal-800/80 text-cream-100 placeholder-neutral-500 px-4 py-2 rounded-full border border-neutral-700/50 focus:outline-none focus:border-gold-500 text-sm transition-colors'
             />
           </div>
 
           <div className='flex items-center gap-4'>
-            {/* Botón "Panel Admin" solo para admin/gestor */}
-            {isAuthenticated && (hasRole('admin') || hasRole('gestor')) && (
-              <button
-                onClick={() => window.location.href = '/admin'}
-                className='text-xs uppercase tracking-widest text-cream-200 hover:text-gold-500 px-3 py-2 rounded-lg border border-neutral-700 hover:border-gold-500 transition-colors hidden sm:block'
-              >
-                Panel Admin
-              </button>
-            )}
-
-            {/* Botón Cargar Vino solo para admin/gestor (legacy) */}
-            {isAuthenticated && (hasRole('admin') || hasRole('gestor')) && (
-              <button
-                onClick={() => window.location.href = '/admin/catalogo'}
-                className='text-xs uppercase tracking-widest text-cream-200 hover:text-gold-500 px-3 py-2 rounded-lg border border-neutral-700 hover:border-gold-500 transition-colors hidden sm:block'
-              >
-                + Cargar Vino
-              </button>
-            )}
+            {/* Aca no hay ningun enlace al panel, y es a proposito (gotcha 6 de
+                AGENTS.md): al panel se entra escribiendo `/admin` en la barra de
+                direcciones. Un boton en la tienda publica es una promesa de que
+                la sesion del panel existe; el que no la tiene recibe un `403` al
+                llegar. Los tres botones que hubo aca —"Panel Admin", "+ Cargar
+                Vino" de escritorio y "+ Cargar Vino" en el drawer de movil— se
+                fueron, y con ellos el `hasRole` que este componente ya no usa. */}
 
             <button
               onClick={onOpenCart}
@@ -232,15 +220,11 @@ export const Navbar = ({
               </nav>
 
               <div className='p-6 border-t border-neutral-800 bg-charcoal-950/80 space-y-3'>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false)
-                    window.location.href = '/admin/catalogo'
-                  }}
-                  className='w-full bg-wine-700 hover:bg-wine-500 text-cream-100 py-3 rounded-xl font-semibold tracking-wider uppercase transition-all duration-300 border border-wine-500/30'
-                >
-                  + Cargar Vino
-                </button>
+                {/* El "+ Cargar Vino" que estuvo aqui se fue con los de escritorio:
+                    el panel se entra escribiendo `/admin`. Este bloque queda con
+                    "Cerrar sesion" y nada mas, y para quien no tiene sesion no
+                    queda nada —por eso el `hidden` de abajo, que antes tapaba el
+                    hueco que dejaba el boton. */}
 
                 {isAuthenticated ? (
                   <>

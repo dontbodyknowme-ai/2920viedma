@@ -10,7 +10,13 @@ interface ProductFormProps {
   wineToEdit: Wine | null
 }
 
-const CATEGORIES: WineCategory[] = ['Tinto', 'Blanco', 'Rosado', 'Espumante']
+/**
+ * Este es el formulario legacy de la tienda publica. El del panel es
+ * `AdminWineForm`, que ya quedo migrado a input libre (spec 011); este seguia con
+ * el `<select>` de cuatro categorias, asi que era el segundo lugar donde cargar
+ * un queso era imposible.
+ */
+const CATEGORIAS_ARRANCAMIENTO: WineCategory = 'Tinto'
 
 export const ProductForm = ({
   isOpen,
@@ -22,7 +28,7 @@ export const ProductForm = ({
   const [name, setName] = useState('')
   const [winery, setWinery] = useState('')
   const [varietal, setVarietal] = useState('')
-  const [category, setCategory] = useState<WineCategory>('Tinto')
+  const [category, setCategory] = useState<WineCategory>(CATEGORIAS_ARRANCAMIENTO)
   const [vintage, setVintage] = useState<number>(new Date().getFullYear())
   const [price, setPrice] = useState<number | ''>('')
   const [description, setDescription] = useState('')
@@ -212,17 +218,12 @@ export const ProductForm = ({
                     <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
                       Categoría
                     </label>
-                    <select
+                    <input
                       value={category}
-                      onChange={(e) => setCategory(e.target.value as WineCategory)}
-                      className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-3 py-2.5 text-cream-100 focus:outline-none focus:border-gold-500 text-sm'
-                    >
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(e) => setCategory(e.target.value)}
+                      placeholder='Tinto, Cerveza, Fiambre...'
+                      className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-3 py-2.5 text-cream-100 placeholder-neutral-500 focus:outline-none focus:border-gold-500 text-sm'
+                    />
                   </div>
                   <div>
                     <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>

@@ -6,10 +6,15 @@ import { filtrarVinos } from '../utils/filtros'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 
-const CATEGORIES: (WineCategory | 'Todos')[] = ['Todos', 'Tinto', 'Blanco', 'Rosado', 'Espumante']
+/**
+ * "Todos" va aparte de las categorias porque **no** es una categoria: no esta en
+ * el catalogo y no se puede filtrar por ella, solo la desactiva.
+ */
+const TODOS = 'Todos'
 
 interface ProductCatalogProps {
   searchQuery: string
+  onSearchChange: (query: string) => void
   onAddToCart: (wine: Wine) => void
   onSelectWine: (wine: Wine) => void
   onEditWine: (wine: Wine) => void
@@ -23,6 +28,7 @@ interface ProductCatalogProps {
 
 export const ProductCatalog = ({
   searchQuery,
+  onSearchChange,
   onAddToCart,
   onSelectWine,
   onEditWine,
@@ -49,6 +55,24 @@ export const ProductCatalog = ({
 
   const availableVarietals = useMemo(
     () => Array.from(new Set(wines.map((w) => w.varietal))).sort(),
+    [wines]
+  )
+
+  /**
+   * Las categorias salen **del catalogo**, no de una lista del codigo.
+   *
+   * Antes era `['Tinto', 'Blanco', 'Rosado', 'Espumante']` escrito a mano. Con
+   * esa lista, cargar un queso obligaba a editar el componente: el producto
+   * existia, se veia en la grilla y no aparecia en ningun filtro. Agregar una
+   * categoria era un paso que se olvidaba, y el sintoma —un producto que no se
+   * puede filtrar— no parece un bug sino que falto cargarlo.
+   *
+   * Ahora el filtro y el buscador derivan del mismo lugar, asi que no pueden
+   * desincronizarse. `esCategoriaValida` evita que entren typos y se creen
+   * categorias duplicadas (`'tinto'` y `'Tinto'`).
+   */
+  const availableCategories = useMemo(
+    () => Array.from(new Set(wines.map((w) => w.category))).sort(),
     [wines]
   )
 
@@ -133,11 +157,8 @@ export const ProductCatalog = ({
   return (
     <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
       <div className='text-center mb-12'>
-        <p className='text-gold-500 uppercase tracking-[0.25em] text-xs font-semibold mb-2'>
-          Nuestra Colección
-        </p>
         <h2 className='text-4xl md:text-5xl font-serif font-bold text-cream-100 mb-8'>
-          Catálogo de Vinos
+          Catálogo de Productos
         </h2>
       </div>
 
@@ -146,10 +167,10 @@ export const ProductCatalog = ({
         {/* Categorías */}
         <div className='flex-1'>
           <label className='block text-sm font-medium text-gold-400 mb-2'>
-            Tipo de Vino
+            Tipo de Producto
           </label>
           <div className='flex flex-wrap gap-2'>
-            {CATEGORIES.map((cat) => (
+            {[TODOS, ...availableCategories].map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
@@ -241,7 +262,10 @@ export const ProductCatalog = ({
       <div className='mb-10 max-w-2xl mx-auto'>
         <input
           type='text'
-          placeholder='Buscar por nombre, bodega o cepa...'
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder='Buscar por nombre, marca o categoría...'
+          aria-label='Buscar productos'
           className='w-full bg-charcoal-800/80 border border-neutral-700/50 rounded-xl px-6 py-3.5 text-cream-100 placeholder-neutral-500 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 text-lg'
         />
       </div>

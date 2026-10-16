@@ -21,10 +21,15 @@ export const filtrarVinos = (vinos: Wine[], filtros: Filtros): Wine[] => {
     const matchesVarietal =
       filtros.selectedVarietals.length === 0 ||
       filtros.selectedVarietals.includes(wine.varietal)
+    // La categoría también se busca: el placeholder del buscador y el del navbar
+    // prometen "nombre, marca o categoría", y sin esta línea el tercero no
+    // encontraba nada. Un texto que promete una búsqueda que no existe es peor
+    // que un placeholder más corto.
     const matchesSearch =
       wine.name.toLowerCase().includes(consulta) ||
       wine.winery.toLowerCase().includes(consulta) ||
-      wine.varietal.toLowerCase().includes(consulta)
+      wine.varietal.toLowerCase().includes(consulta) ||
+      wine.category.toLowerCase().includes(consulta)
 
     return matchesCategory && matchesPrice && matchesVarietal && matchesSearch
   })

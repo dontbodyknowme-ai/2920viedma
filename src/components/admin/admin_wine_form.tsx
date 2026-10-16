@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
-import type { AdminWine, Wine } from '../../types/admin'
-import { CATEGORIAS } from '../../hooks/useCatalogo'
+import type { AdminWine } from '../../types/admin'
+import { CATEGORIAS_ARRANCAMIENTO } from './constantes_categoria'
 import { api } from '../../api/client'
 
 /**
@@ -23,6 +23,13 @@ interface AdminWineFormProps {
   isOpen: boolean
   /** `null` para crear, un vino para editar. */
   vino: AdminWine | null
+  /**
+   * Las categorias que ya estan en uso, para el `datalist` de sugerencias.
+   *
+   * No restringen el campo: son sugerencias. El admin puede escribir una que no
+   * este en la lista y esa queda creada por el producto que la use.
+   */
+  categoriasExistentes: string[]
   onClose: () => void
   onGuardar: (vino: Omit<AdminWine, 'id'> & { id?: string }) => Promise<void>
 }
@@ -33,7 +40,7 @@ const CAMPOS_VACIOS = {
   name: '',
   winery: '',
   varietal: '',
-  category: 'Tinto' as Wine['category'],
+  category: CATEGORIAS_ARRANCAMIENTO,
   vintage: String(ANIO_EN_CURSO),
   price: '',
   stock: '0',
@@ -46,7 +53,13 @@ const CAMPOS_VACIOS = {
 
 type EstadoFormulario = typeof CAMPOS_VACIOS
 
-export const AdminWineForm = ({ isOpen, vino, onClose, onGuardar }: AdminWineFormProps) => {
+export const AdminWineForm = ({
+  isOpen,
+  vino,
+  categoriasExistentes,
+  onClose,
+  onGuardar
+}: AdminWineFormProps) => {
   const [campos, setCampos] = useState<EstadoFormulario>(CAMPOS_VACIOS)
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -214,18 +227,32 @@ export const AdminWineForm = ({ isOpen, vino, onClose, onGuardar }: AdminWineFor
                   </div>
                   <div>
                     <label htmlFor='admin-category' className={etiqueta}>Categoria</label>
-                    <select
+                    {/*
+                      Input con `datalist`, no un `<select>`.
+
+                      El `<select>` limiting a cuatro categorias hacia que
+                      "crear una categoria" no existiera como operacion. Con este
+                      input el admin escribe la que necesita y la categoria queda
+                      creada por el producto que la usa; las que ya existen salen
+                      como sugerencia, asi que no hay que acordarse de la
+                      ortografia.
+
+                      El filtro del catalogo se arma con las mismas categorias
+                      que hay en uso, asi que la nueva aparece sola.
+                    */}
+                    <input
                       id='admin-category'
                       value={campos.category}
-                      onChange={(e) => cambiar('category', e.target.value as Wine['category'])}
+                      onChange={(e) => cambiar('category', e.target.value)}
+                      placeholder='Tinto, Cerveza, Fiambre...'
+                      list='admin-categorias'
                       className={campo}
-                    >
-                      {CATEGORIAS.map((categoria) => (
-                        <option key={categoria} value={categoria}>
-                          {categoria}
-                        </option>
+                    />
+                    <datalist id='admin-categorias'>
+                      {categoriasExistentes.map((categoria) => (
+                        <option key={categoria} value={categoria} />
                       ))}
-                    </select>
+                    </datalist>
                   </div>
                   <div>
                     <label htmlFor='admin-vintage' className={etiqueta}>Cosecha *</label>
