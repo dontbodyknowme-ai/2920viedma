@@ -196,6 +196,32 @@ export const buildApp = async (): Promise<FastifyInstance> => {
 
   await registerRoutes(fastify)
 
+  /**
+   * El proveedor de pagos se registra **aca**, y no dentro de `ordersRoutes`.
+   *
+   * La razon es que el modulo de pedidos no sabe nada de Mercado Pago: recibe un
+   * `ProveedorPagos` y trabaja contra esa interfaz. Configurarlo aca deja la
+   * decision de "que usar" en el arranque, donde se pueden ver las variables, y
+   * deja los tests libres de registrar nada (usan el doble).
+   */
+  const { configurarProveedor, proveedorMercadoPago } = await import('./modules/pagos/proveedor.js')
+
+  const token = process.env.MERCADO_PAGO_ACCESS_TOKEN
+  if (token !== undefined && token.trim() !== '') {
+    configurarProveedor(proveedorMercadoPago(token.trim()))
+    logger.info('Mercado Pago configurado')
+  } else {
+    /**
+     * Sin token **no** se registra nada, y el checkout va a fallar con
+     * "Mercado Pago no esta configurado". Deliberado: un proveedor mudo que
+     * devuelve un id falso haria que la app pareciera funcionar y que cada pago
+     * quedara colgado esperando una webhook que nunca llega.
+     */
+    logger.warn(
+      'MERCADO_PAGO_ACCESS_TOKEN no esta definido: el checkout va a fallar hasta que se ponga'
+    )
+  }
+
   fastify.addHook('onClose', async () => {
     await fastify.prisma.$disconnect()
   })

@@ -1,9 +1,46 @@
 import { FastifyInstance } from 'fastify'
 import { jsonSchemas } from '../../shared/json-schemas.js'
 import { requireRole } from '../auth/middleware.js'
+import { orderCreateSchema } from '../../shared/schemas.js'
+import { crearPedido } from './service.js'
 
 export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
   const { prisma } = fastify
+
+  /**
+   * `POST /api/orders` — el checkout. **Publico**, a diferencia del `GET` y el
+   * `PATCH` de este mismo archivo: lo llama alguien que no tiene sesion, porque
+   * no tiene cuenta (spec 009, RF-01).
+   *
+   * El unico chequeo es el **shape**: que mande vinoId y cantidad, no precios.
+   * Todo lo demas lo decide `service.ts`.
+   */
+  fastify.post(
+    '/api/orders',
+    { schema: jsonSchemas.orders.create },
+    async (request, reply) => {
+      const cuerpo = orderCreateSchema.safeParse(request.body)
+
+      if (!cuerpo.success) {
+        return reply.status(400).send({
+          code: 'VALIDATION_ERROR',
+          message: 'Datos invalidos',
+          details: cuerpo.error.flatten()
+        })
+      }
+
+      // La webhook necesita una URL **absoluta** y publica. `PUBLIC_API_URL` es
+      // del backend; si no esta (que no deberia pasar, `env.ts` la exige), el
+      // checkout falla con un error claro en vez de mandar una Preference sin
+      // `notification_url`, que es el fallo invisible: el pedido queda esperando
+      // pago para siempre sin que nadie sepa por que.
+      const webhookUrl = `${process.env.PUBLIC_API_URL ?? ''}/api/orders/webhook`
+
+      const resultado = await crearPedido(prisma, request.body, webhookUrl)
+
+      return reply.status(201).send(resultado)
+    }
+  )
 
   fastify.get(
     '/api/orders',

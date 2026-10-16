@@ -165,6 +165,37 @@ export const jsonSchemas = {
       params: toJsonSchema(orderIdParamSchema),
       body: toJsonSchema(orderUpdateSchema),
       response: { 200: objetoLibre(), 403: errorLibre, 404: errorLibre }
+    },
+    /**
+     * El checkout (spec 009, T3).
+     *
+     * El `body` va como `objetoLibre()` y no como `toJsonSchema(orderCreateSchema)`
+     * **a proposito**: la validacion fina la hace `orderCreateSchema` dentro del
+     * handler, y duplicarla aca significaria dos lugares que mantener. Si
+     * Fastify rechazara antes, el `details` del 400 seria el del JSON Schema, que
+     * no es el mensaje que el frontend muestra debajo del campo.
+     *
+     * El 201 **declarado propiedad por propiedad**: `fast-json-stringify`
+     * **descarta** lo que no este declarado (gotcha 11 de `AGENTS.md`), y esta
+     * respuesta sin `initPoint` seria un 201 de mentira —el frontend no tendria
+     * a donde mandar al comprador y el fallo aparece en el navegador, no en el
+     * servidor.
+     */
+    create: {
+      body: objetoLibre(),
+      response: {
+        201: {
+          type: 'object',
+          properties: {
+            orderId: { type: 'string' },
+            preferenceId: { type: 'string' },
+            initPoint: { type: 'string' },
+            total: { type: 'number' }
+          },
+          additionalProperties: true
+        },
+        400: errorLibre
+      }
     }
   },
   customers: {
