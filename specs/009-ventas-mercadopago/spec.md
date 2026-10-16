@@ -44,6 +44,26 @@ Permitir que un visitante compre productos de la tienda sin necesidad de registr
 | D-4 | El envío se coordina aparte con el cliente (no lo calcula Mercado Pago) | Confirmada |
 | D-5 | El backend debe estar expuesto con dominio + HTTPS para recibir webhooks | Pendiente de dominio |
 | D-6 | La migración del catálogo real se hace en la spec 010, no en esta | Confirmada |
+| D-7 | El estado del pago va en un **campo nuevo**; `Order.status` sigue siendo del envío | **Confirmada** (usuario, 2026-10-16) |
+| D-8 | Se **reutilizan** `Order`, `OrderItem` y `Customer`. No se crean modelos paralelos | **Confirmada** — ver §2.3 |
+
+### 2.3 Corrección: los modelos ya existen
+
+La primera versión de esta spec proponía crear los modelos `Pedido`, `PedidoItem`
+y `Comprador`. **Los tres ya existen, con otros nombres**, y están completos para
+el checkout:
+
+| Lo que la spec pedía | Lo que ya existe |
+|---|---|
+| `Pedido` con estado, total y dirección | `Order` — `total Int`, `status OrderStatus`, `shippingAddress Json` |
+| `PedidoItem` | `OrderItem` |
+| `Comprador` con nombre, teléfono y email | `Customer` — `name`, `phone?`, `email?`, `totalOrders`, `totalSpent` |
+
+Crear modelos paralelos **dejaría al panel sin ver los pedidos nuevos**: se
+guardarían en tablas que `GET /api/orders` no lee. Es el mismo patrón de "la
+interfaz promete algo que el backend no tiene", pero al revés.
+
+**Lo único que esta spec agrega al schema es el campo del pago.**
 
 ---
 
@@ -84,16 +104,30 @@ CUANDO el comprador inicia el pago, EL SISTEMA debe registrar el pedido en la ba
 - Monto total en pesos argentinos enteros
 - Estado del pago
 
-### RF-06 — El estado del pedido se actualiza según el resultado del pago
+### RF-06 — El estado del pago se actualiza según el resultado
 
-| Estado | Significado |
-|---|---|
-| `pendiente` | El comprador inició el pago pero no lo completó |
-| `pagado` | Mercado Pago confirmó el pago |
-| `rechazado` | Mercado Pago rechazó el pago |
-| `expirado` | El comprador no completó el pago en 10 minutos |
+El pago va en un **campo propio**, separado de `Order.status`.
 
-CUANDO Mercado Pago notifica un cambio de pago vía webhook, EL SISTEMA debe actualizar el estado del pedido en la base de datos.
+> **Por qué no reusar `status`** (decisión del usuario, y corrección a la versión
+> anterior de esta spec): `Order.status` ya significa **en qué anda el envío** —
+> `pendiente`, `preparando`, `enviado`, `entregado`, `cancelado`, `devuelto` — y
+> el panel lo cambia **a mano** cuando un vendedor entrega. Si el pago compartiera
+> ese campo, un pedido en `cancelado` no diría si la plata entró, y el selector
+> del panel mezclaría dos preguntas distintas en un solo control.
+
+| `pago` | Significado | Quién lo cambia |
+|---|---|---|
+| `no_iniciado` | El comprador llenó el formulario, todavía no abrió Mercado Pago | El backend, al crear el pedido |
+| `pendiente` | Abrió Mercado Pago y no terminó | La webhook |
+| `aprobado` | Mercado Pago confirmó el pago | La webhook |
+| `rechazado` | Mercado Pago rechazó el pago | La webhook |
+| `expirado` | No se completó en 10 minutos | El cron |
+
+`Order.status` arranca en `pendiente` **sin relación con el pago**: significa
+"lo estamos armando".
+
+CUANDO Mercado Pago notifica un cambio vía webhook, EL SISTEMA debe actualizar
+el estado del **pago**, nunca el del envío.
 
 ### RF-07 — Los pedidos pendientes expiran a los 10 minutos
 
@@ -119,9 +153,21 @@ CUANDO el pago es aprobado, EL SISTEMA debe mostrar al comprador una confirmaci�
 
 ## 4. Requisitos no funcionales
 
-### RNF-01 — El monto enviado a Mercado Pago coincide exactamente con el total del carrito
+### RNF-01 — El monto lo recalcula el backend, nunca lo manda el cliente
 
-El monto que se envía a Mercado Pago debe ser la suma exacta de los precios de los productos en el carrito, en pesos argentinos enteros.
+> **Corrección a la versión anterior de esta spec.** Decía *"el monto enviado debe
+> ser la suma exacta de los precios de los productos en el carrito"*. Eso es un
+> agujero: el carrito vive en el `localStorage` del navegador, así que quien
+> quiera puede abrir la DevTools, poner `precioUnitario: 1` y pagar un pedido de
+> $150.000 con $2.
+
+EL SISTEMA debe **ignorar por completo los precios que mande el cliente** y
+calcular el total a partir de `Wine.price` en la base. Del pedido solo se acepta
+**qué** vinos y **cuántos**. El mismo número que se guarda en `Order.total` es el
+que se manda a Mercado Pago: si se calcularan por separado, la webhook podría
+aprobar un monto distinto del que el panel muestra.
+
+Todos los precios son **pesos enteros**.
 
 ### RNF-02 — El webhook valida la autenticidad de la notificación
 
