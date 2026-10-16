@@ -162,11 +162,11 @@ webhook llegue de verdad. Necesita credencial real.
 - **`localStorage` NO existe sin importar `test/andamiaje.ts`** (gotcha 33): el
   stub va en el import, no en un `setupFiles`.
 - **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
-- **Cobertura**: 264 tests en 14 archivos (`csv`, `data_table`, `dashboard`,
+- **Cobertura**: 272 tests en 15 archivos (`csv`, `data_table`, `dashboard`,
   `date_range`, `integridad_datos_vino`, `validadores`, `permisos`,
   `admin/sidebar`, `admin/layout_rutas`, `admin/login_fallido`,
   `admin/pago_en_el_panel`, `checkout_reglas`, `checkout_pagina`,
-  `contrato_checkout`);
+  `contrato_checkout`, `filtro_pedidos`);
   `npm test` pasa en modo no interactivo (`watch: false`)
 - **Nota 004-c**: se borraron los tests que dependían de `src/mocks/*` y de `admin_acceso.ts`.
   Con MSW eliminado no queda nada que probar ahí; la cobertura de API real vive en el backend.
@@ -221,7 +221,7 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
   mock corre antes que los `const`; sin `hoisted` revienta por TDZ)
 - **`tests/setup.ts`** pone los defaults de `process.env` **antes** de importar el servidor:
   `config/env.ts` valida el entorno de forma eager y sin ellos no arranca ningún test
-- **Cobertura**: 307 tests en 21 archivos
+- **Cobertura**: 318 tests en 22 archivos
 - `backend/tsconfig.json` incluye solo `src/**/*`: los tests **no** entran al `typecheck` ni al `build`.
   Es a propósito (el build de la imagen no debe typecheckear tests) y **no** es el
   olvido que había en el frontend. Si se cambia, va un `tsconfig` aparte, no
@@ -352,3 +352,5 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
 38. **`OrderTimeline.status` pasó a opcional y eso obliga a tocar tres cosas en el mismo commit** (2026-10-16, spec 009/T4). Una entrada de pago no cambia el envío, así que `status` tiene que poder ser `null`. Eso obliga a cambiar el schema JSON de la respuesta —que declara `status: { type: 'string' }` y **cortaría** el `null`— y `order_timeline.tsx`, que pasa `entrada.status` a `StatusBadge`. T1 lo dejó intacto a propósito y escribió un test que fallaba si se tocaba; T4 es cuando se escribe el primer evento de pago, y el test **cambió de regla**: ya no afirma que esté intacto, afirma que envío y pago **nunca** vienen juntos en una entrada.
 39. **`api.get<T>()` no comprueba `T`: lo afirma el que llama** (2026-10-16, spec 009). `usePedidos` hace `api.get<Paginated<Order>>` con el `Order` de `types/admin`, pero la respuesta real trae `customer: { id, name, email }` **anidado** y la `timeline` con `createdAt`. No hay capa de traducción entre `api/schemas.ts` y `types/admin.ts`, así que **`types/admin.Order` declara `customerName`, `customerEmail` y `timestamp` que nadie llena nunca**: el panel muestra el nombre del cliente **vacío** en la tabla, en el drawer y en el CSV, y "Invalid Date" en cada entrada del historial. El de la fecha se corrigió en la 009 (la entrada de pago lo habría hecho visible en una pantalla nueva). **El del `customerName` quedó abierto y documentado** en el bloque "lo que el panel todavía NO usa" de `contrato_checkout.test.ts`: es la decisión que hay que tomar.
 40. **`[System.IO.File]::WriteAllText` con `$null` BORRA el archivo** (2026-10-16). El `.NET current directory` de PowerShell **no** sigue al `cd`: un `[System.IO.File]::ReadAllText("src/app.ts")` desde `backend/` busca en la raíz y tira, `$c` queda en `$null`, y la línea siguiente escribe **un archivo vacío**. Pasó dos veces en una tarde: un `src/app.ts` de 0 bytes que rompía el typecheck con `TS1149: differs ... only in casing`, y **`AGENTS.md` de 0 bytes**. **Nunca escribir un archivo con una variable que pueda estar en `$null`, y siempre usar rutas absolutas en `[System.IO.File]`** — o mejor, la herramienta de edición, que no tiene ninguno de los dos problemas.
+41. **El querystring NO lo valida Zod, y un `transform` suyo nunca corre** (2026-10-16, fix del filtro de pedidos). `app.ts` compila `toJsonSchema(schema)` y lo pasa a **AJV**; `request.query` es lo que AJV dejó, no el resultado de `zod.parse`. O sea que poner la lógica en un `.transform()` —partir una cadena, normalizar un enum— es escribir código que **no se ejecuta**, y el síntoma es un 400 o un filtro que no filtra, sin error de compilación que lo delate. Por eso los filtros de lista van como **lista**: `?status=pendiente&status=enviado` con `z.array(z.enum([...]))`, que `zod-to-json-schema` sí expresa, y AJV lo resuelve porque corre con `coerceTypes` (por eso `?page=3` llega como `3` y no como `"3"`). Una cadena con comas **no** se puede expresar en un `enum` de JSON Schema. Regla: **si el valor viene del query string, la lógica va en el handler, no en el schema.**
+42. **Un filtro con dos mecanismos que se contradicen se rompe sin avisar** (2026-10-16). El filtro de estados era multi-select en el panel desde el 004-a y aceptaba **un** estado en el backend desde el 004-b. Una casilla andaba, dos daban 400, y en pantalla **no se veía nada**: el filtro se cerraba solo y la tabla seguía mostrando lo de antes. Un `400` en un fetch del panel es un error que el panel **no muestra**, porque `usePedidos` no distingue un fallo de red de un filtro mal armado. La defensa son los dos lados: un test que mira la **query que se arma** y otro que pide por HTTP y mira el **`where` de Prisma**.
