@@ -77,6 +77,60 @@
 - `DateRangePicker` con react-day-picker v9 (tema oscuro, dos meses)
 - Offline: `src/utils/offline.ts` guarda último response por URL; banner `AvisoOffline` + "Reintentar"
 
+## Checkout con Mercado Pago — spec 009 (rama `spec-009`)
+
+**El comprador NO tiene cuenta.** No hay login de comprador, ni registro, ni
+contraseña. El formulario pide cinco datos (nombre, apellido, teléfono, email,
+dirección) y vuelve con `?pago=aprobado|fallido|pendiente`. El email es
+**obligatorio** (D-9): es la identidad con la que el backend resuelve el
+`Customer`, reutilizando el existente o creando uno nuevo.
+
+**D-7: pago y envío son dos columnas, no una.** `Order.status` sigue siendo el
+estado del **envío** (lo cambia el panel a mano cuando un vendedor entrega) y
+`Order.pagoEstado` el del **pago** (solo lo cambia la webhook). Los dos
+enumerados comparten el literal `pendiente` con significados **opuestos**, así
+que hay **dos badges** (`StatusBadge` y `EstadoPagoBadge`) y no uno parametrizado:
+con un `Record<EstadoAdmin, Estilo>` la clave `pendiente` sería una sola y
+TypeScript aceptaría los dos usos sin reclamar.
+
+**Backend:**
+- `POST /api/orders` — **público** (a diferencia del GET y el PATCH de ese mismo
+  archivo, que exigen rol). El total sale de `Wine.price` en la base y es **el
+  mismo número** que se guarda y el que se manda a Mercado Pago. `.strict()` en
+  `orderCreateSchema` **y** en `checkoutItemSchema`: un precio pegado al item
+  colaría por el schema del pedido si el item no lo rechazara solo.
+- `POST /api/orders/webhook` — pública, y por eso **no se fía del cuerpo**:
+  valida la firma (HMAC SHA256 de `id:{id};request-id:{x-request-id};ts:{ts};`
+  con `timingSafeEqual`), **pregunta** `GET /v1/payments/:id` el estado real, y
+  es **idempotente** con un `updateMany` condicional (`WHERE pagoEstado <> destino`)
+  — que en Postgres es atómico y no tiene la carrera del "leer y decidir".
+- Cron de expiración **dentro del proceso** (Render free no tiene cronjobs):
+  `no_iniciado|pendiente` con más de 10 min → `expirado`. **No toca
+  `Order.status`.** `unref()` en el intervalo, o la suite cuelga en verde.
+- **Mercado Pago detrás de una interfaz** (`modules/pagos/proveedor.ts`): el
+  handler depende de `ProveedorPagos` y los tests usan `ProveedorPagosFalso`, que
+  **registra lo que se le pidió**. El proveedor real se registra en `app.ts`, no en
+  el módulo.
+- **Sin token no se registra nada** y el checkout falla con un mensaje explícito.
+  Un proveedor mudo que devuelve un id falso haría parecer que funciona y dejaría
+  cada pago colgado esperando una webhook que nunca llega.
+- `MERCADO_PAGO_ACCESS_TOKEN` y `MERCADO_PAGO_WEBHOOK_SECRET` son **opcionales y
+  validadas**: que no sean obligatorias evita que un deploy sin Mercado Pago no
+  levante; declararlas evita que sean variables sueltas que nadie encuentra.
+
+**Frontend:**
+- `/checkout` renderiza el **mismo `App`** que decide con `useLocation()`. El
+  carrito vive en el estado de `App`, no en un contexto, así que el formulario no
+  tendría qué mandar si fuera su propia página.
+- El carrito **no** se vacía al apretar "Finalizar Pedido": se vacía **solo con el
+  pago aprobado** (D-D). El sandbox de Mercado Pago manda a cancelar seguido.
+- La confirmación lee número y total del **`sessionStorage`** (no de un endpoint
+  público — D-F: devolvería nombre, teléfono y dirección de alguien sin cuenta).
+  Si no hay resumen **no inventa un total**.
+
+**Lo que NO se pudo probar:** que Mercado Pago acepte la Preference y que la
+webhook llegue de verdad. Necesita credencial real.
+
 ## Paleta de colores (fuente única: `tailwind.config.js`)
 
 - **Superficies**: `charcoal` = negro carbón neutro (`#2E2E2E` → `#0A0A0A`); fondo página `charcoal-950` `#0A0A0A`, cards `charcoal-800/900`
@@ -100,11 +154,19 @@
   El stub de `matchMedia` **lee `innerWidth`**, no devuelve `false` fijo: si
   devuelve `false`, el panel se prueba siempre como en un monitor de 2000 px y el
   drawer de móvil no se ve nunca
-- **Montaje**: `montarApp()` en `test/andamiaje.ts` (sin StrictMode; evita doble sincronización a localStorage)
+- **Montaje**: `montarApp(rutaInicial?)` en `test/andamiaje.ts` (sin StrictMode;
+  evita doble sincronización a localStorage). **Monta los dos providers** —
+  `AuthProvider` y `MemoryRouter`, lo mismo que `main.tsx` — porque `App` usa
+  `useLocation()` y la barra y el catálogo usan `useAuth()`. Un test que monta la
+  app recortando providers mide un árbol que en producción no existe.
+- **`localStorage` NO existe sin importar `test/andamiaje.ts`** (gotcha 33): el
+  stub va en el import, no en un `setupFiles`.
 - **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
-- **Cobertura**: 160 tests en 10 archivos (`csv`, `data_table`, `dashboard`,
+- **Cobertura**: 264 tests en 14 archivos (`csv`, `data_table`, `dashboard`,
   `date_range`, `integridad_datos_vino`, `validadores`, `permisos`,
-  `admin/sidebar`, `admin/layout_rutas`, `admin/login_fallido`);
+  `admin/sidebar`, `admin/layout_rutas`, `admin/login_fallido`,
+  `admin/pago_en_el_panel`, `checkout_reglas`, `checkout_pagina`,
+  `contrato_checkout`);
   `npm test` pasa en modo no interactivo (`watch: false`)
 - **Nota 004-c**: se borraron los tests que dependían de `src/mocks/*` y de `admin_acceso.ts`.
   Con MSW eliminado no queda nada que probar ahí; la cobertura de API real vive en el backend.
@@ -112,6 +174,21 @@
   `["src"]` solo y el docstring de `test/andamiaje.ts` afirmaba lo contrario
   desde la spec 001 — era falso. Al incluirlo aparecieron diez `TS2339` dormidos
   en `data_table.test.ts`.
+
+### El test de contrato (`test/contrato_checkout.test.ts`)
+
+Es el único test que mira **las dos puntas a la vez**: lee
+`backend/src/shared/schemas.ts` y `backend/src/shared/json-schemas.ts` como texto
+y compara los nombres de campo con los del frontend. Existe porque las dos mitades
+pueden estar bien y no entenderse — si el backend devuelve `preferenceId` y el
+frontend lee `preferenceIdOk`, **todo pasa en verde**.
+
+Tres reglas que lo hacen confiable y que cualquier extractor de texto debería
+copiar (gotcha 35): **si no encuentra un bloque, tira** (devolver `""` convierte
+"el contrato cambió" en "el contrato no cambió"); **cuenta llaves** en vez de
+`[\s\S]*?\}\)` (que corta en la primera llave que cierra y se lleva las claves del
+schema siguiente); y **saca los comentarios** antes de comparar, o el comentario
+decide por el test.
 
 ### Tests del panel (`test/admin/`)
 
@@ -144,7 +221,7 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
   mock corre antes que los `const`; sin `hoisted` revienta por TDZ)
 - **`tests/setup.ts`** pone los defaults de `process.env` **antes** de importar el servidor:
   `config/env.ts` valida el entorno de forma eager y sin ellos no arranca ningún test
-- **Cobertura**: 165 tests en 14 archivos
+- **Cobertura**: 307 tests en 21 archivos
 - `backend/tsconfig.json` incluye solo `src/**/*`: los tests **no** entran al `typecheck` ni al `build`.
   Es a propósito (el build de la imagen no debe typecheckear tests) y **no** es el
   olvido que había en el frontend. Si se cambia, va un `tsconfig` aparte, no
@@ -260,3 +337,18 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
 30. **El parser del cruce de permisos se rompió con un comentario** (2026-10-14, spec 006/T4). `coherencia_permisos.test.ts` emparejaba `'/api/...'` con el `requireRole` de a 400 caracteres. **El comentario de ocho líneas explicando por qué el `gestor` no ve la facturación dejó a `/api/metrics` sin leer.** El test seguía verde: la tabla del frontend y el backend "coincidían" porque el backend no estaba en el mapa. Además aplanaba a la ruta, y perdía que `DELETE /api/wines/:id` es **solo admin** mientras `PATCH /api/wines/:id` es admin+gestor. Ahora parte por declaraciones `fastify.<método>(`, sin tope. **Un parser que depende de la distancia entre dos cosas se rompe con el primer comentario útil.**
 31. **Dos mecanismos redundantes hacen indistinguibles los tests** (2026-10-14, spec 006/T3). El layout redirige a `primeraVisible(rol)` y el gate navega al destino permitido: los dos dan **el mismo lugar en pantalla**. Un test de punta a punta ("entrar como gestor y ver dónde queda") pasaba en verde con cualquiera de los dos. Recién con el gate montado **aislado** (`montarGate()`, sin `AdminLayout`) la pregunta tuvo respuesta. Y hay un caso donde dos mecanismos se cubren: `return null` durante el redirect se verifica por la **API** ("¿se pidió `/api/metrics`?"), no por el DOM — el frame intermedio ya pasó cuando el test mira el DOM.
 32. **`/admin/*` con `path: '*'` montaba el Dashboard para cualquiera** (2026-10-14, spec 006/T3). `router.tsx` tenía `{ path: '*', element: <Dashboard /> }` dentro del panel, así que `/admin/secreto` le daba el dashboard a un `vendedor`: una sección vedada servida por un atajo. `puedeVer` no conoce esa ruta y por eso redirige. Un `catchAll` que sirve contenido en vez de una página vacía es un permiso con otro nombre.
+33. **`localStorage` NO existe en los tests, y no es culpa de jsdom** (2026-10-16, spec 009/T6). Node 24+ cuelga su propio `localStorage` experimental en `globalThis` **antes** de que jsdom arme su entorno, así que el de jsdom queda tapado y el de Node es `undefined`: `localStorage.getItem(...)` es un `TypeError`, no un `null`. El propio Node avisa `ExperimentalWarning: localStorage is not available because --localstorage-file was not provided`. Y la app **sí** lo usa (catálogo y carrito), así que no es un detalle del entorno. El stub va **en `test/andamiaje.ts`**, no en un `setupFiles`: es donde ya viven los stubs de jsdom y se importa a mano. Además `vitest.config.ts` fija `environmentOptions.jsdom.url`, porque con `about:blank` el origen es opaco y no hay almacenamiento. **Si un test toca almacenamiento y no importa el andamiaje, el fallo dice `TypeError` y no dice "almacenamiento".**
+34. **`onBlur` en React 18 escucha `focusout`, no `blur`** (2026-10-16, spec 009/T6). Desde React 17 los eventos se enganchan en la raíz y `onBlur` está mapeado al `focusout` nativo, que **bu-bblea**. Disparar `blur` a mano en un test no llega nunca: el aserto pasaría solo si el componente mostrara el error sin tocar el campo, que en el navegador no puede cumplirse. **Un test que dispara el evento equivocado puede pasar sin estar probando nada** — el caso más limpio de "verde y sin valor".
+35. **Un test que lee texto como un comentario puede decidir el resultado** (2026-10-16, spec 009, `contrato_checkout.test.ts`). Una aserción `toContain('.strict(')` pasaba con la llamada **borrada**, porque el bloque de `checkoutItemSchema` tiene un comentario que menciona `` `.strict()` `` para explicar por qué está ahí. **Cualquier extractor de texto tiene que sacar los comentarios primero.** Y los otros dos: si no encuentra el bloque **tira** (devolver `""` convierte "el contrato cambió" en "el contrato no cambió"), y **cuenta llaves** en vez de `[\s\S]*?\}\)` (que corta en la primera llave que cierra y se lleva las claves del schema siguiente).
+36. **Declarar `properties` a medias en un `response.schema` corta los datos, y parece lo contrario** (2026-10-16, spec 009/T8, amplía el gotcha 11). Medido con Fastify de verdad:
+    ```text
+    { type: 'object' }                              -> {}
+    { type: 'object', additionalProperties: false } -> {}
+    { type: 'object', properties: { id } }          -> { id }   <-- la peligrosa
+    { type: 'object', additionalProperties: true }  -> todo
+    ```
+    El caso peligroso es el tercero: **escribir el schema con cuidado y que por eso se corte más** es el modo de falla que no duele hasta que el panel muestra columnas vacías. Por eso `pago_en_la_respuesta.test.ts` serializa con **Fastify de verdad** y el schema real, en vez de llamar a una función y asumir que el resultado llega intacto. Y dentro de un array: `items: { type: 'object' }` produce `[{}]`, `items` con `properties` parciales produce `[{ id }]`.
+37. **Un sabotaje que no muerde por apuntar mal se ve igual que uno que no muerde** (2026-10-16, spec 009/T8). `String.replace` cambia la primera ocurrencia, y `data: { type: 'array' }` aparece también en `wines.list`: el sabotaje decía "aplicado", rompió la lista de vinos y las pruebas de pedidos siguieron en verde. Igual con **CRLF**: un literal multilínea con `\n` no matchea nunca en el working copy, el sabotaje sale `NO ENCONTRADO` y la suite queda verde. **Los dos se ven exactamente igual que "el test no muerde" desde afuera.** Por eso los scripts de sabotaje usan anclas de una línea, y por qué hay que leer un `NO ENCONTRADO` como un fallo del sabotaje y no del test.
+38. **`OrderTimeline.status` pasó a opcional y eso obliga a tocar tres cosas en el mismo commit** (2026-10-16, spec 009/T4). Una entrada de pago no cambia el envío, así que `status` tiene que poder ser `null`. Eso obliga a cambiar el schema JSON de la respuesta —que declara `status: { type: 'string' }` y **cortaría** el `null`— y `order_timeline.tsx`, que pasa `entrada.status` a `StatusBadge`. T1 lo dejó intacto a propósito y escribió un test que fallaba si se tocaba; T4 es cuando se escribe el primer evento de pago, y el test **cambió de regla**: ya no afirma que esté intacto, afirma que envío y pago **nunca** vienen juntos en una entrada.
+39. **`api.get<T>()` no comprueba `T`: lo afirma el que llama** (2026-10-16, spec 009). `usePedidos` hace `api.get<Paginated<Order>>` con el `Order` de `types/admin`, pero la respuesta real trae `customer: { id, name, email }` **anidado** y la `timeline` con `createdAt`. No hay capa de traducción entre `api/schemas.ts` y `types/admin.ts`, así que **`types/admin.Order` declara `customerName`, `customerEmail` y `timestamp` que nadie llena nunca**: el panel muestra el nombre del cliente **vacío** en la tabla, en el drawer y en el CSV, y "Invalid Date" en cada entrada del historial. El de la fecha se corrigió en la 009 (la entrada de pago lo habría hecho visible en una pantalla nueva). **El del `customerName` quedó abierto y documentado** en el bloque "lo que el panel todavía NO usa" de `contrato_checkout.test.ts`: es la decisión que hay que tomar.
+40. **`[System.IO.File]::WriteAllText` con `$null` BORRA el archivo** (2026-10-16). El `.NET current directory` de PowerShell **no** sigue al `cd`: un `[System.IO.File]::ReadAllText("src/app.ts")` desde `backend/` busca en la raíz y tira, `$c` queda en `$null`, y la línea siguiente escribe **un archivo vacío**. Pasó dos veces en una tarde: un `src/app.ts` de 0 bytes que rompía el typecheck con `TS1149: differs ... only in casing`, y **`AGENTS.md` de 0 bytes**. **Nunca escribir un archivo con una variable que pueda estar en `$null`, y siempre usar rutas absolutas en `[System.IO.File]`** — o mejor, la herramienta de edición, que no tiene ninguno de los dos problemas.
