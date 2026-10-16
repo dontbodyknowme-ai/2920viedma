@@ -46,27 +46,39 @@ Permitir que un visitante compre productos de la tienda sin necesidad de registr
 | D-6 | La migración del catálogo real se hace en la spec 010, no en esta | Confirmada |
 | D-7 | El estado del pago va en un **campo nuevo**; `Order.status` sigue siendo del envío | **Confirmada** (usuario, 2026-10-16) |
 | D-8 | Se **reutilizan** `Order`, `OrderItem` y `Customer`. No se crean modelos paralelos | **Confirmada** — ver §2.3 |
-| D-9 | Un comprador que vuelve, ¿es el mismo `Customer`? | 🔴 **ABIERTA** — ver §2.4 |
+| D-9 | Un comprador que vuelve es el **mismo `Customer`**, y el email es **obligatorio** | **Confirmada** (usuario, 2026-10-16) |
 | D-10 | ¿El panel filtra por estado de pago, o solo por envío? | 🔴 **ABIERTA** — ver §2.5 |
 | D-11 | ¿Mercado Pago se implementa de una o en dos partes? | 🔴 **ABIERTA** — ver `task.md` |
 
-### 2.4 D-9 — ¿Un comprador que vuelve es el mismo `Customer`?
+### 2.4 D-9 — Un comprador que vuelve es el mismo `Customer`
 
-Es la decisión más grande de la spec y depende de cómo se mire `Customer`:
+**Decisión (usuario, 2026-10-16): ficha de cliente, con email obligatorio.**
 
-- **Es una ficha de cliente:** se busca por email y si existe se reutiliza. Un
-  comprador que compra dos veces tiene **dos pedidos y una** ficha, y
-  `totalOrders` / `totalSpent` crecen. Es lo que el módulo CRM ya asume.
-- **Es un registro por compra:** cada checkout crea un `Customer` nuevo. Es más
-  simple y **no puede chocar** por email repetido, pero rompe el CRM: nadie
-  aparece dos veces y las métricas de `Customer` no significan nada.
+El checkout **busca por email**; si existe, reutiliza la ficha. Si no, crea una.
+Un comprador que compra dos veces tiene **dos pedidos y una** ficha, y
+`totalOrders` / `totalSpent` crecen. Es lo que el módulo CRM ya asume.
 
-Con el email **opcional** (RF-02) choca de una forma incómoda: dos compradores
-sin email **no se pueden distinguir nunca**.
+**Por qué el email pasó a obligatorio.** La versión anterior lo tenía opcional
+(RF-02), y eso rompe la decisión por dos lados:
 
-> **Recomendación: ficha de cliente, con email obligatorio.** Es lo único que
-> resuelve el choque con `@unique` de una vez. Si el email tiene que ser
-> opcional, entonces es registro por compra.
+- **Choca con el `@unique`.** Dos compradores con el mismo email son la misma
+  persona, y uno sin email no es nadie. Con email opcional, la ficha no tiene
+  forma de decir a quién pertenece.
+- **Sin email no hay identidad.** Dos compradores que no dejan email **no se
+  pueden distinguir nunca**. Cada compra abriría un cliente distinto, el CRM
+  mostraría el mismo nombre dozens de veces, y `totalSpent` sería la suma de
+  compras de gente que no sabemos quién es.
+
+Es un costo —se pide un dato que antes no se pedía— a cambio de que el resto del
+sistema funcione. **RF-02 se actualizó** y los casos límite también.
+
+Tres detalles que la decisión obliga, y que se implementan en T2:
+
+| Detalle | Qué hay que hacer |
+|---|---|
+| **Mayúsculas** | `Ana@x.com` y `ana@x.com` son el mismo correo para cualquiera, pero **distintos** para el `@unique` de Postgres. Se guarda **siempre en minúsculas**. Sin eso, una persona se parte en dos fichas por escribir su email con otra capitalización |
+| **Carrera** | Dos checkouts del mismo email a la vez: los dos buscan, los dos no encuentran, los dos insertan, y uno se lleva un `P2002` de violation de unique. Se captura y se reintenta la búsqueda |
+| **Teléfono** | `Customer.phone` es `String?` y **se actualiza** con el valor nuevo cuando la persona escribe uno distinto. Es el único dato de contacto que se corrige solo |
 
 ### 2.5 D-10 — ¿El panel filtra por estado de pago?
 
@@ -101,9 +113,9 @@ interfaz promete algo que el backend no tiene", pero al revés.
 
 ### RF-01 — El comprador puede iniciar el pago sin estar logueado
 
-CUANDO un visitante tiene productos en el carrito y pulsa "Pagar", EL SISTEMA debe permitirle continuar sin pedirle email ni contraseña.
+CUANDO un visitante tiene productos en el carrito y pulsa "Pagar", EL SISTEMA debe permitirle continuar **sin cuenta, sin contraseña y sin registro previo**. Pregunta sus datos de contacto como se pregunta en un local —nombre, teléfono, dirección, email— y con eso alcanza; no hay nada que crear ni que recordar después.
 
-### RF-02 — Datos obligatorios y opcionales del comprador
+### RF-02 — Datos del comprador
 
 CUANDO el comprador pulsa "Pagar", EL SISTEMA debe pedirle:
 
@@ -112,10 +124,18 @@ CUANDO el comprador pulsa "Pagar", EL SISTEMA debe pedirle:
 | Nombre | Sí | No vacío |
 | Apellido | Sí | No vacío |
 | Teléfono | Sí | Formato telefónico válido |
-| Email | Opcional | Si se ingresa, formato email válido |
+| Email | **Sí** | Formato email válido. Se guarda en **minúsculas** (D-9) |
 | Dirección de envío | Sí | No vacío |
 
-El DNI **no se pide**.
+**El DNI no se pide.**
+
+> **Cambio respecto de la versión anterior:** el email era opcional. Con D-9 pasó
+> a obligatorio: es lo que identifica al comprador y lo que evita partirlo en dos
+> fichas. Ver §2.4.
+
+**Antes de crear el pedido, el backend resuelve el `Customer`** (RF-05): busca
+por email en minúsculas; si existe, lo reutiliza y actualiza su teléfono; si no,
+lo crea.
 
 ### RF-03 — El pago se procesa a través de Mercado Pago
 
@@ -129,7 +149,7 @@ CUANDO el comprador está en el checkout de Mercado Pago, EL SISTEMA debe oculta
 
 CUANDO el comprador inicia el pago, EL SISTEMA debe registrar el pedido en la base de datos con:
 
-- Datos del comprador (nombre, apellido, teléfono, email si lo ingresó, dirección)
+- Datos del comprador (nombre, apellido, teléfono, email, dirección), **resueltos contra un `Customer` existente o nuevo** (RF-02, D-9)
 - Productos del carrito (nombre, cantidad, precio unitario)
 - Monto total en pesos argentinos enteros
 - Estado del pago
@@ -168,7 +188,7 @@ SI un pedido queda en estado `pendiente` por más de 10 minutos, ENTONCES EL SIS
 CUANDO un admin o gestor entra al módulo de pedidos, EL SISTEMA debe mostrarle:
 
 - Nombre del comprador
-- Email (si lo ingresó)
+- Email
 - Teléfono
 - Dirección de envío
 - Productos del pedido
@@ -217,7 +237,11 @@ El teléfono y dirección del comprador se guardan en la base de datos con acces
 | El pago es rechazado por Mercado Pago | El pedido queda como `rechazado` y el comprador puede reintentar |
 | El webhook llega dos veces | El sistema no duplica el pedido ni cambia el estado dos veces |
 | El carrito está vacío al pulsar "Pagar" | El sistema no permite avanzar al checkout |
-| El comprador no ingresa email | El pedido se registra sin email (campo opcional) |
+| El comprador no ingresa email | **Ya no es un caso**: el email es obligatorio (D-9). El checkout no avanza y el mensaje dice qué falta |
+| El mismo email compra dos veces | **Un** `Customer`, **dos** `Order`. `totalOrders` queda en 2 |
+| `Ana@x.com` compra y después `ana@x.com` | **Un** `Customer`. El email se guarda en minúsculas al buscar y al escribir |
+| Dos checkouts del mismo email al mismo tiempo | Uno crea la ficha y el otro se la lleva ya existente, no un error de base. Se captura el `P2002` y se reintenta la búsqueda |
+| El comprador ya existía pero escribe otro teléfono | Se actualiza el `Customer`. Es el único dato que se corrige solo |
 | El comprador ingresa un email inválido | El sistema no permite avanzar hasta corregirlo |
 
 ---
@@ -236,7 +260,7 @@ El teléfono y dirección del comprador se guardan en la base de datos con acces
 ## 7. Criterios de finalización
 
 - [ ] Un visitante puede comprar sin estar logueado
-- [ ] El checkout pide nombre, apellido, teléfono y dirección (email opcional, sin DNI)
+- [ ] El checkout pide nombre, apellido, teléfono, email y dirección; **no pide DNI ni contraseña**
 - [ ] El pago se procesa a través de Mercado Pago sin ofrecer tarjeta de crédito ni cuotas
 - [ ] El pedido se registra en la base de datos con estado correcto
 - [ ] Los pedidos pendientes expiran a los 10 minutos

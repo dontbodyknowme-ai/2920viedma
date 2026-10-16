@@ -30,15 +30,20 @@
 
 **Hecho cuando:**
 - `orderCreateSchema` valida: nombre (no vacío), apellido (no vacío), teléfono
-  (formato válido), email (**opcional**, formato email si viene), dirección (no
+  (formato válido), email (**obligatorio**, formato válido), dirección (no
   vacía), items (array **no vacío** de `{ vinoId, cantidad > 0 }`)
+- **El email se normaliza a minúsculas** dentro del schema, no en el handler
+  (D-9). Si la normalización queda en dos lugares, uno de los dos se olvida
 - **El schema rechaza `precioUnitario`** si viene. No es "lo ignoramos": es
   rechazarlo, así que un cliente viejo que lo mande se entera en vez de creer
-  que pagó el precio que quiso.
+  que pagó el precio que quiso
 - Test: body sin `nombre` → 400
-- Test: body sin `email` → 201 (email es opcional)
+- Test: body sin `email` → 400 (**ya no es opcional**, D-9)
+- Test: `Ana@X.com` sale del schema como `ana@x.com`
 - Test: body con `items: []` → 400
 - Test: body con `precioUnitario` → 400
+- Test: `cantidad: 0` y `cantidad: -1` → 400
+- Test: `vinoId` vacío → 400
 
 ---
 
@@ -101,8 +106,10 @@
 **Cubre:** RF-01, RF-02, RF-03
 
 **Hecho cuando:**
-- `FormularioCheckout` con nombre, apellido, teléfono, email (opcional) y
-  dirección. **No pide DNI ni contraseña**
+- `FormularioCheckout` con nombre, apellido, teléfono, **email** y dirección.
+  **No pide DNI ni contraseña**
+- El email es un campo requerido y el error sale debajo del campo, como el
+  resto (la spec 004-a ya fijó esa convención en el login)
 - Los cuatro obligatorios no pueden estar vacíos
 - Al confirmar → `POST /api/orders` con los datos + `{ vinoId, cantidad }` del
   carrito. **Sin precios**
