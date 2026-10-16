@@ -46,6 +46,36 @@ Permitir que un visitante compre productos de la tienda sin necesidad de registr
 | D-6 | La migración del catálogo real se hace en la spec 010, no en esta | Confirmada |
 | D-7 | El estado del pago va en un **campo nuevo**; `Order.status` sigue siendo del envío | **Confirmada** (usuario, 2026-10-16) |
 | D-8 | Se **reutilizan** `Order`, `OrderItem` y `Customer`. No se crean modelos paralelos | **Confirmada** — ver §2.3 |
+| D-9 | Un comprador que vuelve, ¿es el mismo `Customer`? | 🔴 **ABIERTA** — ver §2.4 |
+| D-10 | ¿El panel filtra por estado de pago, o solo por envío? | 🔴 **ABIERTA** — ver §2.5 |
+| D-11 | ¿Mercado Pago se implementa de una o en dos partes? | 🔴 **ABIERTA** — ver `task.md` |
+
+### 2.4 D-9 — ¿Un comprador que vuelve es el mismo `Customer`?
+
+Es la decisión más grande de la spec y depende de cómo se mire `Customer`:
+
+- **Es una ficha de cliente:** se busca por email y si existe se reutiliza. Un
+  comprador que compra dos veces tiene **dos pedidos y una** ficha, y
+  `totalOrders` / `totalSpent` crecen. Es lo que el módulo CRM ya asume.
+- **Es un registro por compra:** cada checkout crea un `Customer` nuevo. Es más
+  simple y **no puede chocar** por email repetido, pero rompe el CRM: nadie
+  aparece dos veces y las métricas de `Customer` no significan nada.
+
+Con el email **opcional** (RF-02) choca de una forma incómoda: dos compradores
+sin email **no se pueden distinguir nunca**.
+
+> **Recomendación: ficha de cliente, con email obligatorio.** Es lo único que
+> resuelve el choque con `@unique` de una vez. Si el email tiene que ser
+> opcional, entonces es registro por compra.
+
+### 2.5 D-10 — ¿El panel filtra por estado de pago?
+
+Hoy el filtro de `/admin/pedidos` es por **estado de envío** y consulta
+`?status=`. Con el pago en campo nuevo, el panel **no puede filtrar "cuánto
+cobraron hoy"** sin abrir pedido por pedido.
+
+Agregar el filtro, o dejarlo así y que el estado de pago se vea al abrir el
+pedido. No bloquea la implementación.
 
 ### 2.3 Corrección: los modelos ya existen
 
