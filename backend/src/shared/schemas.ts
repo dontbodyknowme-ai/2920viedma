@@ -99,6 +99,28 @@ export const ESTADOS_PEDIDO_VALIDOS = [
 export type EstadoPedidoValido = (typeof ESTADOS_PEDIDO_VALIDOS)[number]
 
 /**
+ * Los estados de **pago** del filtro (spec 009, D-10).
+ *
+ * Van en el mismo `where` y con la misma logica de lista que los de envio, pero
+ * en **otro filtro**: el panel los muestra en desplegables separados porque
+ * `pendiente` significa una cosa distinta en cada uno (D-7). Un desplegable unico
+ * con dos "Pendiente" seria un filtro que habria que adivinar.
+ *
+ * Los dos se combinan con AND entre listas y OR adentro: "los expirados que
+ * todavia estan pendientes de envio" es una consulta valida, y es la que se hace
+ * todos los dias para liberar el vino reservado.
+ */
+export const ESTADOS_PAGO_VALIDOS = [
+  'no_iniciado',
+  'pendiente',
+  'aprobado',
+  'rechazado',
+  'expirado'
+] as const
+
+export type EstadoPagoValido = (typeof ESTADOS_PAGO_VALIDOS)[number]
+
+/**
  * Filtro por estado: una **lista**, no un valor.
  *
  * ## Que estaba roto y por que
@@ -135,6 +157,19 @@ export const orderQuerySchema = z.object({
     .array(z.enum(ESTADOS_PEDIDO_VALIDOS))
     .min(1, 'El filtro de estado no puede estar vacio')
     .max(ESTADOS_PEDIDO_VALIDOS.length, 'Se mandaron mas estados de los que existen')
+    .optional(),
+  /**
+   * El filtro de **pago**, en su propio campo (D-10).
+   *
+   * No se mete dentro de `status` porque un estado de envio y uno de pago se
+   * nombran igual y significan cosas distintas: un `status=pendiente` tiene que
+   * decir "pendientes de envio" y no "pendientes de pago". Con un solo campo, la
+   * consulta seria ambigua y habria que adivinar.
+   */
+  pagoEstado: z
+    .array(z.enum(ESTADOS_PAGO_VALIDOS))
+    .min(1, 'El filtro de pago no puede estar vacio')
+    .max(ESTADOS_PAGO_VALIDOS.length, 'Se mandaron mas estados de pago de los que existen')
     .optional(),
   dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),

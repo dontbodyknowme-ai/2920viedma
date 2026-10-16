@@ -185,3 +185,72 @@ describe('sin filtro', () => {
     expect(llamada.take).toBe(25)
   })
 })
+
+describe('el filtro de PAGO (spec 009, D-10)', () => {
+  it('filtra por estado de pago', async () => {
+    const res = await pedir('pagoEstado=aprobado&page=1&limit=10')
+
+    expect(res.statusCode).toBe(200)
+    expect(where().pagoEstado).toEqual({ in: ['aprobado'] })
+  })
+
+  it('varios estados de pago', async () => {
+    const res = await pedir('pagoEstado=pendiente&pagoEstado=expirado&page=1&limit=10')
+
+    expect(res.statusCode).toBe(200)
+    expect(where().pagoEstado).toEqual({ in: ['pendiente', 'expirado'] })
+  })
+
+  it('los CINCO estados de pago, que existen todos', async () => {
+    // Si el schema tuviera uno menos que el enum de Prisma, el ultimo de la
+    // lista daria 400 y el operador no podria filtrar por el.
+    const todos = ['no_iniciado', 'pendiente', 'aprobado', 'rechazado', 'expirado']
+    const res = await pedir(`pagoEstado=${todos.join('&pagoEstado=')}&page=1&limit=10`)
+
+    expect(res.statusCode).toBe(200)
+    expect(where().pagoEstado).toEqual({ in: todos })
+  })
+
+  it('los dos filtros juntos: envio AND pago', async () => {
+    // La pregunta que se hace todos los dias: "los expirados que todavia estan
+    // pendientes de envio" son los que hay que liberar. Prisma pone el AND solo
+    // entre las claves de `where`.
+    const res = await pedir('status=pendiente&pagoEstado=expirado&page=1&limit=10')
+
+    expect(res.statusCode).toBe(200)
+    expect(where().status).toEqual({ in: ['pendiente'] })
+    expect(where().pagoEstado).toEqual({ in: ['expirado'] })
+  })
+
+  it('un estado de PAGO no llega al filtro de envio', async () => {
+    // El bug de D-7 seria exactamente este: que `pagoEstado=expirado` terminara
+    // filtrando `status`. Son dos campos distintos y cada uno va a su filtro.
+    await pedir('pagoEstado=expirado&page=1&limit=10')
+
+    expect(where().status).toBeUndefined()
+    expect(where().pagoEstado).toEqual({ in: ['expirado'] })
+  })
+
+  it('un estado de ENVIO no llega al filtro de pago', async () => {
+    // Y al reves: `enviado` es de envio, no un estado de pago. Prisma daria
+    // error de validacion en tiempo de ejecucion si colara en un enum de pago.
+    await pedir('status=enviado&page=1&limit=10')
+
+    expect(where().pagoEstado).toBeUndefined()
+  })
+
+  it('un estado de pago inventado sigue siendo 400', async () => {
+    const res = await pedir('pagoEstado=inventado')
+
+    expect(res.statusCode).toBe(400)
+    expect(prismaFalso.order.findMany).not.toHaveBeenCalled()
+  })
+
+  it('un estado de envio en el filtro de pago es 400', async () => {
+    // `entregado` es de envio. Si el enum de pago lo aceptara, el operador
+    // marcaria "Entregado" en el desplegable de Pago creyendo que filtra algo.
+    const res = await pedir('pagoEstado=entregado')
+
+    expect(res.statusCode).toBe(400)
+  })
+})

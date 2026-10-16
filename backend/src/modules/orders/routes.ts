@@ -126,7 +126,7 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
       schema: jsonSchemas.orders.list
     },
     async (request) => {
-      const { page, limit, status, dateFrom, dateTo, search } = request.query as any
+      const { page, limit, status, pagoEstado, dateFrom, dateTo, search } = request.query as any
       const where: any = {}
 
       /**
@@ -143,6 +143,20 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
        * un **400**. Ver el comentario de `orderQuerySchema`.
        */
       if (status !== undefined) where.status = { in: status }
+
+      /**
+       * El filtro de pago (spec 009, D-10), con `in` y en su propio campo.
+       *
+       * Los dos filtros se combinan solos: Prisma pone un AND entre las claves
+       * de `where`, asi que "expirados **y** pendientes de envio" sale de
+       * `{ status: { in: [...] }, pagoEstado: { in: [...] } }` sin escribir un
+       * `AND` explicito.
+       *
+       * Y si los dos se dejan sin tocar, `where` queda vacio y se ve todo: no
+       * hay un `where` "por defecto" que de fato que se note.
+       */
+      if (pagoEstado !== undefined) where.pagoEstado = { in: pagoEstado }
+
       if (dateFrom || dateTo) {
         where.createdAt = {}
         if (dateFrom) where.createdAt.gte = new Date(dateFrom + 'T00:00:00')

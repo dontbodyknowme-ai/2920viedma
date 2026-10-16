@@ -1,12 +1,17 @@
 import { useState } from 'react'
-import { Eye, Filter, X } from 'lucide-react'
+import { CreditCard, Eye, Truck, X } from 'lucide-react'
 import { DataTable, columnaConFiltro, columnaHelper } from '../../components/admin/data_table'
 import { StatusBadge } from '../../components/admin/status_badge'
 import { EstadoPagoBadge } from '../../components/admin/estado_pago_badge'
 import { OrderDrawer } from '../../components/admin/order_drawer'
 import { DateRangePicker } from '../../components/admin/date_range_picker'
-import { ESTADOS_PEDIDO, usePedidos } from '../../hooks/usePedidos'
-import type { Order, OrderStatus } from '../../types/admin'
+import {
+  ESTADOS_PAGO,
+  ESTADOS_PEDIDO,
+  filtrosVacios,
+  usePedidos
+} from '../../hooks/usePedidos'
+import type { EstadoPago, Order, OrderStatus } from '../../types/admin'
 
 /**
  * Gestion de pedidos: la segunda de las tres tablas del panel.
@@ -107,6 +112,7 @@ export const PedidosAdmin = () => {
   const [aviso, setAviso] = useState('')
   const [error, setError] = useState('')
   const [panelEstados, setPanelEstados] = useState(false)
+  const [panelPagos, setPanelPagos] = useState(false)
 
   const alternarEstadoEnFiltro = (estado: OrderStatus): void => {
     const yaEsta = pedidos.filtros.estados.includes(estado)
@@ -117,20 +123,38 @@ export const PedidosAdmin = () => {
     })
   }
 
+  /**
+   * Marca o desmarca un estado de **pago** (spec 009, D-10).
+   *
+   * Gemela de `alternarEstadoEnFiltro`, y separada a proposito: mezclarlas habria
+   * que distinguir los dos tipos de estado en cada llamada, y la confusion entre
+   * `pendiente` de envio y `pendiente` de pago es justo lo que D-7 vino a evitar.
+   */
+  const alternarPagoEnFiltro = (pago: EstadoPago): void => {
+    const yaEsta = pedidos.filtros.pagos.includes(pago)
+
+    pedidos.aplicarFiltros({
+      pagos: yaEsta
+        ? pedidos.filtros.pagos.filter((otro) => otro !== pago)
+        : [...pedidos.filtros.pagos, pago]
+    })
+  }
+
   const hayFiltros =
     pedidos.filtros.search !== '' ||
     pedidos.filtros.estados.length > 0 ||
+    pedidos.filtros.pagos.length > 0 ||
     pedidos.filtros.dateFrom !== '' ||
     pedidos.filtros.dateTo !== ''
 
   const limpiarTodo = (): void => {
-    pedidos.aplicarFiltros({
-      search: '',
-      estados: [],
-      dateFrom: '',
-      dateTo: ''
-    })
+    // `filtrosVacios()` y no un objeto a mano: `aplicarFiltros` fusiona, asi que
+    // un campo olvidado **queda puesto**. Y el tipo de la funcion es completo, de
+    // modo que olvidar un campo es un error de compilacion y no una sorpresa en
+    // pantalla.
+    pedidos.aplicarFiltros(filtrosVacios())
     setPanelEstados(false)
+    setPanelPagos(false)
   }
 
   const cambiarEstado = async (pedido: Order, estado: OrderStatus): Promise<Order> => {
@@ -163,13 +187,13 @@ export const PedidosAdmin = () => {
         </div>
 
         <div className='flex flex-wrap items-center gap-2'>
-          {/* --- Filtro de estados, multi-select --- */}
+          {/* --- Filtro de ENVIO, multi-select --- */}
           <div className='relative'>
             <button
               type='button'
               onClick={() => setPanelEstados((previo) => !previo)}
               aria-expanded={panelEstados}
-              aria-label='Filtrar por estado'
+              aria-label='Filtrar por estado de envío'
               className={[
                 'flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors',
                 pedidos.filtros.estados.length > 0
@@ -177,8 +201,8 @@ export const PedidosAdmin = () => {
                   : 'border-neutral-700 bg-charcoal-800 text-neutral-300 hover:border-gold-500'
               ].join(' ')}
             >
-              <Filter className='h-4 w-4 shrink-0' aria-hidden='true' />
-              Estado
+              <Truck className='h-4 w-4 shrink-0' aria-hidden='true' />
+              Envío
               {pedidos.filtros.estados.length > 0 && (
                 <span className='rounded-full bg-gold-500 px-1.5 text-[10px] font-bold text-charcoal-950'>
                   {pedidos.filtros.estados.length}
@@ -209,6 +233,70 @@ export const PedidosAdmin = () => {
                         />
                         <span className='flex-1'>{estado.etiqueta}</span>
                         <StatusBadge estado={estado.valor} size='sm' />
+                      </label>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* --- Filtro de PAGO, multi-select (spec 009, D-10) ---
+              Va en un desplegable **propio** y no junto al de envio porque los
+              dos tienen un "Pendiente" que significa cosas distintas (D-7). En un
+              desplegable unico habria que adivinar cual de los dos se filtra.
+
+              Abrir uno cierra el otro: con dos paneles abiertos al mismo tiempo
+              el de pago tapa el de envio y no se ve que filtros hay puestos. */}
+          <div className='relative'>
+            <button
+              type='button'
+              onClick={() => {
+                setPanelPagos((previo) => !previo)
+                setPanelEstados(false)
+              }}
+              aria-expanded={panelPagos}
+              aria-label='Filtrar por estado de pago'
+              className={[
+                'flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors',
+                pedidos.filtros.pagos.length > 0
+                  ? 'border-gold-500 bg-gold-500/10 text-cream-100'
+                  : 'border-neutral-700 bg-charcoal-800 text-neutral-300 hover:border-gold-500'
+              ].join(' ')}
+            >
+              <CreditCard className='h-4 w-4 shrink-0' aria-hidden='true' />
+              Pago
+              {pedidos.filtros.pagos.length > 0 && (
+                <span className='rounded-full bg-gold-500 px-1.5 text-[10px] font-bold text-charcoal-950'>
+                  {pedidos.filtros.pagos.length}
+                </span>
+              )}
+            </button>
+
+            {panelPagos && (
+              <>
+                <div
+                  aria-hidden='true'
+                  onClick={() => setPanelPagos(false)}
+                  className='fixed inset-0 z-30'
+                />
+                <div className='absolute right-0 z-40 mt-2 w-52 rounded-2xl border border-neutral-700 bg-charcoal-900 p-2 shadow-2xl'>
+                  {ESTADOS_PAGO.map((pago) => {
+                    const marcado = pedidos.filtros.pagos.includes(pago.valor)
+
+                    return (
+                      <label
+                        key={pago.valor}
+                        className='flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-cream-100 transition-colors hover:bg-charcoal-800'
+                      >
+                        <input
+                          type='checkbox'
+                          checked={marcado}
+                          onChange={() => alternarPagoEnFiltro(pago.valor)}
+                          className='h-4 w-4 accent-gold-500'
+                        />
+                        <span className='flex-1'>{pago.etiqueta}</span>
+                        <EstadoPagoBadge estado={pago.valor} size='sm' />
                       </label>
                     )
                   })}
