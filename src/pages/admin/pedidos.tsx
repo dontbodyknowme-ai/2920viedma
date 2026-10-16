@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Eye, Filter, X } from 'lucide-react'
 import { DataTable, columnaConFiltro, columnaHelper } from '../../components/admin/data_table'
 import { StatusBadge } from '../../components/admin/status_badge'
+import { EstadoPagoBadge } from '../../components/admin/estado_pago_badge'
 import { OrderDrawer } from '../../components/admin/order_drawer'
 import { DateRangePicker } from '../../components/admin/date_range_picker'
 import { ESTADOS_PEDIDO, usePedidos } from '../../hooks/usePedidos'
@@ -63,11 +64,30 @@ const columnas = [
   }),
   columnaConFiltro(
     columnaHelper<Order>().accessor('status', {
-      header: 'Estado',
+      header: 'Envio',
       cell: (info) => <StatusBadge estado={info.getValue()} size='sm' />
     }),
     ESTADOS_PEDIDO.map((estado) => ({ valor: estado.valor, etiqueta: estado.etiqueta }))
-  )
+  ),
+  /**
+   * El estado del pago, **sin filtro** (spec 009, D-G).
+   *
+   * Que aparezca no resuelve D-G —D-G es sobre el *filtro*— pero sin la columna
+   * el panel no puede responder "cuanto cobre hoy" sin abrir pedido por pedido,
+   * que es exactamente el problema que la seccion 2.5 de `spec.md` describe.
+   *
+   * Sin filtro a proposito: `GET /api/orders` hoy solo acepta `?status=`, que es
+   * el **envio**. Agregar el filtro obliga a cambiar el endpoint, el
+   * `orderQuerySchema`, el `usePedidos` y la matriz de coherencia de permisos, y
+   * eso es otra decision. La columna es de solo lectura y no toca nada de eso.
+   *
+   * `columnaHelper` sin `columnaConFiltro` a proposito: el encabezado no debe
+   * ofrecer un menu de filtro que el backend no acepta.
+   */
+  columnaHelper<Order>().accessor('pagoEstado', {
+    header: 'Pago',
+    cell: (info) => <EstadoPagoBadge estado={info.getValue()} size='sm' />
+  })
 ]
 
 export const PedidosAdmin = () => {
