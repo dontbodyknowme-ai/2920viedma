@@ -78,7 +78,7 @@ export const OrderTimeline = ({ entradas }: OrderTimelineProps) => {
 
         return (
           <li
-            key={`${entrada.pagoEstado ?? entrada.status}-${entrada.timestamp}`}
+            key={`${entrada.pagoEstado ?? entrada.status}-${entrada.createdAt}`}
             className='relative'
           >
             <span
@@ -124,7 +124,7 @@ export const OrderTimeline = ({ entradas }: OrderTimelineProps) => {
               )}
             </div>
 
-            <p className='mt-1 text-xs text-neutral-400'>{formatoFecha(entrada.timestamp)}</p>
+            <p className='mt-1 text-xs text-neutral-400'>{formatoFecha(entrada.createdAt)}</p>
             {entrada.note !== undefined && (
               <p className='mt-1 text-sm text-cream-300'>{entrada.note}</p>
             )}

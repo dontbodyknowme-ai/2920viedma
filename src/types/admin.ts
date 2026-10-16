@@ -90,8 +90,22 @@ export interface OrderTimelineEntry {
   pagoEstado?: EstadoPago
   /** "Mercado Pago" en las de pago, "Admin" en las de envio. */
   author: string
-  note?: string
-  timestamp: string
+  note?: string | null
+  /**
+   * Se llama `createdAt` y antes `timestamp`, y el nombre es el de la API.
+   *
+   * No habia ningun lugar que tradujera uno al otro —`GET /api/orders/:id`
+   * devuelve las filas de `OrderTimeline` tal cual— asi que el nombre del panel
+   * era un campo que **nadie llenaba**: `order_timeline.tsx` renderizaba
+   * `Invalid Date` en cada entrada del historial. Renombrar el tipo es la
+   * version corta de arreglarlo; la larga es una capa de traduccion que no
+   * existe y que nadie pidio.
+   *
+   * Lo mismo con `customerName` / `customerEmail`: la API manda
+   * `customer: { id, name, email }` anidado. Ese no se toco porque lo leen la
+   * tabla, el drawer y el CSV, y cambiarlo es una decision aparte.
+   */
+  createdAt: string
 }
 
 export interface ShippingAddress {

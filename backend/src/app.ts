@@ -221,7 +221,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
    */
   const { configurarProveedor, proveedorMercadoPago } = await import('./modules/pagos/proveedor.js')
 
-  const token = process.env.MERCADO_PAGO_ACCESS_TOKEN
+  const token = env.MERCADO_PAGO_ACCESS_TOKEN
   if (token !== undefined && token.trim() !== '') {
     configurarProveedor(proveedorMercadoPago(token.trim()))
     logger.info('Mercado Pago configurado')

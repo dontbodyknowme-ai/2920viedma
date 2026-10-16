@@ -60,11 +60,11 @@ const pedido = (over: Partial<Order> = {}): Order => ({
    * test de "cada entrada dice de donde viene" no tendria nada que distinguir.
    */
   timeline: [
-    { status: 'preparando', author: 'Admin', timestamp: '2026-10-16T10:00:00.000Z' },
+    { status: 'preparando', author: 'Admin', createdAt: '2026-10-16T10:00:00.000Z' },
     {
       pagoEstado: 'aprobado',
       author: 'Mercado Pago',
-      timestamp: '2026-10-16T10:02:00.000Z'
+      createdAt: '2026-10-16T10:02:00.000Z'
     }
   ],
   ...over
@@ -289,8 +289,8 @@ describe('el historial', () => {
     // El backend no las escribe; si apareciera una, fingir un estado seria
     // inventar historial.
     const m = await montarTimeline([
-      { author: 'Admin', timestamp: '2026-10-16T10:00:00.000Z' },
-      { status: 'preparando', author: 'Admin', timestamp: '2026-10-16T10:01:00.000Z' }
+      { author: 'Admin', createdAt: '2026-10-16T10:00:00.000Z' },
+      { status: 'preparando', author: 'Admin', createdAt: '2026-10-16T10:01:00.000Z' }
     ])
 
     const items = m.contenedor.querySelectorAll('li')
@@ -300,7 +300,7 @@ describe('el historial', () => {
 
   it('un pago rechazado o expirado no lleva el check verde', async () => {
     const rechazado = await montarTimeline([
-      { pagoEstado: 'rechazado', author: 'Mercado Pago', timestamp: '2026-10-16T10:00:00.000Z' }
+      { pagoEstado: 'rechazado', author: 'Mercado Pago', createdAt: '2026-10-16T10:00:00.000Z' }
     ])
     expect(rechazado.contenedor.querySelector('.text-wine-400')).not.toBeNull()
   })

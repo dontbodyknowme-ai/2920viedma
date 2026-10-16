@@ -92,7 +92,22 @@ const esquema = z.object({
    * pedido que no se pago — que es un alta de pedido gratis, no un bug de
    * permisos.
    */
-  MERCADO_PAGO_WEBHOOK_SECRET: z.string().min(1).optional()
+  MERCADO_PAGO_WEBHOOK_SECRET: z.string().min(1).optional(),
+
+  /**
+   * Token de la cuenta de Mercado Pago (spec 009, T3).
+   *
+   * Opcional por lo mismo que el secreto de la webhook: sin el, `POST /api/orders`
+   * responde 500 con un mensaje que lo dice, y el catalogo y el panel igual
+   * funcionan.
+   *
+   * **Opcional y ademas validado**, lo cual suena contradictorio pero no lo es:
+   * que no sea obligatoria evita que un deploy sin Mercado Pago no levante;
+   * declararla evita que sea una variable suelta que nadie encuentra cuando hay
+   * que ponerla. Una variable que el codigo lee y el esquema no conoce es una
+   * variable que no aparece en `.env.example` y a la que nadie llega.
+   */
+  MERCADO_PAGO_ACCESS_TOKEN: z.string().min(1).optional()
 })
 
 /**
