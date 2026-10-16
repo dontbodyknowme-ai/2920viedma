@@ -124,6 +124,108 @@ export class VinoNoDisponible extends AppError {
   }
 }
 
+/**
+ * Los estados de Mercado Pago que nos importan, y a que estado nuestro.
+ *
+ * `in_process`, `authorized`, `pending`, `cancelled` y los que no estan aca
+ * **dejan el pedido donde esta**: no son un fallo y no son un pago. Pasarlos a
+ * `rechazado` seria mentir —el comprador puede estar esperando que el banco lo
+ * confirme— y pasar a `aprobado` seria peor.
+ *
+ * Cuando el pago vuelve a `pending` despues de `in_process`, que es lo normal,
+ * el pedido queda en `pendiente` y el cron lo expira si no se concreta.
+ */
+const ESTADO_REMOTO_A_NUESTRO: Record<string, 'aprobado' | 'rechazado' | 'pendiente'> = {
+  approved: 'aprobado',
+  rejected: 'rechazado',
+  cancelled: 'rechazado',
+  charged_back: 'rechazado',
+  pending: 'pendiente',
+  in_process: 'pendiente',
+  authorized: 'pendiente'
+}
+
+/**
+ * Aplica un pago informado por la webhook (spec 009, T4).
+ *
+ * ## El estado NO viene del cuerpo de la webhook
+ *
+ * La notificacion dice *qué* cambio, no *en qué estado está*. Por eso se consulta
+ * `GET /v1/payments/:id` a Mercado Pago. Si nos fiáramos del cuerpo, cualquiera
+ * que descubra la URL mandaria `{ data: { id: <un pedido real> } }` con lo que
+ * quiera adentro.
+ *
+ * ## Idempotencia: no hay "ya estaba aplicado"
+ *
+ * Mercado Pago **reintenta**, y el error tipico es sumar el total al `Customer`
+ * dos veces. La forma tipica de evitarlo —leer el pedido, ver si ya esta
+ * `aprobado`, y salir— tiene una carrera: dos notificaciones al mismo tiempo
+ * leen las dos "no aprobado" y las dos suman.
+ *
+ * Por eso la transicion la hace **un unico `updateMany` condicional**, que en
+ * Postgres es atomico: `WHERE pagoEstado <> 'aprobado'`. Solo el que cambia la
+ * fila recibe `count === 1`, y solo ese toca el `Customer`. Los demas no tienen
+ * que preguntar nada: el numero de filas afectadas lo dice.
+ */
+export const aplicarPago = async (
+  prisma: PrismaClient,
+  pagoId: string
+): Promise<{ aplicado: boolean; estado: string }> => {
+  // 1. El estado real, de la pasarela.
+  const remoto = await obtenerProveedor().estadoDe(pagoId)
+
+  const destino = ESTADO_REMOTO_A_NUESTRO[remoto.estado]
+  if (destino === undefined) {
+    // Un estado que no conocemos no se traduce: el pedido se queda como esta y
+    // se responde 200. Devolver 4xx/5xx haria que Mercado Pago reintentara una
+    // notificacion que no vamos a entender nunca.
+    return { aplicado: false, estado: remoto.estado }
+  }
+
+  // 2. El pedido, por `pagoId`. Es la llave que puso el checkout.
+  const pedido = await prisma.order.findUnique({
+    where: { pagoId },
+    select: { id: true, customerId: true, total: true, pagoEstado: true }
+  })
+
+  if (pedido === null) {
+    // Una notificacion de un pago que no es nuestro, o de una Preference vieja
+    // que ya expiro. No es un error que haya que reportar.
+    return { aplicado: false, estado: remoto.estado }
+  }
+
+  // 3. La transicion, atomica.
+  const transicion = await prisma.order.updateMany({
+    where: { id: pedido.id, pagoEstado: { not: destino } },
+    data: { pagoEstado: destino }
+  })
+
+  if (transicion.count === 0) {
+    // Ya estaba en ese estado. **No** se toca el `Customer` ni se agrega una
+    // segunda entrada al historial: una reentrega no es un segundo pago.
+    return { aplicado: false, estado: destino }
+  }
+
+  await prisma.orderTimeline.create({
+    data: { orderId: pedido.id, pagoEstado: destino, origen: 'Mercado Pago' }
+  })
+
+  // 4. Las metricas del cliente, **solo** al aprobar. Un rechazo no suma
+  //    `totalSpent` ni `totalOrders`: el comprador no compro.
+  if (destino === 'aprobado') {
+    await prisma.customer.update({
+      where: { id: pedido.customerId },
+      data: {
+        totalOrders: { increment: 1 },
+        totalSpent: { increment: pedido.total },
+        lastOrderAt: new Date()
+      }
+    })
+  }
+
+  return { aplicado: true, estado: destino }
+}
+
 export const crearPedido = async (
   prisma: PrismaClient,
   cuerpo: unknown,

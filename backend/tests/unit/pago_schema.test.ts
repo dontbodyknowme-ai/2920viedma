@@ -119,27 +119,40 @@ describe('pagoId', () => {
   })
 })
 
-describe('lo que la migracion NO hizo', () => {
-  it('OrderTimeline sigue con status obligatorio', () => {
-    // Deliberado, y es lo que evita romper `GET /api/orders/:id`.
+describe('la timeline: envio o pago, nunca los dos', () => {
+  it('los dos campos son opcionales', () => {
+    // T1 dejo esto **sin tocar**, a proposito, y el commit lo explica: volver
+    // `status` opcional obliga a cambiar en el mismo commit el schema JSON de la
+    // respuesta —que declara `status: { type: 'string' }` y cortaria un `null`
+    // (gotcha 11 de `AGENTS.md`)— y `order_timeline.tsx`.
     //
-    // Asentar un cambio de **pago** en la misma timeline exige volver `status`
-    // opcional (una entrada de pago no cambia el envío). Y eso obliga a tocar,
-    // en el mismo commit: el schema JSON de la respuesta —que declara
-    // `status: { type: 'string' }` y **cortaria** un `null` (gotcha 11 de
-    // `AGENTS.md`)— y `order_timeline.tsx`, que pasa `entrada.status` a
-    // `StatusBadge`.
-    //
-    // Hacerlo solo en T1 dejaba `OrderTimelineEntry.status` tipado como
-    // obligatorio mientras la base ya permitia `null`: una mentira que solo
-    // aparece la primera vez que se escribe un evento de pago, o sea en T4.
+    // T4 es cuando se escribe el primer evento de pago, y entonces si. Este test
+    // ya no afirma que este intacto: afirma **la regla**, que es la que importa y
+    // la que va a seguir valiendo.
     const timeline = bloque('model OrderTimeline {')
 
-    expect(timeline).toMatch(/status\s+OrderStatus/)
-    expect(timeline).not.toMatch(/status\s+OrderStatus\?/)
-    expect(timeline).not.toContain('pagoEstado')
+    expect(timeline).toMatch(/status\s+OrderStatus\?/)
+    expect(timeline).toMatch(/pagoEstado\s+EstadoPago\?/)
   })
 
+  it('ninguno de los dos es obligatorio', () => {
+    // Una entrada de envio no tiene `pagoEstado`, y una de pago no tiene
+    // `status`. Si alguno fuera obligatorio, la mitad de las entradas no se
+    // podrian escribir — que es volver a la columna que significa dos cosas.
+    const timeline = bloque('model OrderTimeline {')
+
+    expect(timeline).not.toMatch(/^\s*status\s+OrderStatus\s*$/m)
+    expect(timeline).not.toMatch(/^\s*pagoEstado\s+EstadoPago\s*$/m)
+  })
+
+  it('la entrada dice de donde vino', () => {
+    // Una entrada sin autor parece escrita a mano cuando la escribio una
+    // webhook, que es justo lo que hace inyectable un pedido pagado a mano.
+    expect(bloque('model OrderTimeline {')).toMatch(/origen\s+String\s+@default\("Admin"\)/)
+  })
+})
+
+describe('lo que la spec NO creo', () => {
   it('no se creo ningun modelo paralelo', () => {
     // La primera version de la 009 pedia `Pedido`, `PedidoItem` y `Comprador`.
     // Crearlos dejaba al panel sin ver los pedidos nuevos: se guardaban en

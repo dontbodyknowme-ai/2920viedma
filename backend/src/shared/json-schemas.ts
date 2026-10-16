@@ -167,6 +167,31 @@ export const jsonSchemas = {
       response: { 200: objetoLibre(), 403: errorLibre, 404: errorLibre }
     },
     /**
+     * La webhook de Mercado Pago (spec 009, T4).
+     *
+     * `body: objetoLibre()` a proposito: la firma se valida contra el `data.id`,
+     * y validar el **shape** con JSON Schema antes daria un `400` a Mercado Pago
+     * por un evento que no nos interesa (alta de Preference, por ejemplo) y lo
+     * haria reintentar para siempre. El handler filtra por lo que le sirve.
+     */
+    webhook: {
+      body: objetoLibre(),
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            received: { type: 'boolean' },
+            applied: { type: 'boolean' },
+            estado: { type: 'string' }
+          },
+          additionalProperties: true
+        },
+        202: objetoLibre(),
+        401: errorLibre,
+        503: errorLibre
+      }
+    },
+    /**
      * El checkout (spec 009, T3).
      *
      * El `body` va como `objetoLibre()` y no como `toJsonSchema(orderCreateSchema)`

@@ -2,10 +2,87 @@ import { FastifyInstance } from 'fastify'
 import { jsonSchemas } from '../../shared/json-schemas.js'
 import { requireRole } from '../auth/middleware.js'
 import { orderCreateSchema } from '../../shared/schemas.js'
-import { crearPedido } from './service.js'
+import { crearPedido, aplicarPago } from './service.js'
+import { verificarFirmaWebhook } from './firma.js'
 
 export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
   const { prisma } = fastify
+
+  /**
+   * `POST /api/orders/webhook` — la notificacion de Mercado Pago (spec 009, T4).
+   *
+   * **Publica**, y por eso es la unica del proyecto que **no** puede fiarse de su
+   * cuerpo. Es publica porque Mercado Pago no tiene sesion de nadie.
+   *
+   * Las tres reglas, en orden de por que:
+   *
+   * 1. **Valida la firma.** Sin esto, cualquiera que descubra la URL pone
+   *    `aprobado` en un pedido que no se pago. Eso no es un bug de permisos, es
+   *    un pedido gratis.
+   * 2. **No cree el `status` del cuerpo.** La webhook solo dice *que* cambio;
+   *    el estado real se pregunta a `GET /v1/payments/:id`. Un cuerpo sin
+   *    validar seria una segunda puerta de entrada al mismo problema.
+   * 3. **Es idempotente.** Mercado Pago reintenta. Una segunda notificacion no
+   *    puede sumar dos veces el total al `Customer`.
+   */
+  fastify.post(
+    '/api/orders/webhook',
+    { schema: jsonSchemas.orders.webhook },
+    async (request, reply) => {
+      const cuerpo = request.body as { type?: string; action?: string; data?: { id?: string } }
+      const pagoId = cuerpo.data?.id
+
+      /**
+       * Sin `data.id` **no hay nada que aplicar**, asi que se responde antes de
+       * autenticar.
+       *
+       * No es una puerta abierta: lo que sale de esta rama es un `202` y nada
+       * mas — no se toca la base, no se llama a Mercado Pago, no cambia ningun
+       * pedido. Mercado Pago manda eventos asi (los de prueba del panel de
+       * configuracion, por ejemplo) y contestarles `401` los haria reintentar
+       * para siempre por algo que jamas vamos a procesar.
+       *
+       * La regla que si se respeta: **se autentica todo lo que actua**. Un
+       * `data.id` presente y una firma invalida es `401`, sin excepciones.
+       */
+      if (pagoId === undefined || pagoId === '') {
+        return reply.status(202).send({ received: true, applied: false })
+      }
+
+      const secreta = process.env.MERCADO_PAGO_WEBHOOK_SECRET
+
+      if (secreta === undefined || secreta.trim() === '') {
+        // Sin secreto **no se acepta ninguna notificacion**, ni siquiera una
+        // legitima. Aceptar sin poder validar seria hacerlo a ciegas, que es el
+        // escenario que esta ruta existe para evitar.
+        return reply.status(503).send({
+          code: 'WEBHOOK_NOT_CONFIGURED',
+          message: 'La webhook de Mercado Pago no esta configurada'
+        })
+      }
+
+      const valida = verificarFirmaWebhook(
+        request.headers as Record<string, string | undefined>,
+        pagoId,
+        secreta
+      )
+
+      if (!valida) {
+        return reply.status(401).send({
+          code: 'INVALID_SIGNATURE',
+          message: 'Firma de la notificacion invalida'
+        })
+      }
+
+      const resultado = await aplicarPago(prisma, pagoId)
+
+      return reply.status(200).send({
+        received: true,
+        applied: resultado.aplicado,
+        estado: resultado.estado
+      })
+    }
+  )
 
   /**
    * `POST /api/orders` — el checkout. **Publico**, a diferencia del `GET` y el

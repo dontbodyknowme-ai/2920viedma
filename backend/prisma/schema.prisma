@@ -202,14 +202,37 @@ model OrderItem {
   @@index([wineId])
 }
 
+/// Un evento del pedido: **del envio o del pago**, no de los dos.
+///
+/// La entrada tiene `status` o tiene `pagoEstado`, nunca las dos. Una entrada de
+/// envio dice "el vendedor entrego esto"; una de pago dice "Mercado Pago
+/// aprobo esto". Mezclarlas en un campo de texto seria volver a la columna que
+/// significa dos cosas, que es justo lo que la spec 009 vino a separar.
+///
+/// `status` paso a **opcional** por esto. Antes era obligatorio y la unica forma
+/// de registrar un evento de pago era meter un estado de envio falso, que
+/// mentia dos veces: en el historial y en el `Order.status`.
+///
+/// Volverlo opcional obligo a cambiar, **en el mismo commit**: el schema JSON de
+/// la respuesta de `GET /api/orders/:id` —que declara `status: { type: 'string' }`
+/// y **cortaria** un `null` (gotcha 11 de `AGENTS.md`)— y el componente
+/// `order_timeline.tsx` del panel, que pasa `entrada.status` a `StatusBadge`.
 model OrderTimeline {
-  id        String      @id @default(cuid())
-  orderId   String
-  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status    OrderStatus
-  note      String?
-  author    String      @default("Admin")
-  createdAt DateTime    @default(now())
+  id          String       @id @default(cuid())
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Estado **del envio**. Nulo en las entradas de pago.
+  status      OrderStatus?
+  /// Estado **del pago**. Nulo en las entradas de envio.
+  pagoEstado  EstadoPago?
+  /// "Mercado Pago" en las de pago, "Admin" en las de envio. Se deja explicito
+  /// porque una entrada sin autor parece escrita a mano cuando la escribio una
+  /// webhook.
+  origen      String       @default("Admin")
+  note        String?
+  author      String       @default("Admin")
+  createdAt   DateTime     @default(now())
 
   @@index([orderId])
+  @@index([pagoEstado])
 }
