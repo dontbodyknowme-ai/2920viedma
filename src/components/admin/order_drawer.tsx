@@ -137,10 +137,13 @@ export const OrderDrawer = ({
                   <h3 className='mb-2 text-[10px] uppercase tracking-widest text-neutral-400'>
                     Cliente
                   </h3>
-                  <p className='font-semibold text-cream-100'>{pedido.customerName}</p>
+                  <p className='font-semibold text-cream-100'>{pedido.customer.name}</p>
                   <p className='mt-1 flex items-center gap-2 text-sm text-neutral-400'>
                     <Mail className='h-4 w-4 shrink-0' aria-hidden='true' />
-                    <span className='truncate'>{pedido.customerEmail}</span>
+                    {/* `email` es `string | null`: el `Customer.email` de la base
+                        es opcional, y un `?? ''` con un guion da menos informacion
+                        que nada. */}
+                    <span className='truncate'>{pedido.customer.email ?? '—'}</span>
                   </p>
                 </section>
 

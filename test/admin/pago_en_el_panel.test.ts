@@ -37,8 +37,7 @@ import type { EstadoPago, Order } from '../../src/types/admin'
 const pedido = (over: Partial<Order> = {}): Order => ({
   id: 'ord_1',
   customerId: 'cus_1',
-  customerName: 'María González',
-  customerEmail: 'maria@example.com',
+  customer: { id: 'cus_1', name: 'María González', email: 'maria@example.com' },
   items: [
     {
       wineId: 'clx1',

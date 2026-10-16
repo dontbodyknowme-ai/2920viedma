@@ -37,15 +37,25 @@ const columnas = [
     header: 'Pedido',
     cell: (info) => <span className='font-mono text-xs text-cream-100'>{info.getValue()}</span>
   }),
-  columnaHelper<Order>().accessor('customerName', {
+  /**
+   * `customer.name`, no `pedido.customerName`.
+   *
+   * El accessor va sobre `customer` y el `cell` baja a `.name`: el accessor es
+   * la columna por la que se **ordena**, y ordenar por un string anidado en
+   * TanStack hay que resolverlo a mano. Como el backend manda `orderBy` en
+   * servidor, la columna es de solo lectura y no se puede ordenar desde aca —
+   * pero el accessor tiene que existir y ser un camino real.
+   */
+  columnaHelper<Order>().accessor('customer', {
     header: 'Cliente',
+    enableSorting: false,
     cell: (info) => (
       <div className='min-w-0'>
         <span className='block truncate font-semibold text-cream-100'>
-          {info.row.original.customerName}
+          {info.getValue().name}
         </span>
         <span className='block truncate text-xs text-neutral-500'>
-          {info.row.original.customerEmail}
+          {info.getValue().email ?? ''}
         </span>
       </div>
     )

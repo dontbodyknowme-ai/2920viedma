@@ -72,22 +72,31 @@ const clavesDe = (bloque: string): string[] => {
 }
 
 /**
- * Saca las lineas de comentario.
+ * Saca las lineas de comentario: las de `//` **y** las de bloque `*`.
  *
  * Existe por una asercion que se dejaba falsificar por un comentario: el bloque de
  * `checkoutItemSchema` tiene un comentario que **menciona** `` `.strict()` ``
  * para explicar por que esta ahi. Un `toContain('.strict(')` sobre el texto crudo
  * pasaba con la llamada borrada — el comentario la satisfacia — y el test
- * llevaba tres versiones afirmando que los items rechazan campos extra sin
+ * llevo tres versiones afirmando que los items rechazan campos extra sin
  * que eso estuviera en el codigo.
  *
- * Un test que lee texto tiene que saca el texto de los comentarios, o el
+ * Y despues el mismo error al reves: los componentes que se corrigieron
+ * **explican** el cambio nombrando el campo viejo, y un test que lo busca lo
+ * encuentra en su propia documentacion. Por eso saca los dos estilos: omitir
+ * el de bloque habria dejado el helper a medias y el mismo bug volviendo.
+ *
+ * Un test que lee texto tiene que sacar el texto de los comentarios, o el
  * comentario decide por el.
  */
 const sinComentarios = (bloque: string): string =>
   bloque
     .split('\n')
-    .filter((linea) => !linea.trim().startsWith('//'))
+    .filter((linea) => {
+      const limpia = linea.trim()
+
+      return !limpia.startsWith('//') && !limpia.startsWith('*') && !limpia.startsWith('/*')
+    })
     .join('\n')
 
 /** Las claves de un `export interface Nombre { ... }`. */
@@ -272,27 +281,60 @@ describe('el panel: los tipos que describen la respuesta', () => {
   })
 })
 
-describe('lo que el panel todavia NO usa', () => {
+describe('el panel y la API dicen lo mismo del cliente', () => {
   /**
-   * No es un test de lo que hay que hacer: es el lugar donde queda escrito que
-   * se sabe que esta roto, para que no se "arregle" por accidente o se lea como
-   * que ya esta resuelto.
+   * Este bloque **estaba al reves**: afirmaba que el panel declaraba
+   * `customerName`, que la API no manda, y decia que se borraba junto con el
+   * arreglo. Ese momento llego.
    *
    * `GET /api/orders` devuelve `customer: { id, name, email }` **anidado**, y el
-   * panel lee `pedido.customerName` / `pedido.customerEmail`, que no existen en
-   * la respuesta. No hay ningun lugar que los arme.
-   *
-   * Los tres que lo leen —la columna de la tabla, el drawer y el CSV— estan
-   * fuera del alcance de la 009, asi que **no se tocaron**. Cuando se arregle,
-   * este bloque se borra junto con el arreglo.
+   * panel leia `pedido.customerName` / `pedido.customerEmail`, que no existian y
+   * que nadie armaba. O sea que el nombre del cliente salia **vacio** en la
+   * columna de la tabla, en el drawer y en el CSV de `/admin/pedidos`.
    */
   const tiposAdmin = leer('src/types/admin.ts')
 
-  it('el panel declara `customerName`, que la API no manda', () => {
+  it('el panel NO declara `customerName`: la API no lo manda', () => {
     const campos = camposDeInterface(tiposAdmin, 'Order')
 
-    expect(campos).toContain('customerName')
-    // Y el tipo de la API dice que lo que llega es `customer`, anidado.
+    expect(campos).not.toContain('customerName')
+    expect(campos).not.toContain('customerEmail')
+  })
+
+  it('los dos leen `customer` anidado, y es el mismo nombre', () => {
+    expect(camposDeInterface(tiposAdmin, 'Order')).toContain('customer')
     expect(camposDeInterface(leer('src/api/schemas.ts'), 'Order')).toContain('customer')
+  })
+
+  it('`ClienteDelPedido` tiene SOLO lo que el endpoint envia', () => {
+    // `GET /api/orders` hace `select: { id, name, email }`. Si el tipo del panel
+    // declarara el `Customer` completo, el panel leeria `pedido.customer.tags` y
+    // obtendria `undefined` en una columna que existe en el CRM y no aca: el
+    // mismo bug al reves del que se acaba de corregir.
+    const campos = camposDeInterface(tiposAdmin, 'ClienteDelPedido').sort()
+
+    expect(campos).toEqual(['email', 'id', 'name'])
+  })
+
+  it('ningun componente del panel lee el nombre plano', () => {
+    // El typecheck ya no alcanza: `customerName` no existe en el tipo, asi que
+    // un lector nuevo no compila. Esto afirma lo mismo desde el otro lado, por
+    // si alguien reintroduce el campo con un `as any`.
+    //
+    // Filtra comentarios, porque los componentes **explican** el cambio y
+    // nombran el campo viejo al hacerlo. Sin el filtro, el test falla por sus
+    // propios comentarios — que es el gotcha 35 del otro lado, y por eso el
+    // helper existe.
+    const lectores = [
+      'src/pages/admin/pedidos.tsx',
+      'src/components/admin/order_drawer.tsx',
+      'src/utils/csv_export.ts'
+    ]
+
+    const culpables = lectores.filter((archivo) =>
+      /\.customer(Name|Email)\b/.test(sinComentarios(leer(archivo)))
+    )
+
+    expect(culpables).toEqual([])
   })
 })

@@ -115,11 +115,38 @@ export interface ShippingAddress {
   phone: string
 }
 
+/**
+ * El cliente **tal como viene dentro de un pedido**.
+ *
+ * ## Por que no es el `Customer` del CRM
+ *
+ * Porque `GET /api/orders` incluye `customer: { select: { id, name, email } }`:
+ * **tres campos**. Si el tipo dijera el `Customer` completo —con tags, notas y
+ * `orders`—, el panel leeria `pedido.customer.tags` y obtendria `undefined` en
+ * una columna que existe en el CRM y no aca. Es el mismo bug al reves del que
+ * ya se corrigio con `createdAt`: **un tipo que promete campos que no llegan**.
+ *
+ * Y no se agranda el `select` para "que esten todos": el pedido lo lee el
+ * vendedor veinte veces por pagina y los tags no los necesita nadie.
+ *
+ * ## Por que anidado y no `customerName` plano
+ *
+ * Porque es lo que la API manda. Antes el tipo pedia `customerName` y
+ * `customerEmail` planos, y no habia ninguna capa que los armara: el panel
+ * mostraba el **nombre del cliente en vacio** en la columna de la tabla, en el
+ * drawer y en el CSV. Un solo nombre, un solo tipo.
+ */
+export interface ClienteDelPedido {
+  id: string
+  name: string
+  email: string | null
+}
+
 export interface Order {
   id: string
   customerId: string
-  customerName: string
-  customerEmail: string
+  /** Anidado, como lo manda la API. Antes se leia plano y salia `undefined`. */
+  customer: ClienteDelPedido
   items: OrderItem[]
   total: number
   /** Estado del envio. Lo cambia el panel a mano cuando un vendedor entrega. */
