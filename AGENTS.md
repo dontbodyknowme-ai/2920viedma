@@ -128,6 +128,25 @@ TypeScript aceptaría los dos usos sin reclamar.
   público — D-F: devolvería nombre, teléfono y dirección de alguien sin cuenta).
   Si no hay resumen **no inventa un total**.
 
+**La rama NO se puede desplegar todavía.** Sin las dos variables la app levanta
+—son opcionales a propósito, para que un deploy sin Mercado Pago no tire el
+catálogo— y todo lo demás funciona, pero **cada pago queda colgado esperando una
+webhook que nunca llega** y el cron lo expira a los 10 minutos.
+
+**D-10 (resuelta): el panel filtra por pago.** Dos desplegables separados, `Envío`
+y `Pago`, porque los dos tienen un `Pendiente` con significado opuesto y en un
+menú único habría que adivinar cuál se está filtrando. En el backend,
+`pagoEstado` va en su **propio** campo del `where` con `in`; Prisma pone el AND
+entre claves solo, así que "expirados **y** pendientes de envío" no necesita un
+`AND` explícito.
+
+**`aplicarFiltros` fusiona.** Hace `{ ...previo, ...cambios }`, así que un literal
+es un filtro **parcial disfrazado**: lo que no nombre, queda como estaba. Por eso
+"limpiar todo" usa `filtrosVacios()`, que tiene tipo `FiltrosPedidos` y no
+`Partial<FiltrosPedidos>` — olvidar un campo ahí es un error de compilación. El
+resto de los filtros (toggles, rango, orden) sí usan literales parciales, y están
+bien: para eso existe el merge.
+
 **Lo que NO se pudo probar:** que Mercado Pago acepte la Preference y que la
 webhook llegue de verdad. Necesita credencial real.
 
@@ -162,11 +181,11 @@ webhook llegue de verdad. Necesita credencial real.
 - **`localStorage` NO existe sin importar `test/andamiaje.ts`** (gotcha 33): el
   stub va en el import, no en un `setupFiles`.
 - **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
-- **Cobertura**: 272 tests en 15 archivos (`csv`, `data_table`, `dashboard`,
+- **Cobertura**: 305 tests en 18 archivos (`csv`, `data_table`, `dashboard`,
   `date_range`, `integridad_datos_vino`, `validadores`, `permisos`,
   `admin/sidebar`, `admin/layout_rutas`, `admin/login_fallido`,
-  `admin/pago_en_el_panel`, `checkout_reglas`, `checkout_pagina`,
-  `contrato_checkout`, `filtro_pedidos`);
+  `admin/pago_en_el_panel`, `admin/cliente_del_pedido`, `checkout_reglas`,
+  `checkout_pagina`, `contrato_checkout`, `filtro_pedidos`, `marca`);
   `npm test` pasa en modo no interactivo (`watch: false`)
 - **Nota 004-c**: se borraron los tests que dependían de `src/mocks/*` y de `admin_acceso.ts`.
   Con MSW eliminado no queda nada que probar ahí; la cobertura de API real vive en el backend.
@@ -221,7 +240,7 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
   mock corre antes que los `const`; sin `hoisted` revienta por TDZ)
 - **`tests/setup.ts`** pone los defaults de `process.env` **antes** de importar el servidor:
   `config/env.ts` valida el entorno de forma eager y sin ellos no arranca ningún test
-- **Cobertura**: 318 tests en 22 archivos
+- **Cobertura**: 326 tests en 22 archivos
 - `backend/tsconfig.json` incluye solo `src/**/*`: los tests **no** entran al `typecheck` ni al `build`.
   Es a propósito (el build de la imagen no debe typecheckear tests) y **no** es el
   olvido que había en el frontend. Si se cambia, va un `tsconfig` aparte, no
