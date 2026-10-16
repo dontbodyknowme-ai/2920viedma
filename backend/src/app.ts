@@ -197,6 +197,21 @@ export const buildApp = async (): Promise<FastifyInstance> => {
   await registerRoutes(fastify)
 
   /**
+   * El cron de expiracion (spec 009, T5).
+   *
+   * Corre **dentro del proceso**, no como un cron del sistema. Es la unica forma
+   * que hay en Render free —que no tiene cronjobs— y es coherente con que las
+   * migraciones tambien corran en el arranque: si el contenedor esta arriba, el
+   * servidor esta; si no esta, no hay nadie a quien expirarle un pedido.
+   *
+   * El precio es que corre en cada instancia. Con dos en un deploy solapado, las
+   * dos expiran — y por eso `expirarPedidosSinPagar` es un `updateMany`
+   * condicional y no un find-then-update.
+   */
+  const { arrancarCronPedidos } = await import('./modules/orders/cron.js')
+  const detenerCronPedidos = arrancarCronPedidos(fastify.prisma)
+
+  /**
    * El proveedor de pagos se registra **aca**, y no dentro de `ordersRoutes`.
    *
    * La razon es que el modulo de pedidos no sabe nada de Mercado Pago: recibe un
@@ -223,6 +238,10 @@ export const buildApp = async (): Promise<FastifyInstance> => {
   }
 
   fastify.addHook('onClose', async () => {
+    // El cron se apaga **antes** de desconectar Prisma: si no, el intervalo
+    // podria disparar una consulta contra una conexion ya cerrada y dejar un
+    // rejection flotando.
+    detenerCronPedidos()
     await fastify.prisma.$disconnect()
   })
 
