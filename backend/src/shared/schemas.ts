@@ -80,10 +80,62 @@ export const publicWineQuerySchema = z.object({})
  *  Pedidos
  *  ============================================================ */
 
+/**
+ * Los estados de envío, en el orden en que avanza el pedido.
+ *
+ * Vive **aquí** y no en dos lugares porque el schema de la query y el
+ * `include` del dropdown del panel necesitan la misma lista, y duplicada se
+ * desincroniza sin que nadie lo note.
+ */
+export const ESTADOS_PEDIDO_VALIDOS = [
+  'pendiente',
+  'preparando',
+  'enviado',
+  'entregado',
+  'cancelado',
+  'devuelto'
+] as const
+
+export type EstadoPedidoValido = (typeof ESTADOS_PEDIDO_VALIDOS)[number]
+
+/**
+ * Filtro por estado: una **lista**, no un valor.
+ *
+ * ## Que estaba roto y por que
+ *
+ * Era `z.enum([...])`, o sea **un** estado. Pero el filtro del panel es un
+ * multi-select que manda `?status=pendiente,enviado` — una cadena con comas, que
+ * no es ningun miembro del enum. O sea que **marcabas una casilla y andaba;
+ * marcabas dos y la consulta daba 400**. El paneldefinio el multi-select en el
+ * 004-a, el backend acepto un valor solo en el 004-b, y nadie cruzo los dos.
+ *
+ * ## Por que lista y no "partir la cadena por comas"
+ *
+ * El querystring **no lo valida Zod**: `app.ts` compila el
+ * `toJsonSchema(orderQuerySchema)` y lo pasa a AJV, y `request.query` es el valor
+ * que AJV dejo, no el del `transform` de Zod. O sea que un `transform` que parta
+ * la cadena **nunca correria** — el `.transform` se compila a JSON Schema, que no
+ * sabe de transformaciones.
+ *
+ * Y una cadena con comas no se puede expresar en un `enum` de JSON Schema: no
+ * hay forma de decir "uno de estos, repetido, separado por comas". El formato
+ * que si se expresa, y que es el estandar de REST, es el **parametro repetido**:
+ *
+ *     ?status=pendiente&status=enviado
+ *
+ * Con `z.array(z.enum(...))`, `zod-to-json-schema` produce
+ * `{ type: 'array', items: { enum: [...] } }` y AJV —que corre con
+ * `coerceTypes`— convierte `"pendiente"` en `["pendiente"]`. O sea que un solo
+ * estado tambien anda, y un estado inventado sigue dando **400**.
+ */
 export const orderQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
-  status: z.enum(['pendiente', 'preparando', 'enviado', 'entregado', 'cancelado', 'devuelto']).optional(),
+  status: z
+    .array(z.enum(ESTADOS_PEDIDO_VALIDOS))
+    .min(1, 'El filtro de estado no puede estar vacio')
+    .max(ESTADOS_PEDIDO_VALIDOS.length, 'Se mandaron mas estados de los que existen')
+    .optional(),
   dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   search: z.string().optional()

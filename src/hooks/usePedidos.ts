@@ -50,7 +50,15 @@ const FILTROS_VACIOS: FiltrosPedidos = {
  * zona horaria: en Argentina (UTC-3) un pedido de las 20:00 pertenece al dia
  * anterior en UTC, y el admin veria pedidos fuera del rango que eligio.
  */
-const construirUrl = (
+/**
+ * Arma la query de la lista.
+ *
+ * **Exportada** y no metida adentro del hook: es la unica forma de afirmar como
+ * viaja el filtro sin montar el panel. Con todo privado, comprobar que el
+ * multi-select manda dos estados seria montar la pagina entera, escribir en el
+ * buscador y leer la red — veinte lineas de andamiaje para afirmar un `append`.
+ */
+export const construirUrl = (
   filtros: FiltrosPedidos,
   page: number,
   limit: number
@@ -60,7 +68,23 @@ const construirUrl = (
   params.set('limit', String(limit))
 
   if (filtros.search.trim() !== '') params.set('search', filtros.search.trim())
-  if (filtros.estados.length > 0) params.set('status', filtros.estados.join(','))
+
+  /**
+   * El estado va **repetido**, no joined con comas.
+   *
+   * `?status=pendiente,enviado` no es ningun miembro del enum del backend, asi
+   * que el multi-select del panel —que marca varias casillas y siempre marcar
+   * varias— daba **400** en cuanto marcabas la segunda. Y no se veia en el
+   * panel: el filtro se cerraba solo y la tabla seguia mostrando lo de antes,
+   * como si no hubiera pasado nada.
+   *
+   * Con `append`, uno solo y dos dan lo mismo:
+   *
+   *     ?status=pendiente
+   *     ?status=pendiente&status=enviado
+   */
+  for (const estado of filtros.estados) params.append('status', estado)
+
   if (filtros.dateFrom !== '') params.set('dateFrom', filtros.dateFrom)
   if (filtros.dateTo !== '') params.set('dateTo', filtros.dateTo)
   if (filtros.sortColumn !== '') {
@@ -136,7 +160,10 @@ export const usePedidos = (): EstadoPedidos => {
     // exportar.
     const params = new URLSearchParams({ page: '1', limit: '100' })
     if (filtros.search.trim() !== '') params.set('search', filtros.search.trim())
-    if (filtros.estados.length > 0) params.set('status', filtros.estados.join(','))
+    // Repetido, igual que en `construirUrl`. Exportar con el filtro puesto es
+    // lo que hace que el CSV sirva: si el estado no llegara, se exportarian los
+    // 100 primeros sin filtrar, que es peor que no exportar.
+    for (const estado of filtros.estados) params.append('status', estado)
     if (filtros.dateFrom !== '') params.set('dateFrom', filtros.dateFrom)
     if (filtros.dateTo !== '') params.set('dateTo', filtros.dateTo)
 

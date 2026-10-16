@@ -129,7 +129,20 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
       const { page, limit, status, dateFrom, dateTo, search } = request.query as any
       const where: any = {}
 
-      if (status) where.status = status
+      /**
+       * `in` y no `=`, y **si o si** `in`.
+       *
+       * El filtro del panel es un multi-select, asi que `status` llega como
+       * lista: `?status=pendiente&status=enviado`. Con `=` se buscaria un
+       * estado literal que es un array, Prisma no matchea nada y la tabla sale
+       * vacia **sin ningun error** — el peor sintoma posible, porque parece que
+       * no hay pedidos.
+       *
+       * Y antes de esto era peor: el backend declaraba un `z.enum` de un valor y
+       * el panel mandaba `"pendiente,enviado"`, asi que marcar dos casillas daba
+       * un **400**. Ver el comentario de `orderQuerySchema`.
+       */
+      if (status !== undefined) where.status = { in: status }
       if (dateFrom || dateTo) {
         where.createdAt = {}
         if (dateFrom) where.createdAt.gte = new Date(dateFrom + 'T00:00:00')
