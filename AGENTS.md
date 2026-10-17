@@ -53,7 +53,10 @@
 ## Panel Admin (`/admin`) — spec 004-a (UI) + 004-b (API real) + 004-c (integrada)
 
 **Frontend (actual, autenticado contra la API):**
-- **Sin botón en la tienda pública**: se entra escribiendo `/admin`
+- **Sin botón en la tienda pública**: se entra escribiendo `/admin`. Es la
+  **regla**, no una descripción del estado — y `main` hoy **incumple**: tiene los
+  tres botones. Ver gotcha 6, que explica por qué esta línea se lee como regla y
+  no como hecho, y cómo verificarlo en un segundo.
 - **Pantalla de login** (`AdminGate`), no redirect: pide email + contraseña reales
 - **No hay clave en el bundle ni en `sessionStorage`**: el `accessToken` vive solo en memoria
   del módulo `src/api/client.ts` y el refresh viaja en cookie httpOnly
@@ -278,7 +281,12 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
 3. **`VistaRapidaProducto` se monta SIEMPRE**; su `AnimatePresence` interno decide visibilidad (montar condicionalmente rompe animación de salida)
 4. **`loadWines`/`loadCart` tienen guardas contra `localStorage` corrupto** (`{}` o `[]` vacían catálogo/carrito)
 5. **Escrituras offline fallan explícitamente** (no se encolan; evitaría conflictos sin resolver)
-6. **Login button removido del navbar** (T2 004-c): acceso a `/admin` solo por URL directa
+6. **La tienda pública NO tiene enlace al panel; se entra escribiendo `/admin`** (regla, no estado). Un botón en el navbar es una promesa de que la sesión del panel existe, y quien no la tiene recibe un `403` al llegar: el botón lo ven todos y el panel solo lo pueden usar tres.
+    **Ojo con cómo se redacta esta nota.** La primera versión decía *"Login button removido del navbar (T2 004-c)"* como si fuera un hecho, y **`main` tenía los tres botones** ("Panel Admin" y "+ Cargar Vino" de escritorio y de drawer): 004-c los había **agregado**, no quitado, y dos rediseños posteriores los dejaron. El documento afirmaba algo que el código no cumplía — el gotcha 29 aplicado a sí mismo— y alguien leyó la nota, fue a verificar y encontró el botón.
+    Por eso va como **regla** y no como "estado actual": así es cierta tanto en `main` como después de `spec-011`, y no hay que actualizarla cada vez que un rediseño toca el navbar. Cuando toques ese componente, **verificá que los tres botones sigan sin estar**:
+    ```powershell
+    git show main:src/components/barra_de_navegacion.tsx | Select-String 'Panel Admin|Cargar Vino'
+    ```
 7. **MSW eliminado** (T7 004-c): `src/mocks/`, `public/mockServiceWorker.js` eliminados; `msw` movido a `devDependencies`
 8. **Node 24 es el piso, no una preferencia** (fix CI 2026-10-11). `jsdom@30` exige `^22.22.2 || ^24.15.0 || >=26`
    y su `undici@8` llama `util.markAsUncloneable`, que no existe en Node 20: con Node 20 el job del frontend

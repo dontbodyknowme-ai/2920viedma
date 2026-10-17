@@ -322,3 +322,11 @@ backend/
   - **305 frontend, 326 backend.** Todo en verde, typecheck, lint y build de los dos lados.
   - **El usuario dijo NO mergear y que la rama todavia no se puede implementar** — por las credenciales. Queda anotado en `AGENTS.md` y `MEMORY.md`: sin los dos secretos la app levanta y todo funciona **menos los pagos**, que quedan colgados esperando una webhook que nunca llega.
   - **Pendiente:** `MERCADO_PAGO_ACCESS_TOKEN` y `MERCADO_PAGO_WEBHOOK_SECRET` (el usuario dijo "ahora tocamos ese tema", asi que queda para otra conversacion), y el merge cuando las haya.
+
+- *2026-10-17:* **Un gotcha del `AGENTS.md` afirmaba algo que el codigo no cumplia — y el que lo encontro fue el usuario, leyendolo.**
+  - El gotcha 6 decia *"Login button removido del navbar (T2 004-c)"* como hecho. **`main` tiene los tres botones**: "Panel Admin" y "+ Cargar Vino" de escritorio y de drawer. Verificado commit por commit: `575cb29` (004-c) los **agrega** —antes tenia cero ocurrencias— y dos rediseños posteriores los dejaron.
+  - O sea que no era un forgotcha: 004-c **lo hizo al reves** de lo que la nota decia, y el documento nunca se actualizo. Es el gotcha 29 aplicado al propio gotcha 29, y de hecho el usuario lo habia detectado desde su otra PC: su rama `spec-011` los quita y el comentario del commit **cita el gotcha 6** — leyo la nota, fue a verificar, y encontro el boton.
+  - **Reescrito como regla, no como estado.** Que diga "el navbar no tiene enlace al panel" es cierto en `main` y despues de `spec-011`; que diga "fue removido en 004-c" era falso hoy y va a volver a ser falso la proxima vez que un rediseno toque el navbar. La misma correccion se hizo en la linea del panel admin que repetia la mentira.
+  - **Se verificaron las otras afirmaciones del mismo tipo** que salen cheaply: `src/mocks/` no existe, `public/mockServiceWorker.js` no existe, `msw` esta en `devDependencies` y no en `dependencies`, y nadie escribe un flag `isAdmin` en `localStorage`. Todas **certainas**.
+  - **La rama `spec-011-cambios-frontend` mergea limpia con `spec-009`** (`git merge-tree` da 0). Toca tres archivos que yo tambien toque —`schema.prisma`, `App.tsx` y `barra_de_navegacion.tsx`— y se reparten sin conflicto. No se toco nada de esa rama.
+  - **Pendiente de hacer desde la otra PC:** mergear `spec-011` a `main`, que es lo que deja `main` en regla con el gotcha 6.
