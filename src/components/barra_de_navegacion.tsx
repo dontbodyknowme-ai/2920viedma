@@ -49,19 +49,13 @@ export const Navbar = ({ cartCount, onOpenCart }: NavbarProps) => {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled
-            ? 'bg-blanco/90 backdrop-blur-md shadow-lg border-b border-verde-800/50 py-3'
-            : 'bg-transparent py-5'
+        className={`sticky top-0 z-50 transition-all duration-300 bg-blanco/90 backdrop-blur-md border-b border-neutral-200 ${
+          isScrolled ? 'shadow-lg py-3' : 'py-4'
         }`}
       >
         <div className='max-w-7xl mx-auto px-6 flex items-center justify-between'>
           <a href='#hero' className='flex flex-col leading-tight'>
-            <img
-              src='/logo-2920.svg'
-              alt='2920'
-              className='h-9 w-auto'
-            />
+            <span className='font-serif text-2xl font-bold text-verde-600'>2920</span>
             <span className='text-xs text-neutral-500'>Todo más cerca</span>
           </a>
 
