@@ -4,23 +4,15 @@ import { useAuth } from '../hooks/useAuth'
 
 const NAV_LINKS = [
   { href: '#hero', label: 'Inicio' },
-  { href: '#catalogo', label: 'Catálogo' },
-  { href: '#contacto', label: 'Contacto' }
+  { href: '#catalogo', label: 'Productos' }
 ]
 
 interface NavbarProps {
   cartCount: number
   onOpenCart: () => void
-  searchQuery: string
-  onSearchChange: (query: string) => void
 }
 
-export const Navbar = ({
-  cartCount,
-  onOpenCart,
-  searchQuery,
-  onSearchChange
-}: NavbarProps) => {
+export const Navbar = ({ cartCount, onOpenCart }: NavbarProps) => {
   const { user, isLoading, isAuthenticated, logout } = useAuth()
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -64,12 +56,13 @@ export const Navbar = ({
         }`}
       >
         <div className='max-w-7xl mx-auto px-6 flex items-center justify-between'>
-          <a href='#' className='flex items-center gap-2'>
+          <a href='#hero' className='flex flex-col leading-tight'>
             <img
               src='/logo-2920.svg'
               alt='2920'
-              className='h-10 w-auto'
+              className='h-9 w-auto'
             />
+            <span className='text-xs text-neutral-500'>Todo más cerca</span>
           </a>
 
           <nav className='flex-1 max-w-md mx-8 hidden md:block'>
@@ -87,16 +80,6 @@ export const Navbar = ({
               ))}
             </ul>
           </nav>
-
-          <div className='flex-1 max-w-md mx-8 hidden md:block'>
-            <input
-              type='text'
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder='Buscar por nombre, marca o categoría...'
-              className='w-full bg-blanco/80 text-carbon placeholder-neutral-500 px-4 py-2 rounded-full border border-neutral-300/50 focus:outline-none focus:border-verde-salvia text-sm transition-colors'
-            />
-          </div>
 
           <div className='flex items-center gap-4'>
             {/* Aca no hay ningun enlace al panel, y es a proposito (gotcha 6 de

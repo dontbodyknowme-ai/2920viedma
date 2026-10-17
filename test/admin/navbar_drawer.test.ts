@@ -46,9 +46,7 @@ const montarNavbar = () =>
   montarAdmin(
     createElement(Navbar, {
       cartCount: 0,
-      onOpenCart: () => {},
-      searchQuery: '',
-      onSearchChange: () => {}
+      onOpenCart: () => {}
     })
   )
 
