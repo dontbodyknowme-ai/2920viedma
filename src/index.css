@@ -28,17 +28,31 @@
 
 html {
   scroll-behavior: smooth;
-  /* Evita el scroll horizontal: si un elemento desborda (una tarjeta, un
-     flex que no achica), la pagina no se ensancha ni hay que achicarla con
-     zoom. El contenido que desborda se recorta, que es lo que se quiere. */
-  overflow-x: hidden;
 }
 
+/* **Sin `overflow-x: hidden` en `html` ni en `body`.** Se les puso como red
+   contra el scroll horizontal y rompio el navbar pegado.
+
+   No es que "casi":`overflow-x: hidden` con `overflow-y: visible` no se puede
+   dejar. El `visible` se convierte en `auto` —los dos ejes no pueden quedar en
+   `visible`/`clip` al mismo tiempo— asi que `body` pasa a ser un contenedor de
+   scroll. El `position: sticky` del header resuelve contra el scrollport de su
+   contenedor mas cercano, y al ser `body` un scroller que no es el que scrollea
+   la pagina, el navbar se iba con el scroll en vez de quedarse pegado arriba.
+
+   Medido: con `overflow-x: hidden`, `header.getBoundingClientRect().top` daba
+   `-600` con la pagina scrolleada 600 px —o sea, desperdigado, arriba de todo,
+   igual que si no fuera `sticky`. Con `overflow-x: visible` da `0`.
+
+   Y la red no hacia falta: medido en el DOM a 320, 390, 486 y 1440 px,
+   `document.documentElement.scrollWidth === clientWidth` y **ningun** elemento
+   es mas ancho que el viewport. No habia nada que tapar. Un `width` fijo o un
+   `min-width` mas grande que la pantalla hay que corregir en el elemento, no
+   esconder en el `body`. */
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow-x: hidden;
   /* `marfil`. */
   background-color: #f7f4ee;
 }

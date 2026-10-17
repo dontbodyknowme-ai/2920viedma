@@ -27,7 +27,6 @@ export const Navbar = ({ cartCount, onOpenCart, searchQuery, onSearchChange }: N
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
   const handleNavClick = (href: string) => {
     setMobileMenuOpen(false)
     const target = document.querySelector(href)
@@ -53,12 +52,31 @@ export const Navbar = ({ cartCount, onOpenCart, searchQuery, onSearchChange }: N
 
   return (
     <>
+      {/*
+        El navbar se oculta arriba de la pagina y aparece al scrollear
+        (punto 1 de la lista de pendientes). En desktop nunca se oculta: los
+        overrides `md:` de abajo se lo impiden, porque ahi hay alto de sobra y una
+        barra que desaparece y vuelve molesta al usar el raton.
+
+        **Se colapsa con `max-h-0`, no con `translate`.** El header es `sticky`,
+        o sea que participa del flujo: si solo se lo traslada `-100%`, deja el
+        hueco de su alto arriba de todo y el hero arranca 134 px mas abajo, con
+        un rectangulo vacio en medio de la pantalla. `max-h-0` + `overflow-hidden`
+        lo saca de la vista sin dejar nada.
+
+        **Y nada de animacion de entrada con Framer Motion en el header.** Esta
+        clase de componente era `initial={{ y: -100 }} animate={{ y: 0 }}`, que
+        escribe un `transform` inline. Un `transform` inline gana contra las
+        clases de Tailwind, asi que cualquier `-translate-y-full` de aca abajo no
+        haria nada y el navbar quedaria siempre visible sin que se entendiera el
+        por que. Por eso el header no lleva `initial`/`animate`: el movimiento lo
+        maneja el CSS, que es lo unico que controla las clases.
+      */}
       <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.6 }}
-        className={`sticky top-0 z-50 transition-all duration-300 bg-blanco/90 backdrop-blur-md border-b border-neutral-200 ${
-          isScrolled ? 'shadow-lg py-3' : 'py-4'
+        className={`sticky top-0 z-50 overflow-hidden backdrop-blur-md bg-blanco/90 transition-[max-height,padding,box-shadow,opacity] duration-300 ${
+          isScrolled
+            ? 'max-h-40 border-b border-neutral-200 py-3 shadow-lg md:max-h-24'
+            : 'max-h-0 border-b border-transparent py-0 opacity-0 md:max-h-24 md:border-neutral-200 md:py-4 md:opacity-100'
         }`}
       >
         {/* Un solo contenedor con `flex-wrap` y **un solo input**, no dos

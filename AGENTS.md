@@ -104,7 +104,8 @@
 - **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
 - **Cobertura**: 160 tests en 10 archivos (`csv`, `data_table`, `dashboard`,
   `date_range`, `integridad_datos_vino`, `validadores`, `permisos`,
-  `admin/sidebar`, `admin/layout_rutas`, `admin/login_fallido`);
+  `admin/sidebar`, `admin/layout_rutas`, `admin/login_fallido`)
+  + `carrito_agregado`, que monta `App` entero interceptando `fetch`;
   `npm test` pasa en modo no interactivo (`watch: false`)
 - **Nota 004-c**: se borraron los tests que dependían de `src/mocks/*` y de `admin_acceso.ts`.
   Con MSW eliminado no queda nada que probar ahí; la cobertura de API real vive en el backend.
@@ -260,3 +261,13 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
 30. **El parser del cruce de permisos se rompió con un comentario** (2026-10-14, spec 006/T4). `coherencia_permisos.test.ts` emparejaba `'/api/...'` con el `requireRole` de a 400 caracteres. **El comentario de ocho líneas explicando por qué el `gestor` no ve la facturación dejó a `/api/metrics` sin leer.** El test seguía verde: la tabla del frontend y el backend "coincidían" porque el backend no estaba en el mapa. Además aplanaba a la ruta, y perdía que `DELETE /api/wines/:id` es **solo admin** mientras `PATCH /api/wines/:id` es admin+gestor. Ahora parte por declaraciones `fastify.<método>(`, sin tope. **Un parser que depende de la distancia entre dos cosas se rompe con el primer comentario útil.**
 31. **Dos mecanismos redundantes hacen indistinguibles los tests** (2026-10-14, spec 006/T3). El layout redirige a `primeraVisible(rol)` y el gate navega al destino permitido: los dos dan **el mismo lugar en pantalla**. Un test de punta a punta ("entrar como gestor y ver dónde queda") pasaba en verde con cualquiera de los dos. Recién con el gate montado **aislado** (`montarGate()`, sin `AdminLayout`) la pregunta tuvo respuesta. Y hay un caso donde dos mecanismos se cubren: `return null` durante el redirect se verifica por la **API** ("¿se pidió `/api/metrics`?"), no por el DOM — el frame intermedio ya pasó cuando el test mira el DOM.
 32. **`/admin/*` con `path: '*'` montaba el Dashboard para cualquiera** (2026-10-14, spec 006/T3). `router.tsx` tenía `{ path: '*', element: <Dashboard /> }` dentro del panel, así que `/admin/secreto` le daba el dashboard a un `vendedor`: una sección vedada servida por un atajo. `puedeVer` no conoce esa ruta y por eso redirige. Un `catchAll` que sirve contenido en vez de una página vacía es un permiso con otro nombre.
+
+33. **`overflow-x: hidden` en `html`/`body` desarma el `position: sticky`** (2026-10-17). Se agrego como "red" contra el scroll horizontal y rompio el navbar pegado. No es que "casi": `overflow-x: hidden` con `overflow-y: visible` **no se puede dejar**, porque los dos ejes no pueden quedar en `visible`/`clip` al mismo tiempo y el `visible` se convierte en `auto`. Con eso `body` pasa a ser contenedor de scroll, y el `sticky` resuelve contra el scrollport de su contenedor mas cercano —que no es el que scrollea la pagina—, asi que el navbar se iba con el scroll en vez de quedarse arriba.
+    **Como se detecta** (no hay test que lo agarre: jsdom no carga el CSS del proyecto, y `position` computed tampoco dice si va a pegar):
+    ```js
+    window.scrollTo(0, 600)
+    document.querySelector('header').getBoundingClientRect().top   // -600 = se fue;  0 = pegado
+    ```
+    Ese `-600` con la pagina scrolleada 600 px es un navbar **desperdigado**, igual que si no fuera `sticky`. Y la red no hacia falta: medido a 320/390/486/1440 px, `scrollWidth === clientWidth` y ningun elemento es mas ancho que el viewport. **Un elemento mas ancho que la pantalla se corrige en el elemento**, no escondiendolo en el `body`.
+34. **Ocultar el navbar con `translate` en un `sticky` deja el hueco** (2026-10-17). El `sticky` participa del flujo: aplicarle un `-translate-y-full` y nada más, el header sigue reservando su alto y el hero arranca 134 px más abajo, con un rectángulo vacío en medio de la pantalla. Va `max-h-0` + `overflow-hidden`.
+    Y en el mismo componente: **si el `<header>` lleva `initial`/`animate` de Framer Motion, su `transform` inline le gana a cualquier clase de Tailwind** y el `-translate-y-full` deja de hacer nada sin que se note por que. O el header se mueve con CSS y no lleva esas props, o el movimiento se hace con `animate={{ y: ... }}`.
