@@ -19,6 +19,7 @@
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import App from '../src/App'
+import { AuthProvider } from '../src/hooks/useAuth'
 import type { CartItem } from '../src/types/vino'
 
 /**
@@ -174,6 +175,13 @@ export interface Montaje {
  * `.test.tsx` pasaria inadvertido y dejaria la suite en verde sin correr estos
  * tests. En un `.ts` la sintaxis JSX no compila.
  *
+ * **Va envuelto en `AuthProvider`, igual que `main.tsx`.** Esto no estaba y hacia
+ * que `montarApp` tirara "useAuth debe usarse dentro de AuthProvider" en el
+ * primer render: `Navbar` y `carta_de_catalogo.tsx` leen `useAuth()`. No se
+ * ROMPIO al agregar el provider —este helper no lo estaba usando nadie, asi que
+ * nadie lo ejecutaba— pero un andamiaje que revienta al primer uso es peor que
+ * uno que no existe.
+ *
  * Sin `StrictMode` a proposito (D-P, R14): el doble montaje de efectos es
  * comportamiento de desarrollo, y con el montaria dos veces cada sincronizacion a
  * `localStorage`.
@@ -184,7 +192,7 @@ export const montarApp = (): Montaje => {
   const root = createRoot(contenedor)
 
   act(() => {
-    root.render(createElement(App))
+    root.render(createElement(AuthProvider, null, createElement(App)))
   })
 
   return { contenedor, root }

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { Check } from 'lucide-react'
 import { Wine, CartItem } from './types/vino'
 import { INITIAL_WINES } from './datos/vino'
 import { Navbar } from './components/barra_de_navegacion'
@@ -78,6 +79,26 @@ export default function App() {
   // `noUnusedLocals` del proyecto lo rechaza: el flag queda persistido por las
   // funciones de arriba y el estado nace cuando hay algo que lo lea.
 
+  /**
+   * El cartel de "se agrego al carrito" (puntos 4 y 8 de la lista de pendientes).
+   *
+   * Son dos los que se fusionaron en uno: el 4 pide "un cartel para cuando se
+   * agrega un producto al carrito" y el 8 lo precisa —"de 3 segundos, que diga
+   * que se agrego"—. Antes de esto la unica confirmacion era el badge del
+   * icono del carrito, que cambia de un numero a otro: si ya habia 2 y agregas
+   * uno, el unico cambio es 2→3, y no dice si paso. Con esto el producto sale
+   * por su nombre.
+   *
+   * **Es un objeto y no el nombre pelado, a proposito.** El `useEffect` de abajo
+   * reinicia los 3 segundos cuando cambia el estado, y React compara las
+   * dependencias con `Object.is`. Con el nombre solo —un `string`— agregar dos
+   * veces el **mismo** producto deja un valor identico: el efecto no vuelve a
+   * dispararse, el `setTimeout` no se renueva y el segundo cartel no dura 3
+   * segundos sino lo que falte del primero. Un objeto nuevo en cada clic tiene
+   * siempre referencia nueva, y eso reinicia el reloj solo.
+   */
+  const [agregado, setAgregado] = useState<{ nombre: string } | null>(null)
+
   useEffect(() => {
     saveWines(wines)
   }, [wines])
@@ -86,7 +107,14 @@ export default function App() {
     saveCart(cart)
   }, [cart])
 
+  useEffect(() => {
+    if (agregado === null) return
+    const t = setTimeout(() => setAgregado(null), 3000)
+    return () => clearTimeout(t)
+  }, [agregado])
+
   const agregarAlCarrito = useCallback((wine: Wine) => {
+    setAgregado({ nombre: wine.name })
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === wine.id)
       if (existing) {
@@ -120,6 +148,10 @@ export default function App() {
     if (cart.length === 0) return
     setCart([])
     setCartOpen(false)
+    // Los dos avisos son `fixed bottom-6`: sin esto, agregar y confirmar en los
+    // 3 segundos siguientes al agregar deja los dos textos encimados en el mismo
+    // lugar. El de "se agrego" ya cumplio su funcion en ese caso.
+    setAgregado(null)
     setPedidoConfirmado(true)
   }, [cart.length])
 
@@ -203,6 +235,20 @@ export default function App() {
         wine={selectedWine}
         onClose={() => setSelectedWine(null)}
       />
+      {/* El aviso de "se agrego al carrito". Va con `role='status'` y no con
+          `alert` por el mismo motivo que el de "Pedido confirmado" (ver RF-27):
+          `alert` bloquea la ejecucion. El nombre va en un `<span>` para que se
+          pueda distinguir de la frase que lo acompana leyendo `textContent`. */}
+      {agregado !== null && (
+        <p
+          role='status'
+          className='pointer-events-none fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-verde-600/30 bg-blanco/95 px-6 py-4 text-center text-sm font-semibold text-carbon shadow-2xl'
+        >
+          <Check className='h-5 w-5 shrink-0 text-verde-600' aria-hidden='true' />
+          <span className='text-verde-600'>{agregado.nombre}</span>
+          <span>se agregó al carrito</span>
+        </p>
+      )}
       {pedidoConfirmado && (
         <p
           role='status'
