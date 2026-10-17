@@ -53,14 +53,14 @@ export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps)
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.25 }}
-              className='bg-charcoal-900 border border-wine-900/60 rounded-2xl w-full max-w-3xl text-cream-100 shadow-2xl my-8 overflow-hidden'
+              className='bg-blanco border border-verde-800/60 rounded-2xl w-full max-w-3xl text-carbon shadow-2xl my-8 overflow-hidden'
             >
               {/* Sin `layout`: T6 demostro que la proyeccion de layout frena el
                   unmount cuando un hijo sale del arbol. `h-72` en movil para que
                   la imagen siga siendo mas grande que la de la tarjeta, que a una
                   columna ya ocupa todo el ancho y mide 256 px de alto (RF-35). */}
               <div className='grid md:grid-cols-2'>
-                <div className='relative h-72 md:h-full bg-charcoal-950'>
+                <div className='relative h-72 md:h-full bg-marfil'>
                   <img
                     src={wine.imageUrl}
                     alt={wine.name}
@@ -70,33 +70,33 @@ export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps)
 
                 <div className='p-6 flex flex-col gap-4'>
                   <div className='flex items-start justify-between gap-3'>
-                    <h2 className='text-2xl font-serif font-bold text-cream-100 leading-tight'>
+                    <h2 className='text-2xl font-serif font-bold text-carbon leading-tight'>
                       {wine.name}
                     </h2>
                     <button
                       type='button'
                       onClick={onClose}
-                      className='text-neutral-400 hover:text-cream-100 p-2 rounded-lg hover:bg-neutral-800 transition-colors shrink-0'
+                      className='text-neutral-600 hover:text-carbon p-2 rounded-lg hover:bg-neutral-200 transition-colors shrink-0'
                       aria-label='Cerrar detalle'
                     >
                       ✕
                     </button>
                   </div>
 
-                  <p className='text-gold-500/90 text-xs font-semibold uppercase tracking-widest'>
+                  <p className='text-verde-salvia/90 text-xs font-semibold uppercase tracking-widest'>
                     {wine.winery} • {wine.varietal}
                   </p>
 
                   <div className='flex flex-wrap items-center gap-2'>
-                    <span className='bg-wine-900/80 border border-wine-500/30 text-cream-100 text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
+                    <span className='bg-verde-800/80 border border-verde-500/30 text-carbon text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
                       {wine.category}
                     </span>
-                    <span className='bg-charcoal-800 text-gold-400 text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-gold-500/20'>
+                    <span className='bg-blanco text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>
                       Cosecha {wine.vintage}
                     </span>
                   </div>
 
-                  <p className='text-cream-100 text-2xl font-bold font-serif'>
+                  <p className='text-carbon text-2xl font-bold font-serif'>
                     {formatearPrecio(wine.price)}
                   </p>
 
@@ -104,10 +104,10 @@ export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps)
                       string vacio es un dato presente, no ausente. */}
                   {wine.tastingNotes !== undefined && (
                     <section>
-                      <h3 className='text-xs uppercase tracking-widest text-gold-500/90 font-semibold mb-1'>
+                      <h3 className='text-xs uppercase tracking-widest text-verde-salvia/90 font-semibold mb-1'>
                         Notas de cata
                       </h3>
-                      <p className='text-neutral-300 text-sm leading-relaxed'>
+                      <p className='text-neutral-700 text-sm leading-relaxed'>
                         {wine.tastingNotes}
                       </p>
                     </section>
@@ -115,10 +115,10 @@ export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps)
 
                   {wine.foodPairing !== undefined && (
                     <section>
-                      <h3 className='text-xs uppercase tracking-widest text-gold-500/90 font-semibold mb-1'>
+                      <h3 className='text-xs uppercase tracking-widest text-verde-salvia/90 font-semibold mb-1'>
                         Maridaje sugerido
                       </h3>
-                      <p className='text-neutral-300 text-sm leading-relaxed'>
+                      <p className='text-neutral-700 text-sm leading-relaxed'>
                         {wine.foodPairing}
                       </p>
                     </section>

@@ -18,15 +18,15 @@ type Variante = 'danger' | 'warning' | 'info'
 
 const VARIANTES: Record<Variante, { boton: string; botonOscuro: boolean }> = {
   danger: {
-    boton: 'bg-wine-700 hover:bg-wine-500 text-cream-100 border-wine-500/40',
+    boton: 'bg-verde-600 hover:bg-verde-600 text-carbon border-verde-500/40',
     botonOscuro: true
   },
   warning: {
-    boton: 'bg-gold-500 hover:bg-gold-400 text-charcoal-950 border-gold-400/50',
+    boton: 'bg-verde-salvia hover:bg-verde-salvia text-carbon border-verde-salvia/50',
     botonOscuro: true
   },
   info: {
-    boton: 'bg-charcoal-700 hover:bg-charcoal-600 text-cream-100 border-neutral-600',
+    boton: 'bg-neutral-200 hover:bg-neutral-300 text-carbon border-neutral-600',
     botonOscuro: false
   }
 }
@@ -90,17 +90,17 @@ export const ConfirmDialog = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
-              className='w-full max-w-md rounded-2xl border border-wine-900/60 bg-charcoal-900 p-6 text-cream-100 shadow-2xl'
+              className='w-full max-w-md rounded-2xl border border-verde-800/60 bg-blanco p-6 text-carbon shadow-2xl'
             >
               <h3 className='font-serif text-xl font-bold'>{title}</h3>
-              <p className='mt-3 text-sm leading-relaxed text-neutral-300'>{message}</p>
+              <p className='mt-3 text-sm leading-relaxed text-neutral-700'>{message}</p>
 
               <div className='mt-6 flex gap-3'>
                 <button
                   type='button'
                   onClick={onClose}
                   disabled={loading}
-                  className='flex-1 rounded-xl border border-neutral-700 bg-charcoal-800 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-neutral-300 transition-colors hover:bg-neutral-800 disabled:opacity-50'
+                  className='flex-1 rounded-xl border border-neutral-300 bg-blanco px-4 py-3 text-xs font-semibold uppercase tracking-wider text-neutral-700 transition-colors hover:bg-neutral-200 disabled:opacity-50'
                 >
                   {cancelText}
                 </button>

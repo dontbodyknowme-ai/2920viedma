@@ -34,16 +34,16 @@ const Seccion = ({
   descripcion: string
   children: React.ReactNode
 }) => (
-  <section className='rounded-2xl border border-neutral-800 bg-charcoal-900/60 p-5'>
+  <section className='rounded-2xl border border-neutral-200 bg-blanco/60 p-5'>
     <div className='mb-4 flex items-start gap-3'>
       <span
         aria-hidden='true'
-        className='mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-500/10 text-gold-400'
+        className='mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-verde-salvia/10 text-verde-salvia'
       >
         <Icono className='h-4 w-4' />
       </span>
       <div>
-        <h2 className='font-serif text-lg font-bold text-cream-100'>{titulo}</h2>
+        <h2 className='font-serif text-lg font-bold text-carbon'>{titulo}</h2>
         <p className='mt-0.5 text-sm text-neutral-500'>{descripcion}</p>
       </div>
     </div>
@@ -52,9 +52,9 @@ const Seccion = ({
 )
 
 const Fila = ({ etiqueta, valor }: { etiqueta: string; valor: string }) => (
-  <div className='flex flex-wrap justify-between gap-2 border-b border-neutral-800/60 py-2 last:border-0'>
-    <dt className='text-sm text-neutral-400'>{etiqueta}</dt>
-    <dd className='text-sm text-cream-100'>{valor}</dd>
+  <div className='flex flex-wrap justify-between gap-2 border-b border-neutral-200/60 py-2 last:border-0'>
+    <dt className='text-sm text-neutral-600'>{etiqueta}</dt>
+    <dd className='text-sm text-carbon'>{valor}</dd>
   </div>
 )
 
@@ -63,7 +63,7 @@ const Lista = ({ items }: { items: string[] }) => (
     {items.map((item) => (
       <span
         key={item}
-        className='rounded-lg border border-neutral-700 bg-charcoal-800 px-2.5 py-1 text-xs text-neutral-300'
+        className='rounded-lg border border-neutral-300 bg-blanco px-2.5 py-1 text-xs text-neutral-700'
       >
         {item}
       </span>
@@ -84,12 +84,12 @@ const BotonExportar = ({ etiqueta, total, onClick, ocupado }: BotonExportarProps
     type='button'
     onClick={onClick}
     disabled={ocupado}
-    className='flex items-center gap-2 rounded-xl border border-neutral-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-300 transition-colors hover:border-gold-500 hover:text-cream-100 disabled:opacity-50'
+    className='flex items-center gap-2 rounded-xl border border-neutral-300 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 transition-colors hover:border-verde-salvia hover:text-carbon disabled:opacity-50'
   >
     <Download className='h-4 w-4' aria-hidden='true' />
     {etiqueta}
     {total !== undefined && (
-      <span className='rounded-full bg-charcoal-800 px-1.5 text-[10px] text-neutral-500'>
+      <span className='rounded-full bg-blanco px-1.5 text-[10px] text-neutral-500'>
         {total}
       </span>
     )}
@@ -170,7 +170,7 @@ export const ConfiguracionAdmin = () => {
   return (
     <div className='space-y-5'>
       <div>
-        <h2 className='font-serif text-lg font-bold text-cream-100'>Configuracion</h2>
+        <h2 className='font-serif text-lg font-bold text-carbon'>Configuracion</h2>
         <p className='text-sm text-neutral-500'>Datos de la tienda y herramientas de datos</p>
       </div>
 
@@ -180,8 +180,8 @@ export const ConfiguracionAdmin = () => {
           className={[
             'flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm',
             mensaje.ok
-              ? 'border border-gold-500/40 bg-gold-500/10'
-              : 'border border-wine-500/50 bg-wine-900/40'
+              ? 'border border-verde-salvia/40 bg-verde-salvia/10'
+              : 'border border-verde-500/50 bg-verde-800/40'
           ].join(' ')}
         >
           {!mensaje.ok && <AlertTriangle className='h-4 w-4 shrink-0' aria-hidden='true' />}
@@ -255,7 +255,7 @@ export const ConfiguracionAdmin = () => {
               </div>
             </div>
 
-            <dl className='mt-4 border-t border-neutral-800 pt-2'>
+            <dl className='mt-4 border-t border-neutral-200 pt-2'>
               <Fila etiqueta='Vinos en el catalogo' valor={String(vinos.data?.total ?? 0)} />
               <Fila etiqueta='Clientes' valor={String(clientes.data?.total ?? 0)} />
               <Fila etiqueta='Pedidos' valor={String(pedidos.data?.total ?? 0)} />
@@ -311,7 +311,7 @@ export const ConfiguracionAdmin = () => {
             type='button'
             onClick={() => inputCsv.current?.click()}
             disabled={ocupado === 'Importar catalogo'}
-            className='flex items-center gap-2 rounded-xl border border-wine-500/40 bg-wine-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500 disabled:opacity-50'
+            className='flex items-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600 disabled:opacity-50'
           >
             <Upload className='h-4 w-4' aria-hidden='true' />
             Importar catalogo
@@ -320,7 +320,7 @@ export const ConfiguracionAdmin = () => {
 
         <p className='mt-3 text-xs text-neutral-500'>
           El archivo que exporta &ldquo;Catalogo&rdquo; se puede volver a importar: lleva el{' '}
-          <code className='mx-1 rounded bg-charcoal-800 px-1'>Id</code> de cada vino. Sin esa
+          <code className='mx-1 rounded bg-blanco px-1'>Id</code> de cada vino. Sin esa
           columna, la importacion crearia una copia nueva de cada uno en vez de actualizarlo.
         </p>
       </Seccion>

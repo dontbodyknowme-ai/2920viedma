@@ -156,15 +156,15 @@ export const ProductForm = ({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className='bg-charcoal-900 border border-wine-900/60 rounded-2xl p-6 md:p-8 w-full max-w-xl text-cream-100 shadow-2xl relative my-8'
+              className='bg-blanco border border-verde-800/60 rounded-2xl p-6 md:p-8 w-full max-w-xl text-carbon shadow-2xl relative my-8'
             >
-              <div className='flex justify-between items-center mb-6 border-b border-neutral-800 pb-4'>
-                <h2 className='text-2xl font-serif font-bold text-cream-100'>
+              <div className='flex justify-between items-center mb-6 border-b border-neutral-200 pb-4'>
+                <h2 className='text-2xl font-serif font-bold text-carbon'>
                   {isEditing ? 'Editar Vino' : 'Cargar Nuevo Vino'}
                 </h2>
                 <button
                   onClick={onClose}
-                  className='text-neutral-400 hover:text-cream-100 text-lg p-1'
+                  className='text-neutral-600 hover:text-carbon text-lg p-1'
                 >
                   ✕
                 </button>
@@ -172,7 +172,7 @@ export const ProductForm = ({
 
               <form onSubmit={handleSubmit} className='space-y-4'>
                 <div>
-                  <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
+                  <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
                     Nombre de la Etiqueta *
                   </label>
                   <input
@@ -181,13 +181,13 @@ export const ProductForm = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder='Ej: Gran Reserva Malbec'
-                    className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-4 py-2.5 text-cream-100 focus:outline-none focus:border-gold-500 text-sm'
+                    className='w-full bg-blanco border border-neutral-300/60 rounded-xl px-4 py-2.5 text-carbon focus:outline-none focus:border-verde-salvia text-sm'
                   />
                 </div>
 
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                   <div>
-                    <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
+                    <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
                       Bodega *
                     </label>
                     <input
@@ -196,11 +196,11 @@ export const ProductForm = ({
                       value={winery}
                       onChange={(e) => setWinery(e.target.value)}
                       placeholder='Ej: Catena Zapata'
-                      className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-4 py-2.5 text-cream-100 focus:outline-none focus:border-gold-500 text-sm'
+                      className='w-full bg-blanco border border-neutral-300/60 rounded-xl px-4 py-2.5 text-carbon focus:outline-none focus:border-verde-salvia text-sm'
                     />
                   </div>
                   <div>
-                    <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
+                    <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
                       Varietal / Cepa
                     </label>
                     <input
@@ -208,36 +208,36 @@ export const ProductForm = ({
                       value={varietal}
                       onChange={(e) => setVarietal(e.target.value)}
                       placeholder='Ej: Malbec, Cabernet'
-                      className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-4 py-2.5 text-cream-100 focus:outline-none focus:border-gold-500 text-sm'
+                      className='w-full bg-blanco border border-neutral-300/60 rounded-xl px-4 py-2.5 text-carbon focus:outline-none focus:border-verde-salvia text-sm'
                     />
                   </div>
                 </div>
 
                 <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
                   <div>
-                    <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
+                    <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
                       Categoría
                     </label>
                     <input
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       placeholder='Tinto, Cerveza, Fiambre...'
-                      className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-3 py-2.5 text-cream-100 placeholder-neutral-500 focus:outline-none focus:border-gold-500 text-sm'
+                      className='w-full bg-blanco border border-neutral-300/60 rounded-xl px-3 py-2.5 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia text-sm'
                     />
                   </div>
                   <div>
-                    <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
+                    <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
                       Año (Cosecha)
                     </label>
                     <input
                       type='number'
                       value={vintage}
                       onChange={(e) => setVintage(Number(e.target.value))}
-                      className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-4 py-2.5 text-cream-100 focus:outline-none focus:border-gold-500 text-sm'
+                      className='w-full bg-blanco border border-neutral-300/60 rounded-xl px-4 py-2.5 text-carbon focus:outline-none focus:border-verde-salvia text-sm'
                     />
                   </div>
                   <div>
-                    <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
+                    <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
                       Precio ($) *
                     </label>
                     <input
@@ -246,13 +246,13 @@ export const ProductForm = ({
                       value={price}
                       onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : '')}
                       placeholder='35000'
-                      className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-4 py-2.5 text-cream-100 focus:outline-none focus:border-gold-500 text-sm'
+                      className='w-full bg-blanco border border-neutral-300/60 rounded-xl px-4 py-2.5 text-carbon focus:outline-none focus:border-verde-salvia text-sm'
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
+                  <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
                     Imagen del Vino
                   </label>
                   <div
@@ -260,7 +260,7 @@ export const ProductForm = ({
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
-                      isDragging ? 'border-gold-500 bg-wine-900/20' : 'border-neutral-700'
+                      isDragging ? 'border-verde-salvia bg-verde-800/20' : 'border-neutral-300'
                     }`}
                   >
                     {imagePreview ? (
@@ -270,14 +270,14 @@ export const ProductForm = ({
                           alt='Vista previa'
                           className='max-h-40 mx-auto rounded-lg mb-3'
                         />
-                        <p className='text-neutral-400 text-xs'>
+                        <p className='text-neutral-600 text-xs'>
                           Imagen cargada desde archivo (la URL se ignora)
                         </p>
                       </>
                     ) : (
-                      <p className='text-neutral-400 text-sm'>
+                      <p className='text-neutral-600 text-sm'>
                         Arrastrá una imagen acá o{' '}
-                        <label className='text-gold-500 cursor-pointer hover:underline'>
+                        <label className='text-verde-salvia cursor-pointer hover:underline'>
                           seleccioná un archivo
                           <input
                             type='file'
@@ -294,7 +294,7 @@ export const ProductForm = ({
                   )}
                   {!imagePreview && (
                     <div className='mt-3'>
-                      <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
+                      <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
                         O ingresá una URL de imagen
                       </label>
                       <input
@@ -305,14 +305,14 @@ export const ProductForm = ({
                           setImagePreview(e.target.value)
                         }}
                         placeholder='https://...'
-                        className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-4 py-2.5 text-cream-100 focus:outline-none focus:border-gold-500 text-sm'
+                        className='w-full bg-blanco border border-neutral-300/60 rounded-xl px-4 py-2.5 text-carbon focus:outline-none focus:border-verde-salvia text-sm'
                       />
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className='block text-xs uppercase tracking-wider text-neutral-400 mb-1'>
+                  <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
                     Descripción
                   </label>
                   <textarea
@@ -320,21 +320,21 @@ export const ProductForm = ({
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder='Notas de cata, crianza en barrica, maridaje...'
-                    className='w-full bg-charcoal-800 border border-neutral-700/60 rounded-xl px-4 py-2.5 text-cream-100 focus:outline-none focus:border-gold-500 text-sm resize-none'
+                    className='w-full bg-blanco border border-neutral-300/60 rounded-xl px-4 py-2.5 text-carbon focus:outline-none focus:border-verde-salvia text-sm resize-none'
                   />
                 </div>
 
-                <div className='flex gap-3 pt-4 border-t border-neutral-800'>
+                <div className='flex gap-3 pt-4 border-t border-neutral-200'>
                   <button
                     type='button'
                     onClick={onClose}
-                    className='flex-1 bg-charcoal-800 hover:bg-neutral-800 text-cream-200 py-3 rounded-xl text-xs uppercase font-semibold tracking-wider transition-colors'
+                    className='flex-1 bg-blanco hover:bg-neutral-200 text-neutral-600 py-3 rounded-xl text-xs uppercase font-semibold tracking-wider transition-colors'
                   >
                     Cancelar
                   </button>
                   <button
                     type='submit'
-                    className='flex-1 bg-wine-700 hover:bg-wine-500 text-cream-100 py-3 rounded-xl text-xs uppercase font-semibold tracking-wider transition-colors shadow-lg shadow-wine-900/50 border border-wine-500/30'
+                    className='flex-1 bg-verde-600 hover:bg-verde-600 text-carbon py-3 rounded-xl text-xs uppercase font-semibold tracking-wider transition-colors shadow-lg shadow-verde-900/50 border border-verde-500/30'
                   >
                     {isEditing ? 'Guardar Cambios' : 'Guardar Vino'}
                   </button>

@@ -48,14 +48,14 @@ const ChipTag = ({
   tag: string
   onQuitar?: (tag: string) => void
 }) => (
-  <span className='inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-charcoal-800 px-2.5 py-1 text-xs text-neutral-300'>
+  <span className='inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-blanco px-2.5 py-1 text-xs text-neutral-700'>
     {tag}
     {onQuitar !== undefined && (
       <button
         type='button'
         onClick={() => onQuitar(tag)}
         aria-label={`Quitar tag ${tag}`}
-        className='rounded-full p-0.5 transition-colors hover:bg-neutral-700 hover:text-wine-400'
+        className='rounded-full p-0.5 transition-colors hover:bg-neutral-200 hover:text-verde-600'
       >
         <X className='h-3 w-3' aria-hidden='true' />
       </button>
@@ -166,13 +166,13 @@ export const CustomerDrawer = ({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-              className='flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-wine-900/60 bg-charcoal-900 text-cream-100 shadow-2xl'
+              className='flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-verde-800/60 bg-blanco text-carbon shadow-2xl'
             >
               {/* --- Header --- */}
-              <div className='flex items-start justify-between gap-4 border-b border-neutral-800 px-6 py-4'>
+              <div className='flex items-start justify-between gap-4 border-b border-neutral-200 px-6 py-4'>
                 <div className='min-w-0'>
                   <h2 className='truncate font-serif text-xl font-bold'>{cliente.name}</h2>
-                  <p className='mt-0.5 truncate text-xs text-neutral-400'>{cliente.email}</p>
+                  <p className='mt-0.5 truncate text-xs text-neutral-600'>{cliente.email}</p>
 
                   {cliente.tags.length > 0 && (
                     <div className='mt-2 flex flex-wrap gap-1.5'>
@@ -186,7 +186,7 @@ export const CustomerDrawer = ({
                   type='button'
                   onClick={onClose}
                   aria-label='Cerrar detalle del cliente'
-                  className='rounded-lg p-2 text-neutral-400 transition-colors hover:bg-charcoal-800 hover:text-cream-100'
+                  className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-blanco hover:text-carbon'
                 >
                   <X className='h-5 w-5' aria-hidden='true' />
                 </button>
@@ -195,7 +195,7 @@ export const CustomerDrawer = ({
               {isLoading ? (
                 <div className='flex-1 space-y-3 p-6'>
                   {Array.from({ length: 6 }, (_, indice) => (
-                    <div key={indice} className='h-14 animate-pulse rounded-xl bg-charcoal-800' />
+                    <div key={indice} className='h-14 animate-pulse rounded-xl bg-blanco' />
                   ))}
                 </div>
               ) : (
@@ -204,7 +204,7 @@ export const CustomerDrawer = ({
                   <div
                     role='tablist'
                     aria-label='Secciones del cliente'
-                    className='flex gap-1 border-b border-neutral-800 px-6'
+                    className='flex gap-1 border-b border-neutral-200 px-6'
                   >
                     {pestanas.map((item) => (
                       <button
@@ -216,8 +216,8 @@ export const CustomerDrawer = ({
                         className={[
                           'border-b-2 px-3 py-3 text-xs font-semibold transition-colors',
                           pestana === item.id
-                            ? 'border-gold-500 text-gold-400'
-                            : 'border-transparent text-neutral-400 hover:text-cream-100'
+                            ? 'border-verde-salvia text-verde-salvia'
+                            : 'border-transparent text-neutral-600 hover:text-carbon'
                         ].join(' ')}
                       >
                         {item.etiqueta}
@@ -240,10 +240,10 @@ export const CustomerDrawer = ({
                                 <Link
                                   to={`/admin/pedidos?id=${pedido.id}`}
                                   onClick={onClose}
-                                  className='flex items-center gap-3 rounded-xl border border-neutral-800 bg-charcoal-800/40 p-3 transition-colors hover:border-gold-500/40'
+                                  className='flex items-center gap-3 rounded-xl border border-neutral-200 bg-blanco/40 p-3 transition-colors hover:border-verde-salvia/40'
                                 >
                                   <div className='min-w-0 flex-1'>
-                                    <p className='font-mono text-xs text-cream-100'>
+                                    <p className='font-mono text-xs text-carbon'>
                                       {pedido.id}
                                     </p>
                                     <p className='mt-0.5 text-xs text-neutral-500'>
@@ -251,7 +251,7 @@ export const CustomerDrawer = ({
                                     </p>
                                   </div>
                                   <StatusBadge estado={pedido.status} size='sm' />
-                                  <span className='shrink-0 text-sm font-semibold text-cream-100'>
+                                  <span className='shrink-0 text-sm font-semibold text-carbon'>
                                     {dinero(pedido.total)}
                                   </span>
                                 </Link>
@@ -275,14 +275,14 @@ export const CustomerDrawer = ({
                             value={nota}
                             onChange={(e) => setNota(e.target.value)}
                             placeholder='Nota interna...'
-                            className='flex-1 resize-none rounded-xl border border-neutral-700 bg-charcoal-800 px-3 py-2 text-sm focus:border-gold-500 focus:outline-none'
+                            className='flex-1 resize-none rounded-xl border border-neutral-300 bg-blanco px-3 py-2 text-sm focus:border-verde-salvia focus:outline-none'
                           />
                           <button
                             type='button'
                             onClick={() => void agregarNota()}
                             disabled={guardando}
                             aria-label='Agregar nota'
-                            className='shrink-0 self-start rounded-xl border border-wine-500/40 bg-wine-700 p-2.5 text-cream-100 transition-colors hover:bg-wine-500 disabled:opacity-50'
+                            className='shrink-0 self-start rounded-xl border border-verde-500/40 bg-verde-600 p-2.5 text-carbon transition-colors hover:bg-verde-600 disabled:opacity-50'
                           >
                             <Plus className='h-4 w-4' aria-hidden='true' />
                           </button>
@@ -291,7 +291,7 @@ export const CustomerDrawer = ({
                         {errorNota !== '' && (
                           <p
                             role='alert'
-                            className='rounded-xl border border-wine-500/50 bg-wine-900/40 px-3 py-2 text-sm'
+                            className='rounded-xl border border-verde-500/50 bg-verde-800/40 px-3 py-2 text-sm'
                           >
                             {errorNota}
                           </p>
@@ -308,9 +308,9 @@ export const CustomerDrawer = ({
                             {[...cliente.notes].reverse().map((registro) => (
                               <li
                                 key={registro.id}
-                                className='rounded-xl border border-neutral-800 bg-charcoal-800/40 p-3'
+                                className='rounded-xl border border-neutral-200 bg-blanco/40 p-3'
                               >
-                                <p className='text-sm text-cream-100'>{registro.text}</p>
+                                <p className='text-sm text-carbon'>{registro.text}</p>
                                 <p className='mt-1.5 text-xs text-neutral-500'>
                                   {registro.author} ·{' '}
                                   {new Date(registro.createdAt).toLocaleString('es-AR', {
@@ -335,19 +335,19 @@ export const CustomerDrawer = ({
                           <div className='flex items-center gap-2'>
                             <Mail className='h-4 w-4 shrink-0 text-neutral-500' aria-hidden='true' />
                             <dt className='sr-only'>Email</dt>
-                            <dd className='truncate text-neutral-200'>{cliente.email}</dd>
+                            <dd className='truncate text-neutral-700'>{cliente.email}</dd>
                           </div>
                           <div className='flex items-center gap-2'>
                             <Phone className='h-4 w-4 shrink-0 text-neutral-500' aria-hidden='true' />
                             <dt className='sr-only'>Telefono</dt>
-                            <dd className='text-neutral-200'>{cliente.phone}</dd>
+                            <dd className='text-neutral-700'>{cliente.phone}</dd>
                           </div>
-                          <div className='grid grid-cols-2 gap-3 border-t border-neutral-800 pt-3'>
+                          <div className='grid grid-cols-2 gap-3 border-t border-neutral-200 pt-3'>
                             <div>
                               <dt className='text-xs uppercase tracking-widest text-neutral-500'>
                                 Pedidos
                               </dt>
-                              <dd className='mt-0.5 text-lg font-bold text-cream-100'>
+                              <dd className='mt-0.5 text-lg font-bold text-carbon'>
                                 {cliente.totalOrders}
                               </dd>
                             </div>
@@ -355,16 +355,16 @@ export const CustomerDrawer = ({
                               <dt className='text-xs uppercase tracking-widest text-neutral-500'>
                                 Total gastado
                               </dt>
-                              <dd className='mt-0.5 text-lg font-bold text-gold-400'>
+                              <dd className='mt-0.5 text-lg font-bold text-verde-salvia'>
                                 {dinero(cliente.totalSpent)}
                               </dd>
                             </div>
                           </div>
-                          <div className='border-t border-neutral-800 pt-3'>
+                          <div className='border-t border-neutral-200 pt-3'>
                             <dt className='text-xs uppercase tracking-widest text-neutral-500'>
                               Cliente desde
                             </dt>
-                            <dd className='mt-0.5 text-neutral-200'>
+                            <dd className='mt-0.5 text-neutral-700'>
                               {fechaCorta(cliente.createdAt)}
                             </dd>
                           </div>
@@ -372,7 +372,7 @@ export const CustomerDrawer = ({
                             <dt className='text-xs uppercase tracking-widest text-neutral-500'>
                               Ultimo pedido
                             </dt>
-                            <dd className='mt-0.5 text-neutral-200'>
+                            <dd className='mt-0.5 text-neutral-700'>
                               {cliente.lastOrderAt === null
                                 ? 'Nunca'
                                 : fechaCorta(cliente.lastOrderAt)}
@@ -386,7 +386,7 @@ export const CustomerDrawer = ({
                         {(cliente.email === '' || cliente.phone === '') && (
                           <p
                             role='status'
-                            className='rounded-xl border border-gold-500/40 bg-gold-500/10 px-3 py-2 text-sm'
+                            className='rounded-xl border border-verde-salvia/40 bg-verde-salvia/10 px-3 py-2 text-sm'
                           >
                             Este cliente no tiene{' '}
                             {cliente.email === '' && cliente.phone === ''
@@ -399,8 +399,8 @@ export const CustomerDrawer = ({
                         )}
 
                         {/* --- Tags --- */}
-                        <div className='border-t border-neutral-800 pt-4'>
-                          <h3 className='mb-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-neutral-400'>
+                        <div className='border-t border-neutral-200 pt-4'>
+                          <h3 className='mb-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-neutral-600'>
                             <Tag className='h-3.5 w-3.5' aria-hidden='true' />
                             Tags
                           </h3>
@@ -435,14 +435,14 @@ export const CustomerDrawer = ({
                                 }
                               }}
                               placeholder='vip, mayorista...'
-                              className='flex-1 rounded-xl border border-neutral-700 bg-charcoal-800 px-3 py-2 text-sm focus:border-gold-500 focus:outline-none'
+                              className='flex-1 rounded-xl border border-neutral-300 bg-blanco px-3 py-2 text-sm focus:border-verde-salvia focus:outline-none'
                             />
                             <button
                               type='button'
                               onClick={() => void agregarTag()}
                               disabled={guardando || tagNuevo.trim() === ''}
                               aria-label='Agregar tag'
-                              className='shrink-0 rounded-xl border border-wine-500/40 bg-wine-700 px-3 py-2 text-xs font-semibold text-cream-100 transition-colors hover:bg-wine-500 disabled:opacity-50'
+                              className='shrink-0 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold text-carbon transition-colors hover:bg-verde-600 disabled:opacity-50'
                             >
                               Agregar
                             </button>
@@ -464,7 +464,7 @@ export const CustomerDrawer = ({
                           {errorTag !== '' && (
                             <p
                               role='alert'
-                              className='mt-2 rounded-xl border border-wine-500/50 bg-wine-900/40 px-3 py-2 text-sm'
+                              className='mt-2 rounded-xl border border-verde-500/50 bg-verde-800/40 px-3 py-2 text-sm'
                             >
                               {errorTag}
                             </p>

@@ -23,9 +23,9 @@ export const Hero = ({ wines, onSelectWine }: HeroProps) => {
   const destacados = [...wines].sort((a, b) => b.price - a.price).slice(0, 3)
 
   return (
-    <section id='hero' className='relative overflow-hidden bg-charcoal-950'>
+    <section id='hero' className='relative overflow-hidden bg-marfil'>
       {/* Fondo con gradiente sutil para profundidad */}
-      <div className='absolute inset-0 bg-gradient-to-b from-charcoal-950 via-charcoal-900/50 to-charcoal-950' />
+      <div className='absolute inset-0 bg-gradient-to-b from-marfil via-blanco/50 to-marfil' />
 
       <div className='relative mx-auto flex min-h-screen w-full max-w-screen-2xl flex-col items-center justify-center px-6 py-20 lg:px-12 lg:py-24'>
         <motion.div
@@ -34,10 +34,10 @@ export const Hero = ({ wines, onSelectWine }: HeroProps) => {
           transition={{ duration: 0.9, ease: 'easeOut' }}
           className='mx-auto max-w-3xl text-center'
         >
-          <p className='mb-3 font-serif text-2xl font-bold uppercase tracking-wider text-cream-100 md:text-3xl'>
+          <p className='mb-3 font-serif text-2xl font-bold uppercase tracking-wider text-carbon md:text-3xl'>
             Tienda Digital
           </p>
-          <p className='mb-6 text-xs font-semibold uppercase tracking-[0.4em] text-gold-500'>
+          <p className='mb-6 text-xs font-semibold uppercase tracking-[0.4em] text-verde-salvia'>
             Un detalle especial, Un buen momento. A un click de distancia
           </p>
 
@@ -49,12 +49,12 @@ export const Hero = ({ wines, onSelectWine }: HeroProps) => {
             />
           </h1>
 
-          <div className='mx-auto mb-8 h-px w-24 bg-gold-500/60' />
+          <div className='mx-auto mb-8 h-px w-24 bg-verde-salvia/60' />
 
-          <p className='mx-auto mb-12 max-w-xl font-light leading-relaxed text-lg text-neutral-400 md:text-xl'>
+          <p className='mx-auto mb-12 max-w-xl font-light leading-relaxed text-lg text-neutral-600 md:text-xl'>
             Elegí lo que buscas y recibilo en la puerta de tu casa, de manera simple, cómoda y segura.
           </p>
-          <p className='-mt-8 mb-12 text-sm font-semibold uppercase tracking-widest text-gold-500'>
+          <p className='-mt-8 mb-12 text-sm font-semibold uppercase tracking-widest text-verde-salvia'>
             Bebidas · Regalería · Gastronomía
           </p>
 
@@ -62,7 +62,7 @@ export const Hero = ({ wines, onSelectWine }: HeroProps) => {
             href='#catalogo'
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className='inline-flex items-center gap-3 rounded-lg border border-gold-500/40 bg-wine-700 px-10 py-4 text-sm font-semibold uppercase tracking-widest text-cream-100 shadow-lg shadow-wine-900/40 transition-all duration-300 hover:bg-wine-600 hover:shadow-wine-800/50'
+            className='inline-flex items-center gap-3 rounded-lg border border-verde-salvia/40 bg-verde-600 px-10 py-4 text-sm font-semibold uppercase tracking-widest text-carbon shadow-lg shadow-verde-900/40 transition-all duration-300 hover:bg-verde-700 hover:shadow-verde-900/50'
           >
             Explorar Productos
             <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -78,10 +78,10 @@ export const Hero = ({ wines, onSelectWine }: HeroProps) => {
           transition={{ duration: 0.6, delay: 0.4, ease: 'easeOut' }}
           className='mt-16 text-center'
         >
-          <h2 className='font-serif text-3xl font-bold uppercase tracking-widest text-cream-100 md:text-4xl'>
-            Promociones <span className='text-gold-500'>&</span> Combos
+          <h2 className='font-serif text-3xl font-bold uppercase tracking-widest text-carbon md:text-4xl'>
+            Promociones <span className='text-verde-salvia'>&</span> Combos
           </h2>
-          <div className='mx-auto mt-4 h-0.5 w-16 bg-gold-500/60' />
+          <div className='mx-auto mt-4 h-0.5 w-16 bg-verde-salvia/60' />
         </motion.div>
 
         {/* Botellas destacadas */}
@@ -101,7 +101,7 @@ export const Hero = ({ wines, onSelectWine }: HeroProps) => {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.5 + i * 0.15, ease: 'easeOut' }}
-                  className='group relative overflow-hidden rounded-2xl border border-neutral-800 bg-charcoal-900/80 text-left transition-all duration-300 hover:border-gold-500/40 hover:shadow-xl hover:shadow-wine-900/20'
+                  className='group relative overflow-hidden rounded-2xl border border-neutral-200 bg-blanco/80 text-left transition-all duration-300 hover:border-verde-salvia/40 hover:shadow-xl hover:shadow-verde-900/20'
                 >
                   <div className='relative aspect-[3/4] w-full overflow-hidden'>
                     <img
@@ -109,12 +109,12 @@ export const Hero = ({ wines, onSelectWine }: HeroProps) => {
                       alt={wine.name}
                       className='h-full w-full object-cover transition-transform duration-700 group-hover:scale-105'
                     />
-                    <div className='absolute inset-0 bg-gradient-to-t from-charcoal-950/90 via-transparent to-transparent' />
+                    <div className='absolute inset-0 bg-gradient-to-t from-marfil/90 via-transparent to-transparent' />
                     <span className='absolute bottom-4 left-4 right-4'>
-                      <span className='block font-serif text-base font-bold text-cream-100 transition-colors group-hover:text-gold-400'>
+                      <span className='block font-serif text-base font-bold text-carbon transition-colors group-hover:text-verde-600'>
                         {wine.name}
                       </span>
-                      <span className='mt-1 block text-xs uppercase tracking-wider text-neutral-400'>
+                      <span className='mt-1 block text-xs uppercase tracking-wider text-neutral-600'>
                         {wine.winery} &middot; {wine.vintage}
                       </span>
                     </span>

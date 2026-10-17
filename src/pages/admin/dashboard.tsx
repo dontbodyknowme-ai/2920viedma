@@ -40,14 +40,14 @@ const ActividadReciente = ({ metricas }: { metricas: Metrics }) => {
   }
 
   return (
-    <ul className='divide-y divide-neutral-800'>
+    <ul className='divide-y divide-neutral-200'>
       {metricas.recentActivity.map((item) => (
         <li key={`${item.type}-${item.id}`} className='flex items-center gap-3 py-3'>
           <span
             className={[
               'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
               item.type === 'order'
-                ? 'bg-gold-500/15 text-gold-400'
+                ? 'bg-verde-salvia/15 text-verde-salvia'
                 : 'bg-sky-500/15 text-sky-300'
             ].join(' ')}
             aria-hidden='true'
@@ -55,7 +55,7 @@ const ActividadReciente = ({ metricas }: { metricas: Metrics }) => {
             {item.type === 'order' ? <Receipt className='h-4 w-4' /> : <ShoppingCart className='h-4 w-4' />}
           </span>
           <div className='min-w-0 flex-1'>
-            <p className='truncate text-sm text-cream-100'>{item.description}</p>
+            <p className='truncate text-sm text-carbon'>{item.description}</p>
             <p className='text-xs text-neutral-500'>
               {new Date(item.timestamp).toLocaleDateString('es-AR', {
                 day: '2-digit',
@@ -76,9 +76,9 @@ export const Dashboard = () => {
 
   if (error !== undefined) {
     return (
-      <div className='rounded-2xl border border-wine-900/60 bg-charcoal-900/60 p-8 text-center'>
-        <p className='font-serif text-lg text-cream-100'>No se pudieron cargar las metricas</p>
-        <p className='mt-1 text-sm text-neutral-400'>{error}</p>
+      <div className='rounded-2xl border border-verde-800/60 bg-blanco/60 p-8 text-center'>
+        <p className='font-serif text-lg text-carbon'>No se pudieron cargar las metricas</p>
+        <p className='mt-1 text-sm text-neutral-600'>{error}</p>
       </div>
     )
   }
@@ -143,15 +143,15 @@ export const Dashboard = () => {
 
       {/* --- Grafico y actividad --- */}
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
-        <section className='rounded-2xl border border-neutral-800 bg-charcoal-900/60 p-5 lg:col-span-2'>
-          <h2 className='font-serif text-lg font-bold text-cream-100'>Ventas de los ultimos 30 dias</h2>
+        <section className='rounded-2xl border border-neutral-200 bg-blanco/60 p-5 lg:col-span-2'>
+          <h2 className='font-serif text-lg font-bold text-carbon'>Ventas de los ultimos 30 dias</h2>
           <div className='mt-4 h-72'>
             {isLoading || metricas === undefined ? (
               <div className='flex h-full items-end gap-1'>
                 {Array.from({ length: 30 }, (_, indice) => (
                   <div
                     key={indice}
-                    className='flex-1 animate-pulse rounded-t bg-charcoal-700'
+                    className='flex-1 animate-pulse rounded-t bg-neutral-200'
                     style={{ height: `${20 + ((indice * 37) % 70)}%` }}
                   />
                 ))}
@@ -163,7 +163,7 @@ export const Dashboard = () => {
             ) : (
               <Suspense
                 fallback={
-                  <div className='h-full w-full animate-pulse rounded-xl bg-charcoal-800' />
+                  <div className='h-full w-full animate-pulse rounded-xl bg-blanco' />
                 }
               >
                 <GraficoVentas datos={metricas.salesLast30Days} />
@@ -172,17 +172,17 @@ export const Dashboard = () => {
           </div>
         </section>
 
-        <section className='rounded-2xl border border-neutral-800 bg-charcoal-900/60 p-5'>
-          <h2 className='font-serif text-lg font-bold text-cream-100'>Actividad reciente</h2>
+        <section className='rounded-2xl border border-neutral-200 bg-blanco/60 p-5'>
+          <h2 className='font-serif text-lg font-bold text-carbon'>Actividad reciente</h2>
           <div className='mt-2'>
             {isLoading || metricas === undefined ? (
               <div className='space-y-4 py-2'>
                 {Array.from({ length: 5 }, (_, indice) => (
                   <div key={indice} className='flex items-center gap-3'>
-                    <div className='h-8 w-8 animate-pulse rounded-full bg-charcoal-700' />
+                    <div className='h-8 w-8 animate-pulse rounded-full bg-neutral-200' />
                     <div className='flex-1 space-y-2'>
-                      <div className='h-3 w-3/4 animate-pulse rounded bg-charcoal-700' />
-                      <div className='h-2.5 w-1/3 animate-pulse rounded bg-charcoal-700' />
+                      <div className='h-3 w-3/4 animate-pulse rounded bg-neutral-200' />
+                      <div className='h-2.5 w-1/3 animate-pulse rounded bg-neutral-200' />
                     </div>
                   </div>
                 ))}
@@ -195,13 +195,13 @@ export const Dashboard = () => {
       </div>
 
       {/* --- Top productos --- */}
-      <section className='rounded-2xl border border-neutral-800 bg-charcoal-900/60 p-5'>
-        <h2 className='font-serif text-lg font-bold text-cream-100'>Productos mas vendidos</h2>
+      <section className='rounded-2xl border border-neutral-200 bg-blanco/60 p-5'>
+        <h2 className='font-serif text-lg font-bold text-carbon'>Productos mas vendidos</h2>
 
         {isLoading || metricas === undefined ? (
           <div className='mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5'>
             {Array.from({ length: 5 }, (_, indice) => (
-              <div key={indice} className='h-28 animate-pulse rounded-xl bg-charcoal-700' />
+              <div key={indice} className='h-28 animate-pulse rounded-xl bg-neutral-200' />
             ))}
           </div>
         ) : metricas.topProducts.length === 0 ? (
@@ -211,10 +211,10 @@ export const Dashboard = () => {
             {metricas.topProducts.map((producto, indice) => (
               <li
                 key={producto.wineId}
-                className='flex items-center gap-3 rounded-xl border border-neutral-800 bg-charcoal-800/40 p-3'
+                className='flex items-center gap-3 rounded-xl border border-neutral-200 bg-blanco/40 p-3'
               >
                 <span
-                  className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-wine-700 text-xs font-bold text-cream-100'
+                  className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-verde-600 text-xs font-bold text-carbon'
                   aria-hidden='true'
                 >
                   {indice + 1}
@@ -225,13 +225,13 @@ export const Dashboard = () => {
                   className='h-12 w-12 shrink-0 rounded-lg object-cover'
                 />
                 <div className='min-w-0 flex-1'>
-                  <p className='truncate text-sm font-semibold text-cream-100'>
+                  <p className='truncate text-sm font-semibold text-carbon'>
                     {producto.name}
                   </p>
                   <p className='text-xs text-neutral-500'>
                     {producto.units} {producto.units === 1 ? 'unidad' : 'unidades'}
                   </p>
-                  <p className='text-sm font-bold text-gold-400'>{dinero(producto.revenue)}</p>
+                  <p className='text-sm font-bold text-verde-salvia'>{dinero(producto.revenue)}</p>
                 </div>
               </li>
             ))}

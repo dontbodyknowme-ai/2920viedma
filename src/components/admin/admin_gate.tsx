@@ -108,12 +108,12 @@ export const AdminGate = () => {
   }
 
   return (
-    <div className='flex min-h-screen items-center justify-center bg-charcoal-950 px-4 text-cream-100'>
+    <div className='flex min-h-screen items-center justify-center bg-marfil px-4 text-carbon'>
       <div className='w-full max-w-sm'>
         <div className='mb-6 text-center'>
-          <Wine className='mx-auto h-10 w-10 text-wine-500' aria-hidden='true' />
+          <Wine className='mx-auto h-10 w-10 text-verde-500' aria-hidden='true' />
           <h1 className='mt-3 font-serif text-2xl font-bold'>Administracion</h1>
-          <p className='mt-1 text-sm text-neutral-400'>
+          <p className='mt-1 text-sm text-neutral-600'>
             Esta seccion es restringida.
           </p>
         </div>
@@ -121,11 +121,11 @@ export const AdminGate = () => {
         <form
           onSubmit={enviar}
           noValidate
-          className='rounded-2xl border border-neutral-800 bg-charcoal-900 p-6'
+          className='rounded-2xl border border-neutral-200 bg-blanco p-6'
         >
           <label
             htmlFor='email-admin'
-            className='mb-1.5 block text-[10px] uppercase tracking-widest text-neutral-400'
+            className='mb-1.5 block text-[10px] uppercase tracking-widest text-neutral-600'
           >
             Email
           </label>
@@ -138,13 +138,13 @@ export const AdminGate = () => {
               setEmail(e.target.value)
               if (error !== '') setError('')
             }}
-            className='w-full rounded-xl border bg-charcoal-800 px-3 py-2.5 text-sm text-cream-100 placeholder-neutral-600 focus:outline-none focus:border-gold-500'
+            className='w-full rounded-xl border bg-blanco px-3 py-2.5 text-sm text-carbon placeholder-neutral-600 focus:outline-none focus:border-verde-salvia'
             placeholder='admin@vinoteca.local'
           />
 
           <label
             htmlFor='clave-admin'
-            className='mt-4 mb-1.5 block text-[10px] uppercase tracking-widest text-neutral-400'
+            className='mt-4 mb-1.5 block text-[10px] uppercase tracking-widest text-neutral-600'
           >
             Contrasena
           </label>
@@ -159,11 +159,11 @@ export const AdminGate = () => {
               if (error !== '') setError('')
             }}
             className={[ 
-              'w-full rounded-xl border bg-charcoal-800 px-3 py-2.5 text-sm',
-              'text-cream-100 placeholder-neutral-600 focus:outline-none',
+              'w-full rounded-xl border bg-blanco px-3 py-2.5 text-sm',
+              'text-carbon placeholder-neutral-600 focus:outline-none',
               error !== ''
-                ? 'border-wine-500 focus:border-wine-400'
-                : 'border-neutral-700 focus:border-gold-500'
+                ? 'border-verde-500 focus:border-verde-300'
+                : 'border-neutral-300 focus:border-verde-salvia'
             ].join(' ')}
             aria-invalid={error !== ''}
             aria-describedby={error !== '' ? 'error-clave' : undefined}
@@ -174,7 +174,7 @@ export const AdminGate = () => {
               id='error-clave'
               role='alert'
               className={[ 
-                'mt-2 rounded-lg border border-wine-500/50 bg-wine-900/40 px-3 py-2 text-sm',
+                'mt-2 rounded-lg border border-verde-500/50 bg-verde-800/40 px-3 py-2 text-sm',
                 fallando ? 'animate-pulse' : ''
               ].join(' ')}
             >
@@ -185,7 +185,7 @@ export const AdminGate = () => {
           <button
             type='submit'
             disabled={clave === '' || email === ''}
-            className='mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-wine-500/40 bg-wine-700 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500 disabled:cursor-not-allowed disabled:opacity-40'
+            className='mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600 disabled:cursor-not-allowed disabled:opacity-40'
           >
             <KeyRound className='h-4 w-4' aria-hidden='true' />
             Entrar

@@ -156,8 +156,8 @@ export function DataTable<TData extends RowData>({
   const iconoOrden = (columnaId: string): ReactNode => {
     const columna = tabla.getColumn(columnaId)
     const orden = columna?.getIsSorted()
-    if (orden === 'asc') return <ArrowUp className='h-3.5 w-3.5 text-gold-400' aria-hidden='true' />
-    if (orden === 'desc') return <ArrowDown className='h-3.5 w-3.5 text-gold-400' aria-hidden='true' />
+    if (orden === 'asc') return <ArrowUp className='h-3.5 w-3.5 text-verde-salvia' aria-hidden='true' />
+    if (orden === 'desc') return <ArrowDown className='h-3.5 w-3.5 text-verde-salvia' aria-hidden='true' />
     return <ArrowUpDown className='h-3.5 w-3.5 text-neutral-600' aria-hidden='true' />
   }
 
@@ -198,9 +198,9 @@ export function DataTable<TData extends RowData>({
     )
 
   return (
-    <div className='rounded-2xl border border-neutral-800 bg-charcoal-900/60'>
+    <div className='rounded-2xl border border-neutral-200 bg-blanco/60'>
       {/* --- Barra de herramientas --- */}
-      <div className='flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 p-4'>
+      <div className='flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 p-4'>
         <div className='relative min-w-56 flex-1'>
           <Search
             className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500'
@@ -212,7 +212,7 @@ export function DataTable<TData extends RowData>({
             onChange={(evento) => onSearchChange(evento.target.value)}
             placeholder='Buscar...'
             aria-label='Buscar'
-            className='w-full rounded-xl border border-neutral-700 bg-charcoal-800 py-2 pl-9 pr-3 text-sm text-cream-100 placeholder-neutral-500 focus:border-gold-500 focus:outline-none'
+            className='w-full rounded-xl border border-neutral-300 bg-blanco py-2 pl-9 pr-3 text-sm text-carbon placeholder-neutral-500 focus:border-verde-salvia focus:outline-none'
           />
         </div>
 
@@ -222,13 +222,13 @@ export function DataTable<TData extends RowData>({
               type='button'
               onClick={onExport}
               disabled={isLoading || total === 0}
-              className='rounded-xl border border-neutral-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-300 transition-colors hover:border-gold-500 hover:text-cream-100 disabled:opacity-50'
+              className='rounded-xl border border-neutral-300 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 transition-colors hover:border-verde-salvia hover:text-carbon disabled:opacity-50'
             >
               Exportar CSV
             </button>
           )}
 
-          <label className='flex items-center gap-2 text-xs text-neutral-400'>
+          <label className='flex items-center gap-2 text-xs text-neutral-600'>
             <span className='sr-only sm:not-sr-only'>Por pagina</span>
             <select
               value={limit}
@@ -237,7 +237,7 @@ export function DataTable<TData extends RowData>({
                 onPageChange(1)
               }}
               aria-label='Filas por pagina'
-              className='rounded-xl border border-neutral-700 bg-charcoal-800 px-2 py-2 text-sm text-cream-100 focus:border-gold-500 focus:outline-none'
+              className='rounded-xl border border-neutral-300 bg-blanco px-2 py-2 text-sm text-carbon focus:border-verde-salvia focus:outline-none'
             >
               {TAMANOS_PAGINA.map((tamano) => (
                 <option key={tamano} value={tamano}>
@@ -251,7 +251,7 @@ export function DataTable<TData extends RowData>({
 
       {/* --- Filtros de columna, solo si alguna columna los declara --- */}
       {columnasFiltrables.length > 0 && (
-        <div className='flex flex-wrap items-end gap-3 border-b border-neutral-800 p-4'>
+        <div className='flex flex-wrap items-end gap-3 border-b border-neutral-200 p-4'>
           {columnasFiltrables.map(({ clave, titulo, opciones }) => (
             <label key={clave} className='flex flex-col gap-1'>
               <span className='text-[10px] uppercase tracking-widest text-neutral-500'>
@@ -260,7 +260,7 @@ export function DataTable<TData extends RowData>({
               <select
                 value={filtros[clave] ?? ''}
                 onChange={(evento) => cambiarFiltro(clave, evento.target.value)}
-                className='rounded-lg border border-neutral-700 bg-charcoal-800 px-2 py-1.5 text-sm text-cream-100 focus:border-gold-500 focus:outline-none'
+                className='rounded-lg border border-neutral-300 bg-blanco px-2 py-1.5 text-sm text-carbon focus:border-verde-salvia focus:outline-none'
               >
                 <option value=''>Todos</option>
                 {opciones.map((opcion) => (
@@ -276,7 +276,7 @@ export function DataTable<TData extends RowData>({
             <button
               type='button'
               onClick={limpiarTodo}
-              className='flex items-center gap-1 rounded-lg border border-neutral-700 px-2 py-1.5 text-xs text-neutral-400 transition-colors hover:border-gold-500 hover:text-cream-100'
+              className='flex items-center gap-1 rounded-lg border border-neutral-300 px-2 py-1.5 text-xs text-neutral-600 transition-colors hover:border-verde-salvia hover:text-carbon'
             >
               <X className='h-3.5 w-3.5' aria-hidden='true' />
               Limpiar filtros
@@ -290,7 +290,7 @@ export function DataTable<TData extends RowData>({
         <table role='grid' className='w-full border-collapse text-left text-sm'>
           <thead>
             {tabla.getHeaderGroups().map((grupo) => (
-              <tr key={grupo.id} className='border-b border-neutral-800'>
+              <tr key={grupo.id} className='border-b border-neutral-200'>
                 {grupo.headers.map((encabezado) => {
                   const ordenable = encabezado.column.getCanSort()
                   return (
@@ -304,13 +304,13 @@ export function DataTable<TData extends RowData>({
                             ? 'descending'
                             : 'none'
                       }
-                      className='px-4 py-3 text-xs font-semibold uppercase tracking-widest text-neutral-400'
+                      className='px-4 py-3 text-xs font-semibold uppercase tracking-widest text-neutral-600'
                     >
                       {encabezado.isPlaceholder ? null : ordenable ? (
                         <button
                           type='button'
                           onClick={() => alternarOrden(encabezado.column.id)}
-                          className='flex items-center gap-1.5 transition-colors hover:text-cream-100'
+                          className='flex items-center gap-1.5 transition-colors hover:text-carbon'
                         >
                           {flexRender(encabezado.column.columnDef.header, encabezado.getContext())}
                           {iconoOrden(encabezado.column.id)}
@@ -322,7 +322,7 @@ export function DataTable<TData extends RowData>({
                   )
                 })}
                 {rowActions !== undefined && (
-                  <th scope='col' className='px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest text-neutral-400'>
+                  <th scope='col' className='px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest text-neutral-600'>
                     Acciones
                   </th>
                 )}
@@ -333,15 +333,15 @@ export function DataTable<TData extends RowData>({
           <tbody>
             {isLoading
               ? Array.from({ length: Math.min(limit, 8) }, (_, indice) => (
-                  <tr key={`esqueleto-${indice}`} className='border-b border-neutral-800/60'>
+                  <tr key={`esqueleto-${indice}`} className='border-b border-neutral-200/60'>
                     {columns.map((columna) => (
                       <td key={columna.id} className='px-4 py-3'>
-                        <div className='h-4 w-full animate-pulse rounded bg-charcoal-700' />
+                        <div className='h-4 w-full animate-pulse rounded bg-neutral-200' />
                       </td>
                     ))}
                     {rowActions !== undefined && (
                       <td className='px-4 py-3'>
-                        <div className='ml-auto h-4 w-16 animate-pulse rounded bg-charcoal-700' />
+                        <div className='ml-auto h-4 w-16 animate-pulse rounded bg-neutral-200' />
                       </td>
                     )}
                   </tr>
@@ -349,10 +349,10 @@ export function DataTable<TData extends RowData>({
               : tabla.getRowModel().rows.map((fila) => (
                   <tr
                     key={fila.id}
-                    className='border-b border-neutral-800/60 transition-colors hover:bg-charcoal-800/40'
+                    className='border-b border-neutral-200/60 transition-colors hover:bg-blanco/40'
                   >
                     {fila.getVisibleCells().map((celda) => (
-                      <td key={celda.id} className='px-4 py-3 text-neutral-200'>
+                      <td key={celda.id} className='px-4 py-3 text-neutral-700'>
                         {flexRender(celda.column.columnDef.cell, celda.getContext())}
                       </td>
                     ))}
@@ -367,7 +367,7 @@ export function DataTable<TData extends RowData>({
             {!isLoading && data.length === 0 && (
               <tr>
                 <td colSpan={columns.length + (rowActions !== undefined ? 1 : 0)} className='px-4 py-16 text-center'>
-                  <p className='font-serif text-lg text-neutral-300'>
+                  <p className='font-serif text-lg text-neutral-700'>
                     {total === 0 && !hayFiltros ? `No hay ${emptyPlural}` : 'Sin resultados'}
                   </p>
                   <p className='mt-1 text-sm text-neutral-500'>
@@ -377,7 +377,7 @@ export function DataTable<TData extends RowData>({
                     <button
                       type='button'
                       onClick={limpiarTodo}
-                      className='mt-4 rounded-xl border border-neutral-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-300 transition-colors hover:border-gold-500 hover:text-cream-100'
+                      className='mt-4 rounded-xl border border-neutral-300 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 transition-colors hover:border-verde-salvia hover:text-carbon'
                     >
                       Limpiar filtros
                     </button>
@@ -390,8 +390,8 @@ export function DataTable<TData extends RowData>({
       </div>
 
       {/* --- Paginacion --- */}
-      <div className='flex flex-wrap items-center justify-between gap-3 border-t border-neutral-800 p-4'>
-        <p className='text-xs text-neutral-400'>
+      <div className='flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 p-4'>
+        <p className='text-xs text-neutral-600'>
           {total === 0 ? 'Sin filas' : `Mostrando ${desde}-${hasta} de ${total} ${total === 1 ? emptySingular : emptyPlural}`}
         </p>
 
@@ -401,7 +401,7 @@ export function DataTable<TData extends RowData>({
             onClick={() => onPageChange(1)}
             disabled={page <= 1 || isLoading}
             aria-label='Primera pagina'
-            className='rounded-lg border border-neutral-700 px-2 py-1.5 text-xs text-neutral-300 transition-colors hover:border-gold-500 disabled:opacity-30'
+            className='rounded-lg border border-neutral-300 px-2 py-1.5 text-xs text-neutral-700 transition-colors hover:border-verde-salvia disabled:opacity-30'
           >
             Primera
           </button>
@@ -410,11 +410,11 @@ export function DataTable<TData extends RowData>({
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1 || isLoading}
             aria-label='Pagina anterior'
-            className='rounded-lg border border-neutral-700 px-2 py-1.5 text-neutral-300 transition-colors hover:border-gold-500 disabled:opacity-30'
+            className='rounded-lg border border-neutral-300 px-2 py-1.5 text-neutral-700 transition-colors hover:border-verde-salvia disabled:opacity-30'
           >
             <ChevronLeft className='h-4 w-4' aria-hidden='true' />
           </button>
-          <span className='px-2 text-xs text-neutral-400'>
+          <span className='px-2 text-xs text-neutral-600'>
             {page} / {totalPaginas}
           </span>
           <button
@@ -422,7 +422,7 @@ export function DataTable<TData extends RowData>({
             onClick={() => onPageChange(page + 1)}
             disabled={page >= totalPaginas || isLoading}
             aria-label='Pagina siguiente'
-            className='rounded-lg border border-neutral-700 px-2 py-1.5 text-neutral-300 transition-colors hover:border-gold-500 disabled:opacity-30'
+            className='rounded-lg border border-neutral-300 px-2 py-1.5 text-neutral-700 transition-colors hover:border-verde-salvia disabled:opacity-30'
           >
             <ChevronRight className='h-4 w-4' aria-hidden='true' />
           </button>
@@ -431,7 +431,7 @@ export function DataTable<TData extends RowData>({
             onClick={() => onPageChange(totalPaginas)}
             disabled={page >= totalPaginas || isLoading}
             aria-label='Ultima pagina'
-            className='rounded-lg border border-neutral-700 px-2 py-1.5 text-xs text-neutral-300 transition-colors hover:border-gold-500 disabled:opacity-30'
+            className='rounded-lg border border-neutral-300 px-2 py-1.5 text-xs text-neutral-700 transition-colors hover:border-verde-salvia disabled:opacity-30'
           >
             Ultima
           </button>

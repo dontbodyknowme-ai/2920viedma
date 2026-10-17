@@ -132,7 +132,7 @@ export const ProductCatalog = ({
     return (
       <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
         <div className='flex items-center justify-center py-20'>
-          <div className='w-12 h-12 border-4 border-gold-500 border-t-transparent rounded-full animate-spin' />
+          <div className='w-12 h-12 border-4 border-verde-salvia border-t-transparent rounded-full animate-spin' />
         </div>
       </section>
     )
@@ -142,10 +142,10 @@ export const ProductCatalog = ({
     return (
       <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
         <div className='text-center py-20'>
-          <p className='text-wine-400 mb-4'>{error}</p>
+          <p className='text-verde-500 mb-4'>{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className='px-6 py-3 bg-wine-700 hover:bg-wine-500 text-cream-100 rounded-xl font-semibold transition-colors'
+            className='px-6 py-3 bg-verde-600 hover:bg-verde-600 text-carbon rounded-xl font-semibold transition-colors'
           >
             Reintentar
           </button>
@@ -157,7 +157,7 @@ export const ProductCatalog = ({
   return (
     <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
       <div className='text-center mb-12'>
-        <h2 className='text-4xl md:text-5xl font-serif font-bold text-cream-100 mb-8'>
+        <h2 className='text-4xl md:text-5xl font-serif font-bold text-carbon mb-8'>
           Catálogo de Productos
         </h2>
       </div>
@@ -166,7 +166,7 @@ export const ProductCatalog = ({
       <div className='mb-10 flex flex-col md:flex-row gap-6 max-w-4xl mx-auto'>
         {/* Categorías */}
         <div className='flex-1'>
-          <label className='block text-sm font-medium text-gold-400 mb-2'>
+          <label className='block text-sm font-medium text-verde-salvia mb-2'>
             Tipo de Producto
           </label>
           <div className='flex flex-wrap gap-2'>
@@ -176,8 +176,8 @@ export const ProductCatalog = ({
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                   selectedCategory === cat
-                    ? 'bg-wine-700 text-cream-100 border border-wine-500/50'
-                    : 'bg-charcoal-800 text-neutral-300 hover:bg-charcoal-700 border border-neutral-700'
+                    ? 'bg-verde-600 text-carbon border border-verde-500/50'
+                    : 'bg-blanco text-neutral-700 hover:bg-neutral-200 border border-neutral-300'
                 }`}
               >
                 {cat}
@@ -190,13 +190,13 @@ export const ProductCatalog = ({
         {availableVarietals.length > 0 && (
           <div className='flex-1'>
             <div className='flex items-center justify-between mb-2'>
-              <label className='block text-sm font-medium text-gold-400'>
+              <label className='block text-sm font-medium text-verde-salvia'>
                 Cepa
               </label>
               {selectedVarietals.length > 0 && (
                 <button
                   onClick={handleClearVarietals}
-                  className='text-xs text-gold-400 hover:text-gold-300 underline'
+                  className='text-xs text-verde-salvia hover:text-verde-salvia underline'
                 >
                   Limpiar
                 </button>
@@ -209,8 +209,8 @@ export const ProductCatalog = ({
                   onClick={() => handleVarietalToggle(varietal)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     selectedVarietals.includes(varietal)
-                      ? 'bg-gold-600 text-charcoal-950'
-                      : 'bg-charcoal-800 text-neutral-300 hover:bg-charcoal-700 border border-neutral-700'
+                      ? 'bg-verde-600 text-carbon'
+                      : 'bg-blanco text-neutral-700 hover:bg-neutral-200 border border-neutral-300'
                   }`}
                 >
                   {varietal}
@@ -222,7 +222,7 @@ export const ProductCatalog = ({
 
         {/* Rango de precio */}
         <div className='flex-1 min-w-[200px]'>
-          <label className='block text-sm font-medium text-gold-400 mb-2'>
+          <label className='block text-sm font-medium text-verde-salvia mb-2'>
             Rango de Precio (ARS)
           </label>
           <div className='flex gap-2'>
@@ -231,7 +231,7 @@ export const ProductCatalog = ({
               placeholder='Mín'
               value={minPrice === '' ? '' : minPrice}
               onChange={(e) => onMinPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
-              className='flex-1 bg-charcoal-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-cream-100 placeholder-neutral-500 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 text-sm'
+              className='flex-1 bg-blanco border border-neutral-300 rounded-xl px-4 py-2.5 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia text-sm'
               min='0'
             />
             <input
@@ -239,7 +239,7 @@ export const ProductCatalog = ({
               placeholder='Máx'
               value={maxPrice === '' ? '' : maxPrice}
               onChange={(e) => onMaxPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
-              className='flex-1 bg-charcoal-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-cream-100 placeholder-neutral-500 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 text-sm'
+              className='flex-1 bg-blanco border border-neutral-300 rounded-xl px-4 py-2.5 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia text-sm'
               min='0'
             />
           </div>
@@ -250,7 +250,7 @@ export const ProductCatalog = ({
                 handleClearVarietals()
                 setSelectedCategory('Todos')
               }}
-              className='mt-2 w-full text-xs text-gold-400 hover:text-gold-300 underline'
+              className='mt-2 w-full text-xs text-verde-salvia hover:text-verde-salvia underline'
             >
               Limpiar todos los filtros
             </button>
@@ -266,7 +266,7 @@ export const ProductCatalog = ({
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder='Buscar por nombre, marca o categoría...'
           aria-label='Buscar productos'
-          className='w-full bg-charcoal-800/80 border border-neutral-700/50 rounded-xl px-6 py-3.5 text-cream-100 placeholder-neutral-500 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 text-lg'
+          className='w-full bg-blanco/80 border border-neutral-300/50 rounded-xl px-6 py-3.5 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia text-lg'
         />
       </div>
 
@@ -279,7 +279,7 @@ export const ProductCatalog = ({
             exit={{ opacity: 0 }}
             className='text-center py-20'
           >
-            <p className='text-neutral-400 text-lg'>
+            <p className='text-neutral-600 text-lg'>
               No se encontraron vinos con los filtros actuales
             </p>
           </motion.div>

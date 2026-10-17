@@ -40,7 +40,7 @@ export const OrderTimeline = ({ entradas }: OrderTimelineProps) => {
           item, asi que no hay que repetirla ni calcular donde termina. */}
       <span
         aria-hidden='true'
-        className='absolute bottom-2 left-[9px] top-2 w-px bg-neutral-800'
+        className='absolute bottom-2 left-[9px] top-2 w-px bg-blanco'
       />
 
       {entradas.map((entrada, indice) => {
@@ -55,15 +55,15 @@ export const OrderTimeline = ({ entradas }: OrderTimelineProps) => {
                 'absolute -left-7 top-0.5 flex h-[19px] w-[19px] items-center justify-center rounded-full border',
                 actual
                   ? fallido
-                    ? 'border-wine-500 bg-wine-900'
-                    : 'border-gold-500 bg-charcoal-900'
-                  : 'border-neutral-700 bg-charcoal-950'
+                    ? 'border-verde-500 bg-verde-800'
+                    : 'border-verde-salvia bg-blanco'
+                  : 'border-neutral-300 bg-marfil'
               ].join(' ')}
             >
               {fallido ? (
-                <X className='h-3 w-3 text-wine-400' />
+                <X className='h-3 w-3 text-verde-500' />
               ) : actual ? (
-                <Check className='h-3 w-3 text-gold-400' />
+                <Check className='h-3 w-3 text-verde-salvia' />
               ) : (
                 <Circle className='h-2 w-2 text-neutral-600' />
               )}
@@ -78,9 +78,9 @@ export const OrderTimeline = ({ entradas }: OrderTimelineProps) => {
               )}
             </div>
 
-            <p className='mt-1 text-xs text-neutral-400'>{formatoFecha(entrada.timestamp)}</p>
+            <p className='mt-1 text-xs text-neutral-600'>{formatoFecha(entrada.timestamp)}</p>
             {entrada.note !== undefined && (
-              <p className='mt-1 text-sm text-neutral-300'>{entrada.note}</p>
+              <p className='mt-1 text-sm text-neutral-700'>{entrada.note}</p>
             )}
           </li>
         )

@@ -148,8 +148,8 @@ export const AdminWineForm = ({
     }
   }
 
-  const campo = 'w-full rounded-xl border border-neutral-700 bg-charcoal-800 px-3 py-2.5 text-sm text-cream-100 focus:border-gold-500 focus:outline-none'
-  const etiqueta = 'mb-1 block text-[10px] uppercase tracking-widest text-neutral-400'
+  const campo = 'w-full rounded-xl border border-neutral-300 bg-blanco px-3 py-2.5 text-sm text-carbon focus:border-verde-salvia focus:outline-none'
+  const etiqueta = 'mb-1 block text-[10px] uppercase tracking-widest text-neutral-600'
 
   return (
     <AnimatePresence>
@@ -172,9 +172,9 @@ export const AdminWineForm = ({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-              className='flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-wine-900/60 bg-charcoal-900 text-cream-100 shadow-2xl'
+              className='flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-verde-800/60 bg-blanco text-carbon shadow-2xl'
             >
-              <div className='flex items-center justify-between border-b border-neutral-800 px-6 py-4'>
+              <div className='flex items-center justify-between border-b border-neutral-200 px-6 py-4'>
                 <h2 className='font-serif text-xl font-bold'>
                   {vino === null ? 'Nuevo vino' : 'Editar vino'}
                 </h2>
@@ -182,7 +182,7 @@ export const AdminWineForm = ({
                   type='button'
                   onClick={onClose}
                   aria-label='Cerrar formulario'
-                  className='rounded-lg p-2 text-neutral-400 transition-colors hover:bg-charcoal-800 hover:text-cream-100'
+                  className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-blanco hover:text-carbon'
                 >
                   <X className='h-5 w-5' aria-hidden='true' />
                 </button>
@@ -320,19 +320,19 @@ export const AdminWineForm = ({
                       />
                       <label
                         htmlFor='admin-image-upload'
-                        className='flex items-center gap-2 cursor-pointer w-full px-4 py-3 border-2 border-dashed border-neutral-700 rounded-xl text-center text-neutral-400 hover:border-gold-500 hover:bg-charcoal-700 transition-colors'
+                        className='flex items-center gap-2 cursor-pointer w-full px-4 py-3 border-2 border-dashed border-neutral-300 rounded-xl text-center text-neutral-600 hover:border-verde-salvia hover:bg-neutral-200 transition-colors'
                       >
                         <svg className='h-6 w-6 mx-auto text-neutral-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                           <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' />
                         </svg>
                         <div className='flex flex-col'>
-                          <span className='text-sm font-medium text-cream-100'>Click o arrastra para subir imagen</span>
+                          <span className='text-sm font-medium text-carbon'>Click o arrastra para subir imagen</span>
                           <span className='text-xs text-neutral-500'>Máx 5 MB · JPG, PNG, WebP</span>
                         </div>
                       </label>
                     </div>
                     {campos.imageUrl && (
-                      <div className='relative w-24 h-24 rounded-lg overflow-hidden border border-wine-500/30'>
+                      <div className='relative w-24 h-24 rounded-lg overflow-hidden border border-verde-500/30'>
                         <img
                           src={campos.imageUrl}
                           alt='Previsualización'
@@ -341,7 +341,7 @@ export const AdminWineForm = ({
                         <button
                           type='button'
                           onClick={() => cambiar('imageUrl', '')}
-                          className='absolute top-1 right-1 bg-wine-700/90 text-cream-100 rounded-full p-1 hover:bg-wine-500 transition-colors'
+                          className='absolute top-1 right-1 bg-verde-600/90 text-carbon rounded-full p-1 hover:bg-verde-600 transition-colors'
                           aria-label='Eliminar imagen'
                         >
                           <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -389,14 +389,14 @@ export const AdminWineForm = ({
 
                 {/* El interruptor de activo es el que saca el vino del catalogo
                     sin borrarlo del historial de pedidos. */}
-                <label className='flex cursor-pointer items-center gap-3 rounded-xl border border-neutral-800 bg-charcoal-800/40 px-4 py-3'>
+                <label className='flex cursor-pointer items-center gap-3 rounded-xl border border-neutral-200 bg-blanco/40 px-4 py-3'>
                   <input
                     type='checkbox'
                     checked={campos.activo}
                     onChange={(e) => cambiar('activo', e.target.checked)}
-                    className='h-4 w-4 accent-gold-500'
+                    className='h-4 w-4 accent-verde-salvia'
                   />
-                  <span className='text-sm text-cream-100'>
+                  <span className='text-sm text-carbon'>
                     Visible en el catalogo
                     <span className='block text-xs text-neutral-500'>
                       Si lo desactivas, deja de aparecer en la tienda pero conserva sus pedidos.
@@ -405,23 +405,23 @@ export const AdminWineForm = ({
                 </label>
 
                 {error !== '' && (
-                  <p role='alert' className='rounded-xl border border-wine-500/50 bg-wine-900/40 px-4 py-3 text-sm text-cream-100'>
+                  <p role='alert' className='rounded-xl border border-verde-500/50 bg-verde-800/40 px-4 py-3 text-sm text-carbon'>
                     {error}
                   </p>
                 )}
 
-                <div className='flex gap-3 border-t border-neutral-800 pt-4'>
+                <div className='flex gap-3 border-t border-neutral-200 pt-4'>
                   <button
                     type='button'
                     onClick={onClose}
-                    className='flex-1 rounded-xl border border-neutral-700 bg-charcoal-800 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-neutral-300 transition-colors hover:bg-neutral-800'
+                    className='flex-1 rounded-xl border border-neutral-300 bg-blanco px-4 py-3 text-xs font-semibold uppercase tracking-wider text-neutral-700 transition-colors hover:bg-neutral-200'
                   >
                     Cancelar
                   </button>
                   <button
                     type='submit'
                     disabled={guardando}
-                    className='flex-1 rounded-xl border border-wine-500/40 bg-wine-700 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500 disabled:opacity-50'
+                    className='flex-1 rounded-xl border border-verde-500/40 bg-verde-600 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600 disabled:opacity-50'
                   >
                     {guardando ? 'Guardando...' : 'Guardar'}
                   </button>

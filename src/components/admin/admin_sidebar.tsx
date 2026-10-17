@@ -85,19 +85,19 @@ export const AdminSidebar = ({
     user === null ? [] : seccionesVisibles(user.role)
 
   return (
-    <div className='flex h-full flex-col border-r border-wine-900/50 bg-charcoal-950'>
+    <div className='flex h-full flex-col border-r border-verde-800/50 bg-marfil'>
       {/* La marca. Oculta el texto cuando el sidebar esta colapsado para que
           quede solo el inicial y el ancho no salte. */}
       <div
-        className={`flex items-center border-b border-wine-900/50 ${
+        className={`flex items-center border-b border-verde-800/50 ${
           colapsado ? 'justify-center px-3 py-5' : 'gap-2 px-5 py-5'
         }`}
       >
-        <span className='font-serif text-lg font-bold tracking-wider text-gold-500'>
+        <span className='font-serif text-lg font-bold tracking-wider text-verde-salvia'>
           2920
         </span>
         {!colapsado && (
-          <span className='rounded-full border border-gold-500/40 bg-wine-900/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-gold-400'>
+          <span className='rounded-full border border-verde-salvia/40 bg-verde-800/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-verde-salvia'>
             Admin
           </span>
         )}
@@ -122,8 +122,8 @@ export const AdminSidebar = ({
                       'flex items-center rounded-xl text-sm font-semibold uppercase tracking-wider transition-colors',
                       colapsado ? 'justify-center px-3 py-3' : 'gap-3 px-4 py-3',
                       isActive
-                        ? 'bg-wine-700 text-cream-100 border border-gold-500/40'
-                        : 'border border-transparent text-neutral-400 hover:bg-charcoal-800 hover:text-cream-100'
+                        ? 'bg-verde-600 text-carbon border border-verde-salvia/40'
+                        : 'border border-transparent text-neutral-600 hover:bg-blanco hover:text-carbon'
                     ].join(' ')
                   }
                 >
@@ -136,13 +136,13 @@ export const AdminSidebar = ({
         </ul>
       </nav>
 
-      <div className='border-t border-wine-900/50 p-3'>
+      <div className='border-t border-verde-800/50 p-3'>
         <a
           href='/'
           title='Ver tienda'
           onClick={onSalirAlTienda}
           className={[
-            'flex items-center rounded-xl text-xs uppercase tracking-wider text-neutral-500 transition-colors hover:bg-charcoal-800 hover:text-gold-400',
+            'flex items-center rounded-xl text-xs uppercase tracking-wider text-neutral-500 transition-colors hover:bg-blanco hover:text-verde-600',
             colapsado ? 'justify-center px-3 py-3' : 'gap-3 px-4 py-3'
           ].join(' ')}
         >
@@ -160,7 +160,7 @@ export const AdminSidebar = ({
             aria-label={colapsado ? 'Expandir menu lateral' : 'Colapsar menu lateral'}
             aria-pressed={colapsado}
             className={[
-              'mt-1 flex w-full items-center rounded-xl text-xs uppercase tracking-wider text-neutral-500 transition-colors hover:bg-charcoal-800 hover:text-gold-400',
+              'mt-1 flex w-full items-center rounded-xl text-xs uppercase tracking-wider text-neutral-500 transition-colors hover:bg-blanco hover:text-verde-600',
               colapsado ? 'justify-center px-3 py-3' : 'gap-3 px-4 py-3'
             ].join(' ')}
           >

@@ -45,7 +45,7 @@ const columnas = (categorias: readonly string[]) => [
           className='h-9 w-9 shrink-0 rounded-lg object-cover'
         />
         <span className='min-w-0'>
-          <span className='block truncate font-semibold text-cream-100'>
+          <span className='block truncate font-semibold text-carbon'>
             {info.getValue()}
           </span>
           <span className='block truncate text-xs text-neutral-500'>
@@ -62,7 +62,7 @@ const columnas = (categorias: readonly string[]) => [
   columnaHelper<AdminWine>().accessor('vintage', { header: 'Cosecha' }),
   columnaHelper<AdminWine>().accessor('price', {
     header: 'Precio',
-    cell: (info) => <span className='font-semibold text-cream-100'>{dinero(info.getValue())}</span>
+    cell: (info) => <span className='font-semibold text-carbon'>{dinero(info.getValue())}</span>
   }),
   columnaHelper<AdminWine>().accessor('stock', {
     header: 'Stock',
@@ -74,7 +74,7 @@ const columnas = (categorias: readonly string[]) => [
         <span
           className={[
             'font-mono font-semibold',
-            valor === 0 ? 'text-wine-400' : 'text-neutral-200'
+            valor === 0 ? 'text-verde-500' : 'text-neutral-700'
           ].join(' ')}
         >
           {valor}
@@ -192,7 +192,7 @@ export const CatalogoAdmin = () => {
     <div className='space-y-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div>
-          <h2 className='font-serif text-lg font-bold text-cream-100'>Catalogo de vinos</h2>
+          <h2 className='font-serif text-lg font-bold text-carbon'>Catalogo de vinos</h2>
           <p className='text-sm text-neutral-500'>
             {catalogo.total} {catalogo.total === 1 ? 'vino' : 'vinos'} en el catalogo
           </p>
@@ -213,7 +213,7 @@ export const CatalogoAdmin = () => {
           <button
             type='button'
             onClick={() => inputCsv.current?.click()}
-            className='flex items-center gap-2 rounded-xl border border-neutral-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-300 transition-colors hover:border-gold-500 hover:text-cream-100'
+            className='flex items-center gap-2 rounded-xl border border-neutral-300 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 transition-colors hover:border-verde-salvia hover:text-carbon'
           >
             <Upload className='h-4 w-4' aria-hidden='true' />
             Importar CSV
@@ -221,7 +221,7 @@ export const CatalogoAdmin = () => {
           <button
             type='button'
             onClick={abrirNuevo}
-            className='flex items-center gap-2 rounded-xl border border-wine-500/40 bg-wine-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500'
+            className='flex items-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600'
           >
             <Plus className='h-4 w-4' aria-hidden='true' />
             Nuevo vino
@@ -230,13 +230,13 @@ export const CatalogoAdmin = () => {
       </div>
 
       {aviso !== '' && (
-        <p role='status' className='rounded-xl border border-gold-500/40 bg-gold-500/10 px-4 py-2.5 text-sm text-cream-100'>
+        <p role='status' className='rounded-xl border border-verde-salvia/40 bg-verde-salvia/10 px-4 py-2.5 text-sm text-carbon'>
           {aviso}
         </p>
       )}
 
       {catalogo.error !== undefined && (
-        <p role='alert' className='rounded-xl border border-wine-500/50 bg-wine-900/40 px-4 py-2.5 text-sm text-cream-100'>
+        <p role='alert' className='rounded-xl border border-verde-500/50 bg-verde-800/40 px-4 py-2.5 text-sm text-carbon'>
           {catalogo.error}
         </p>
       )}
@@ -277,7 +277,7 @@ export const CatalogoAdmin = () => {
               onClick={() => abrirEdicion(vino)}
               aria-label={`Editar ${vino.name}`}
               title='Editar'
-              className='rounded-lg p-2 text-neutral-400 transition-colors hover:bg-charcoal-700 hover:text-gold-400'
+              className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-verde-600'
             >
               <Pencil className='h-4 w-4' aria-hidden='true' />
             </button>
@@ -286,7 +286,7 @@ export const CatalogoAdmin = () => {
               onClick={() => void duplicar(vino)}
               aria-label={`Duplicar ${vino.name}`}
               title='Duplicar'
-              className='rounded-lg p-2 text-neutral-400 transition-colors hover:bg-charcoal-700 hover:text-gold-400'
+              className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-verde-600'
             >
               <Copy className='h-4 w-4' aria-hidden='true' />
             </button>
@@ -295,7 +295,7 @@ export const CatalogoAdmin = () => {
               onClick={() => void alternarEstado(vino)}
               aria-label={`${vino.activo ? 'Ocultar' : 'Mostrar'} ${vino.name}`}
               title={vino.activo ? 'Ocultar del catalogo' : 'Mostrar en el catalogo'}
-              className='rounded-lg p-2 text-neutral-400 transition-colors hover:bg-charcoal-700 hover:text-gold-400'
+              className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-verde-600'
             >
               <Power className='h-4 w-4' aria-hidden='true' />
             </button>
@@ -304,7 +304,7 @@ export const CatalogoAdmin = () => {
               onClick={() => setPorEliminar(vino)}
               aria-label={`Eliminar ${vino.name}`}
               title='Eliminar'
-              className='rounded-lg p-2 text-neutral-400 transition-colors hover:bg-wine-900 hover:text-wine-400'
+              className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-verde-800 hover:text-verde-600'
             >
               <Trash2 className='h-4 w-4' aria-hidden='true' />
             </button>
