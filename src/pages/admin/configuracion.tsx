@@ -311,7 +311,7 @@ export const ConfiguracionAdmin = () => {
             type='button'
             onClick={() => inputCsv.current?.click()}
             disabled={ocupado === 'Importar catalogo'}
-            className='flex items-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600 disabled:opacity-50'
+            className='flex items-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-blanco transition-colors hover:bg-verde-600 disabled:opacity-50'
           >
             <Upload className='h-4 w-4' aria-hidden='true' />
             Importar catalogo

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+﻿import { NavLink } from 'react-router-dom'
 import {
   ChevronLeft,
   LayoutDashboard,
@@ -122,7 +122,7 @@ export const AdminSidebar = ({
                       'flex items-center rounded-xl text-sm font-semibold uppercase tracking-wider transition-colors',
                       colapsado ? 'justify-center px-3 py-3' : 'gap-3 px-4 py-3',
                       isActive
-                        ? 'bg-verde-600 text-carbon border border-verde-salvia/40'
+                        ? 'bg-verde-600 text-blanco border border-verde-salvia/40'
                         : 'border border-transparent text-neutral-600 hover:bg-blanco hover:text-carbon'
                     ].join(' ')
                   }

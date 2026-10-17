@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+﻿import { motion } from 'framer-motion'
 import type { Wine } from '../types/vino'
 
 /**
@@ -62,7 +62,7 @@ export const Hero = ({ wines, onSelectWine }: HeroProps) => {
             href='#catalogo'
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className='inline-flex items-center gap-3 rounded-lg border border-verde-salvia/40 bg-verde-600 px-10 py-4 text-sm font-semibold uppercase tracking-widest text-carbon shadow-lg shadow-verde-900/40 transition-all duration-300 hover:bg-verde-700 hover:shadow-verde-900/50'
+            className='inline-flex items-center gap-3 rounded-lg border border-verde-salvia/40 bg-verde-600 px-10 py-4 text-sm font-semibold uppercase tracking-widest text-blanco shadow-lg shadow-verde-900/40 transition-all duration-300 hover:bg-verde-700 hover:shadow-verde-900/50'
           >
             Explorar Productos
             <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>

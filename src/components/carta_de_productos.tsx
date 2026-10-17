@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+﻿import { motion } from 'framer-motion'
 import { Wine } from '../types/vino'
 
 interface ProductCardProps {
@@ -34,7 +34,7 @@ export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: Pro
           alt={wine.name}
           className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100'
         />
-        <div className='absolute top-3 left-3 bg-verde-800/80 backdrop-blur-md border border-verde-500/30 text-carbon text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
+        <div className='absolute top-3 left-3 bg-verde-800/80 backdrop-blur-md border border-verde-500/30 text-blanco text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
           {wine.category}
         </div>
         <div className='absolute top-3 right-3 bg-blanco/80 backdrop-blur-md text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>
@@ -77,7 +77,7 @@ export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: Pro
             )}
             <button
               onClick={() => onAddToCart(wine)}
-              className='bg-verde-600 hover:bg-verde-600 text-carbon text-xs uppercase tracking-wider font-bold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-verde-900/40 border border-verde-500/20 active:scale-95'
+              className='bg-verde-600 hover:bg-verde-600 text-blanco text-xs uppercase tracking-wider font-bold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-verde-900/40 border border-verde-500/20 active:scale-95'
             >
               Agregar
             </button>

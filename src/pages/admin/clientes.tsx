@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Eye, Filter, X } from 'lucide-react'
 import { DataTable, columnaHelper } from '../../components/admin/data_table'
@@ -179,14 +179,14 @@ export const ClientesAdmin = () => {
               className={[
                 'flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors',
                 clientes.filtros.tags.length > 0
-                  ? 'border-verde-salvia bg-verde-salvia/10 text-carbon'
+                  ? 'border-verde-salvia bg-verde-salvia/10 text-blanco'
                   : 'border-neutral-300 bg-blanco text-neutral-700 hover:border-verde-salvia'
               ].join(' ')}
             >
               <Filter className='h-4 w-4 shrink-0' aria-hidden='true' />
               Tags
               {clientes.filtros.tags.length > 0 && (
-                <span className='rounded-full bg-verde-salvia px-1.5 text-[10px] font-bold text-carbon'>
+                <span className='rounded-full bg-verde-salvia px-1.5 text-[10px] font-bold text-blanco'>
                   {clientes.filtros.tags.length}
                 </span>
               )}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { DayPicker, type DateRange } from 'react-day-picker'
 import { es } from 'date-fns/locale'
 import { CalendarDays, X } from 'lucide-react'
@@ -192,9 +192,9 @@ const etiqueta = (): string => {
                 day_button:
                   'h-8 w-8 rounded-lg text-carbon hover:bg-neutral-200 transition-colors',
                 selected: 'rounded-lg',
-                range_start: 'rounded-l-lg bg-verde-600 text-carbon',
-                range_end: 'rounded-r-lg bg-verde-600 text-carbon',
-                range_middle: 'bg-verde-800/50 text-carbon',
+                range_start: 'rounded-l-lg bg-verde-600 text-blanco',
+                range_end: 'rounded-r-lg bg-verde-600 text-blanco',
+                range_middle: 'bg-verde-800/50 text-blanco',
                 today: 'font-bold text-verde-salvia',
                 outside: 'text-neutral-600',
                 disabled: 'text-neutral-700 opacity-50'
@@ -219,7 +219,7 @@ const etiqueta = (): string => {
                   onChange(normalizarRango(rangoAbierto))
                   setAbierto(false)
                 }}
-                className='flex-1 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600'
+                className='flex-1 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-blanco transition-colors hover:bg-verde-600'
               >
                 Aplicar
               </button>
