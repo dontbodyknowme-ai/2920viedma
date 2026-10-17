@@ -31,13 +31,6 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum WineCategory {
-  Tinto
-  Blanco
-  Rosado
-  Espumante
-}
-
 enum OrderStatus {
   pendiente
   preparando
@@ -80,7 +73,12 @@ model Wine {
   name         String
   winery       String
   varietal     String
-  category     WineCategory
+  /// Texto libre, no enum. Antes era `WineCategory` (Tinto/Blanco/Rosado/
+  /// Espumante) y `prisma migrate dev` no era una opcion para agregar una:
+  /// ampliar un enum de Postgres es una migracion, y el admin no puede correr
+  /// migraciones desde el panel. Con un `String`, la categoria se crea cargando
+  /// un producto que la use, y el filtro del catalogo la deriva de ahi.
+  category     String
   vintage      Int
   /// Pesos argentinos enteros. NO centavos (D-15).
   price        Int

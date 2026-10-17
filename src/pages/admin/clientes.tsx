@@ -39,12 +39,12 @@ const columnas = [
     header: 'Nombre',
     cell: (info) => (
       <div className='min-w-0'>
-        <span className='block truncate font-semibold text-cream-100'>{info.getValue()}</span>
+        <span className='block truncate font-semibold text-carbon'>{info.getValue()}</span>
         {/* CE-04: un cliente sin email se muestra con un aviso en la fila, no
             con la celda vacia, porque "sin email" y "todavia no cargado" se
             verian igual. */}
         {info.row.original.email === '' && (
-          <span className='block truncate text-xs text-gold-400'>Sin email</span>
+          <span className='block truncate text-xs text-verde-salvia'>Sin email</span>
         )}
       </div>
     )
@@ -52,7 +52,7 @@ const columnas = [
   columnaHelper<Customer>().accessor('email', {
     header: 'Email',
     cell: (info) => (
-      <span className='block max-w-[14rem] truncate text-neutral-300'>
+      <span className='block max-w-[14rem] truncate text-neutral-700'>
         {info.getValue() === '' ? '—' : info.getValue()}
       </span>
     )
@@ -60,7 +60,7 @@ const columnas = [
   columnaHelper<Customer>().accessor('phone', {
     header: 'Telefono',
     cell: (info) => (
-      <span className='whitespace-nowrap text-neutral-300'>
+      <span className='whitespace-nowrap text-neutral-700'>
         {info.getValue() === '' ? '—' : info.getValue()}
       </span>
     )
@@ -68,13 +68,13 @@ const columnas = [
   columnaHelper<Customer>().accessor('totalOrders', {
     header: 'Pedidos',
     cell: (info) => (
-      <span className='font-mono font-semibold text-cream-100'>{info.getValue()}</span>
+      <span className='font-mono font-semibold text-carbon'>{info.getValue()}</span>
     )
   }),
   columnaHelper<Customer>().accessor('totalSpent', {
     header: 'Total gastado',
     cell: (info) => (
-      <span className='whitespace-nowrap font-semibold text-cream-100'>
+      <span className='whitespace-nowrap font-semibold text-carbon'>
         {dinero(info.getValue())}
       </span>
     )
@@ -82,7 +82,7 @@ const columnas = [
   columnaHelper<Customer>().accessor('lastOrderAt', {
     header: 'Ultimo pedido',
     cell: (info) => (
-      <span className='whitespace-nowrap text-neutral-300'>{fecha(info.getValue())}</span>
+      <span className='whitespace-nowrap text-neutral-700'>{fecha(info.getValue())}</span>
     )
   }),
   columnaHelper<Customer>().accessor('tags', {
@@ -161,7 +161,7 @@ export const ClientesAdmin = () => {
     <div className='space-y-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div>
-          <h2 className='font-serif text-lg font-bold text-cream-100'>Clientes</h2>
+          <h2 className='font-serif text-lg font-bold text-carbon'>Clientes</h2>
           <p className='text-sm text-neutral-500'>
             {clientes.total} {clientes.total === 1 ? 'cliente' : 'clientes'}
             {hayFiltros ? ' con los filtros aplicados' : ' en total'}
@@ -179,14 +179,14 @@ export const ClientesAdmin = () => {
               className={[
                 'flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors',
                 clientes.filtros.tags.length > 0
-                  ? 'border-gold-500 bg-gold-500/10 text-cream-100'
-                  : 'border-neutral-700 bg-charcoal-800 text-neutral-300 hover:border-gold-500'
+                  ? 'border-verde-salvia bg-verde-salvia/10 text-carbon'
+                  : 'border-neutral-300 bg-blanco text-neutral-700 hover:border-verde-salvia'
               ].join(' ')}
             >
               <Filter className='h-4 w-4 shrink-0' aria-hidden='true' />
               Tags
               {clientes.filtros.tags.length > 0 && (
-                <span className='rounded-full bg-gold-500 px-1.5 text-[10px] font-bold text-charcoal-950'>
+                <span className='rounded-full bg-verde-salvia px-1.5 text-[10px] font-bold text-carbon'>
                   {clientes.filtros.tags.length}
                 </span>
               )}
@@ -199,7 +199,7 @@ export const ClientesAdmin = () => {
                   onClick={() => setPanelTags(false)}
                   className='fixed inset-0 z-30'
                 />
-                <div className='absolute right-0 z-40 mt-2 max-h-72 w-52 overflow-y-auto rounded-2xl border border-neutral-700 bg-charcoal-900 p-2 shadow-2xl'>
+                <div className='absolute right-0 z-40 mt-2 max-h-72 w-52 overflow-y-auto rounded-2xl border border-neutral-300 bg-blanco p-2 shadow-2xl'>
                   {tagsSugeridas.length === 0 ? (
                     <p className='px-2 py-3 text-xs text-neutral-500'>No hay tags.</p>
                   ) : (
@@ -208,13 +208,13 @@ export const ClientesAdmin = () => {
                       return (
                         <label
                           key={tag}
-                          className='flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-cream-100 transition-colors hover:bg-charcoal-800'
+                          className='flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-carbon transition-colors hover:bg-blanco'
                         >
                           <input
                             type='checkbox'
                             checked={marcado}
                             onChange={() => clientes.alternarTag(tag)}
-                            className='h-4 w-4 accent-gold-500'
+                            className='h-4 w-4 accent-verde-salvia'
                           />
                           <span className='flex-1'>{tag}</span>
                         </label>
@@ -234,7 +234,7 @@ export const ClientesAdmin = () => {
                 setPanelTags(false)
               }}
               aria-label='Limpiar filtros'
-              className='flex items-center gap-1.5 rounded-xl border border-neutral-700 px-3 py-2 text-xs text-neutral-300 transition-colors hover:border-wine-500 hover:text-cream-100'
+              className='flex items-center gap-1.5 rounded-xl border border-neutral-300 px-3 py-2 text-xs text-neutral-700 transition-colors hover:border-verde-500 hover:text-carbon'
             >
               <X className='h-4 w-4' aria-hidden='true' />
               Limpiar
@@ -246,7 +246,7 @@ export const ClientesAdmin = () => {
       {aviso !== '' && (
         <p
           role='status'
-          className='rounded-xl border border-gold-500/40 bg-gold-500/10 px-4 py-2.5 text-sm'
+          className='rounded-xl border border-verde-salvia/40 bg-verde-salvia/10 px-4 py-2.5 text-sm'
         >
           {aviso}
         </p>
@@ -255,7 +255,7 @@ export const ClientesAdmin = () => {
       {(error !== '' || clientes.error !== undefined) && (
         <p
           role='alert'
-          className='rounded-xl border border-wine-500/50 bg-wine-900/40 px-4 py-2.5 text-sm'
+          className='rounded-xl border border-verde-500/50 bg-verde-800/40 px-4 py-2.5 text-sm'
         >
           {error !== '' ? error : clientes.error}
         </p>
@@ -296,7 +296,7 @@ export const ClientesAdmin = () => {
               onClick={() => abrirPorId(cliente.id)}
               aria-label={`Ver cliente ${cliente.name}`}
               title='Ver detalle'
-              className='rounded-lg p-2 text-neutral-400 transition-colors hover:bg-charcoal-700 hover:text-gold-400'
+              className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-verde-600'
             >
               <Eye className='h-4 w-4' aria-hidden='true' />
             </button>

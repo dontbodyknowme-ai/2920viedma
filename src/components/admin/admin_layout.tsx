@@ -113,7 +113,7 @@ export const AdminLayout = () => {
   if (destino !== null) return null
 
   return (
-    <div className='min-h-screen bg-charcoal-900 text-cream-100'>
+    <div className='min-h-screen bg-blanco text-carbon'>
       {esMovil ? (
         <>
           {/* Fondo oscurecido del drawer. Solo en movil. */}
@@ -127,7 +127,7 @@ export const AdminLayout = () => {
           )}
           <aside
             aria-label='Menu de administracion'
-            className={`fixed inset-y-0 left-0 z-50 w-72 transform border-r border-wine-900/50 transition-transform duration-300 ${
+            className={`fixed inset-y-0 left-0 z-50 w-72 transform border-r border-verde-800/50 transition-transform duration-300 ${
               menuAbierto ? 'translate-x-0' : '-translate-x-full'
             }`}
           >
@@ -135,7 +135,7 @@ export const AdminLayout = () => {
               type='button'
               onClick={() => setMenuAbierto(false)}
               aria-label='Cerrar menu de navegacion'
-              className='absolute right-3 top-5 z-10 rounded-lg p-2 text-neutral-400 transition-colors hover:bg-charcoal-800 hover:text-cream-100'
+              className='absolute right-3 top-5 z-10 rounded-lg p-2 text-neutral-600 transition-colors hover:bg-blanco hover:text-carbon'
             >
               <X className='h-5 w-5' aria-hidden='true' />
             </button>
@@ -145,7 +145,7 @@ export const AdminLayout = () => {
       ) : (
         <aside
           aria-label='Menu de administracion'
-          className={`fixed inset-y-0 left-0 z-40 border-r border-wine-900/50 transition-[width] duration-300 ${
+          className={`fixed inset-y-0 left-0 z-40 border-r border-verde-800/50 transition-[width] duration-300 ${
             colapsado ? 'w-[72px]' : 'w-72'
           }`}
         >

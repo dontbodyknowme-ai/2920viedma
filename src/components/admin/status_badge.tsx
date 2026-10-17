@@ -40,9 +40,9 @@ const ESTILOS: Record<EstadoAdmin, Estilo> = {
     borde: 'border-amber-500/40'
   },
   enviado: {
-    fondo: 'bg-gold-500/15',
-    texto: 'text-gold-400',
-    borde: 'border-gold-500/40'
+    fondo: 'bg-verde-salvia/15',
+    texto: 'text-verde-salvia',
+    borde: 'border-verde-salvia/40'
   },
   entregado: {
     fondo: 'bg-emerald-500/15',
@@ -50,14 +50,14 @@ const ESTILOS: Record<EstadoAdmin, Estilo> = {
     borde: 'border-emerald-500/40'
   },
   cancelado: {
-    fondo: 'bg-wine-500/20',
-    texto: 'text-wine-400',
-    borde: 'border-wine-500/50'
+    fondo: 'bg-verde-500/20',
+    texto: 'text-verde-500',
+    borde: 'border-verde-500/50'
   },
   devuelto: {
-    fondo: 'bg-wine-500/20',
-    texto: 'text-wine-400',
-    borde: 'border-wine-500/50'
+    fondo: 'bg-verde-500/20',
+    texto: 'text-verde-500',
+    borde: 'border-verde-500/50'
   },
   // Productos: el verde y el gris dicen si esta en el catalogo, sin pasar por
   // el mismo rojo de un pedido cancelado, que significaria otra cosa.
@@ -67,8 +67,8 @@ const ESTILOS: Record<EstadoAdmin, Estilo> = {
     borde: 'border-emerald-500/40'
   },
   inactivo: {
-    fondo: 'bg-neutral-700/30',
-    texto: 'text-neutral-400',
+    fondo: 'bg-neutral-200/30',
+    texto: 'text-neutral-600',
     borde: 'border-neutral-600/50'
   },
   // Clientes: tonalidad distinta para que no se confundan con los estados de
@@ -79,9 +79,9 @@ const ESTILOS: Record<EstadoAdmin, Estilo> = {
     borde: 'border-sky-500/40'
   },
   vip: {
-    fondo: 'bg-gold-500/20',
-    texto: 'text-gold-300',
-    borde: 'border-gold-400/50'
+    fondo: 'bg-verde-salvia/20',
+    texto: 'text-verde-salvia',
+    borde: 'border-verde-salvia/50'
   },
   frecuente: {
     fondo: 'bg-violet-500/15',

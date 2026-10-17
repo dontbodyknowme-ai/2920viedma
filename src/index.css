@@ -17,9 +17,9 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #fdfbf7;
-  /* `charcoal-900`. */
-  background-color: #121212;
+  color: #292d2f;
+  /* `marfil`. */
+  background-color: #f7f4ee;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -34,8 +34,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* `charcoal-900`. */
-  background-color: #121212;
+  /* `marfil`. */
+  background-color: #f7f4ee;
 }
 
 #root {

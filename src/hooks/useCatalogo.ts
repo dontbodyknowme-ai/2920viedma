@@ -35,9 +35,6 @@ const FILTROS_VACIOS: FiltrosCatalogo = {
   sortDirection: 'asc'
 }
 
-/** Las categorias del tema. Es el mismo listado que usa el catalogo publico. */
-export const CATEGORIAS = ['Tinto', 'Blanco', 'Rosado', 'Espumante'] as const
-
 export const ESTADOS = [
   { valor: 'activo', etiqueta: 'Activo' },
   { valor: 'inactivo', etiqueta: 'Inactivo' }
@@ -71,6 +68,8 @@ export interface EstadoCatalogo {
   filtros: FiltrosCatalogo
   /** Las cepas disponibles, para el desplegable de filtro. */
   cepas: string[]
+  /** Las categorias en uso, para el filtro y las sugerencias del formulario. */
+  categorias: string[]
   setPage: (page: number) => void
   setLimit: (limit: number) => void
   setSearch: (valor: string) => void
@@ -99,6 +98,17 @@ export const useCatalogo = (): EstadoCatalogo => {
   // que nadie venga y la escriba a mano en el codigo.
   const cepas = useMemo(
     () => [...new Set((data?.data ?? []).map((vino) => vino.varietal))].sort(),
+    [data]
+  )
+
+  /**
+   * Las categorias tambien salen de los datos, y por el mismo motivo que las
+   * cepas. Estaban fijas en `['Tinto', 'Blanco', 'Rosado', 'Espumante']`, lo que
+   * hacia que cargar un queso o una cerveza no se pudiera filtrar: el producto
+   * existia y no aparecia en el desplegable.
+   */
+  const categorias = useMemo(
+    () => [...new Set((data?.data ?? []).map((vino) => vino.category))].sort(),
     [data]
   )
 
@@ -239,6 +249,7 @@ export const useCatalogo = (): EstadoCatalogo => {
     limit,
     filtros,
     cepas,
+    categorias,
     setPage,
     setLimit,
     setSearch,

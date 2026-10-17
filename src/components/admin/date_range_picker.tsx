@@ -121,9 +121,9 @@ const etiqueta = (): string => {
       type='button'
       onClick={() => (abierto ? setAbierto(false) : abrir())}
       aria-expanded={abierto}
-      className='flex items-center gap-2 rounded-xl border border-neutral-700 bg-charcoal-800 px-3 py-2 text-xs text-cream-100 transition-colors hover:border-gold-500'
+      className='flex items-center gap-2 rounded-xl border border-neutral-300 bg-blanco px-3 py-2 text-xs text-carbon transition-colors hover:border-verde-salvia'
     >
-      <CalendarDays className='h-4 w-4 shrink-0 text-neutral-400' aria-hidden='true' />
+      <CalendarDays className='h-4 w-4 shrink-0 text-neutral-600' aria-hidden='true' />
       <span className='whitespace-nowrap'>{etiqueta()}</span>
     </button>
   )
@@ -143,9 +143,9 @@ const etiqueta = (): string => {
             className='fixed inset-0 z-30'
           />
 
-          <div className='absolute right-0 z-40 mt-2 rounded-2xl border border-neutral-700 bg-charcoal-900 p-3 shadow-2xl'>
+          <div className='absolute right-0 z-40 mt-2 rounded-2xl border border-neutral-300 bg-blanco p-3 shadow-2xl'>
             <div className='flex items-center justify-between gap-4 pb-2'>
-              <span className='text-[10px] uppercase tracking-widest text-neutral-400'>
+              <span className='text-[10px] uppercase tracking-widest text-neutral-600'>
                 Rango de fechas
               </span>
               <button
@@ -155,7 +155,7 @@ const etiqueta = (): string => {
                   setAbierto(false)
                 }}
                 aria-label='Limpiar rango de fechas'
-                className='rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-charcoal-800 hover:text-cream-100'
+                className='rounded-lg p-1.5 text-neutral-600 transition-colors hover:bg-blanco hover:text-carbon'
               >
                 <X className='h-4 w-4' aria-hidden='true' />
               </button>
@@ -178,34 +178,34 @@ const etiqueta = (): string => {
                 root: 'rdp-root',
                 months: 'flex flex-col gap-4 sm:flex-row sm:gap-6',
                 month: 'space-y-2',
-                caption_label: 'text-xs font-semibold capitalize text-cream-100',
+                caption_label: 'text-xs font-semibold capitalize text-carbon',
                 nav: 'flex items-center gap-1',
                 button_previous:
-                  'rounded-lg p-1.5 text-neutral-400 hover:bg-charcoal-800 hover:text-gold-400',
+                  'rounded-lg p-1.5 text-neutral-600 hover:bg-blanco hover:text-verde-600',
                 button_next:
-                  'rounded-lg p-1.5 text-neutral-400 hover:bg-charcoal-800 hover:text-gold-400',
+                  'rounded-lg p-1.5 text-neutral-600 hover:bg-blanco hover:text-verde-600',
                 weekdays: 'flex',
                 weekday:
                   'w-8 text-[10px] font-medium uppercase text-neutral-500',
                 week: 'flex w-full mt-0.5',
                 day: 'relative w-8 h-8 p-0 text-center text-xs focus:outline-none',
                 day_button:
-                  'h-8 w-8 rounded-lg text-cream-100 hover:bg-charcoal-700 transition-colors',
+                  'h-8 w-8 rounded-lg text-carbon hover:bg-neutral-200 transition-colors',
                 selected: 'rounded-lg',
-                range_start: 'rounded-l-lg bg-wine-700 text-cream-100',
-                range_end: 'rounded-r-lg bg-wine-700 text-cream-100',
-                range_middle: 'bg-wine-900/50 text-cream-100',
-                today: 'font-bold text-gold-400',
+                range_start: 'rounded-l-lg bg-verde-600 text-carbon',
+                range_end: 'rounded-r-lg bg-verde-600 text-carbon',
+                range_middle: 'bg-verde-800/50 text-carbon',
+                today: 'font-bold text-verde-salvia',
                 outside: 'text-neutral-600',
                 disabled: 'text-neutral-700 opacity-50'
               }}
             />
 
-            <div className='flex gap-2 border-t border-neutral-800 pt-3'>
+            <div className='flex gap-2 border-t border-neutral-200 pt-3'>
               <button
                 type='button'
                 onClick={() => setAbierto(false)}
-                className='flex-1 rounded-xl border border-neutral-700 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-300 transition-colors hover:bg-charcoal-800'
+                className='flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-700 transition-colors hover:bg-blanco'
               >
                 Cancelar
               </button>
@@ -219,7 +219,7 @@ const etiqueta = (): string => {
                   onChange(normalizarRango(rangoAbierto))
                   setAbierto(false)
                 }}
-                className='flex-1 rounded-xl border border-wine-500/40 bg-wine-700 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500'
+                className='flex-1 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600'
               >
                 Aplicar
               </button>

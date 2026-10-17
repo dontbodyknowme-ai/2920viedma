@@ -55,7 +55,7 @@ export const AdminHeader = ({
   const rolRedundante = rol !== null && rol === nombre
 
   return (
-    <header className='sticky top-0 z-30 border-b border-wine-900/50 bg-charcoal-950/90 backdrop-blur'>
+    <header className='sticky top-0 z-30 border-b border-verde-800/50 bg-marfil/90 backdrop-blur'>
       <div className='flex items-center justify-between gap-4 px-4 py-4 md:px-6'>
         <div className='flex min-w-0 items-center gap-3'>
           {/* En movil el sidebar es un drawer, asi que hace falta el boton.
@@ -65,12 +65,12 @@ export const AdminHeader = ({
               type='button'
               onClick={onAbrirMenu}
               aria-label='Abrir menu de navegacion'
-              className='rounded-lg p-2 text-cream-100 transition-colors hover:bg-charcoal-800'
+              className='rounded-lg p-2 text-carbon transition-colors hover:bg-blanco'
             >
               <Menu className='h-5 w-5' aria-hidden='true' />
             </button>
           )}
-          <h1 className='truncate font-serif text-xl font-bold text-cream-100 md:text-2xl'>
+          <h1 className='truncate font-serif text-xl font-bold text-carbon md:text-2xl'>
             {titulo}
           </h1>
         </div>
@@ -82,9 +82,9 @@ export const AdminHeader = ({
             aria-expanded={menuAbierto}
             aria-haspopup='menu'
             aria-label='Menu de usuario'
-            className='flex items-center gap-2 rounded-xl border border-neutral-700 px-3 py-2 text-sm text-cream-100 transition-colors hover:border-gold-500'
+            className='flex items-center gap-2 rounded-xl border border-neutral-300 px-3 py-2 text-sm text-carbon transition-colors hover:border-verde-salvia'
           >
-            <Shield className='h-4 w-4 text-gold-500' aria-hidden='true' />
+            <Shield className='h-4 w-4 text-verde-salvia' aria-hidden='true' />
             <span className='hidden text-xs font-semibold uppercase tracking-wider md:inline'>
               Admin
             </span>
@@ -102,15 +102,15 @@ export const AdminHeader = ({
               />
               <div
                 role='menu'
-                className='absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-neutral-700 bg-charcoal-900 shadow-2xl'
+                className='absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-neutral-300 bg-blanco shadow-2xl'
               >
-                <div className='border-b border-neutral-800 px-4 py-3'>
-                  <p className='text-sm font-semibold text-cream-100'>{nombre}</p>
+                <div className='border-b border-neutral-200 px-4 py-3'>
+                  <p className='text-sm font-semibold text-carbon'>{nombre}</p>
                   {email && (
                     <p className='truncate text-xs text-neutral-500'>{email}</p>
                   )}
                   {rol && !rolRedundante && (
-                    <p className='mt-1 inline-flex items-center gap-1 rounded-full bg-wine-900/60 px-2 py-0.5 text-[11px] font-medium text-wine-200'>
+                    <p className='mt-1 inline-flex items-center gap-1 rounded-full bg-verde-800/60 px-2 py-0.5 text-[11px] font-medium text-blanco'>
                       <Shield className='h-3 w-3' aria-hidden='true' />
                       {rol}
                     </p>
@@ -123,7 +123,7 @@ export const AdminHeader = ({
                     setMenuAbierto(false)
                     onSalirDelModoAdmin()
                   }}
-                  className='flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-neutral-300 transition-colors hover:bg-charcoal-800 hover:text-cream-100'
+                  className='flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-neutral-700 transition-colors hover:bg-blanco hover:text-carbon'
                 >
                   <LogOut className='h-4 w-4 shrink-0' aria-hidden='true' />
                   Cerrar sesion

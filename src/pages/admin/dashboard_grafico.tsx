@@ -39,9 +39,9 @@ const TooltipPersonalizado = ({ active, payload }: PuntoTooltip) => {
   if (punto === undefined) return null
 
   return (
-    <div className='rounded-xl border border-neutral-700 bg-charcoal-950/95 px-3 py-2 shadow-xl'>
-      <p className='text-xs text-neutral-400'>{etiquetaDia(punto.date)}</p>
-      <p className='mt-0.5 text-sm font-bold text-gold-400'>
+    <div className='rounded-xl border border-neutral-300 bg-marfil/95 px-3 py-2 shadow-xl'>
+      <p className='text-xs text-neutral-600'>{etiquetaDia(punto.date)}</p>
+      <p className='mt-0.5 text-sm font-bold text-verde-salvia'>
         {new Intl.NumberFormat('es-AR', {
           style: 'currency',
           currency: 'ARS',
@@ -62,11 +62,11 @@ interface GraficoVentasProps {
 export const GraficoVentas = ({ datos }: GraficoVentasProps) => (
   <ResponsiveContainer width='100%' height='100%'>
     <LineChart data={datos} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-      <CartesianGrid strokeDasharray='3 3' stroke='#262626' vertical={false} />
+      <CartesianGrid strokeDasharray='3 3' stroke='#e5e5e5' vertical={false} />
       <XAxis
         dataKey='date'
         tickFormatter={etiquetaDia}
-        stroke='#737373'
+        stroke='#6b6b6b'
         fontSize={11}
         tickLine={false}
         axisLine={false}
@@ -76,20 +76,20 @@ export const GraficoVentas = ({ datos }: GraficoVentasProps) => (
       />
       <YAxis
         tickFormatter={dineroCorto}
-        stroke='#737373'
+        stroke='#6b6b6b'
         fontSize={11}
         tickLine={false}
         axisLine={false}
         width={52}
       />
-      <Tooltip content={<TooltipPersonalizado />} cursor={{ stroke: '#d4af37', strokeOpacity: 0.3 }} />
+      <Tooltip content={<TooltipPersonalizado />} cursor={{ stroke: '#75866a', strokeOpacity: 0.3 }} />
       <Line
         type='monotone'
         dataKey='revenue'
-        stroke='#d4af37'
+        stroke='#405747'
         strokeWidth={2}
         dot={false}
-        activeDot={{ r: 4, fill: '#d4af37', stroke: '#0a0a0a', strokeWidth: 2 }}
+        activeDot={{ r: 4, fill: '#405747', stroke: '#292d2f', strokeWidth: 2 }}
       />
     </LineChart>
   </ResponsiveContainer>

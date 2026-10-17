@@ -23,10 +23,10 @@ export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: Pro
       exit={{ opacity: 0, scale: 0.9 }}
       whileHover={{ y: -8 }}
       transition={{ duration: 0.3 }}
-      className='bg-charcoal-800/60 rounded-2xl border border-neutral-800 hover:border-wine-500/50 overflow-hidden flex flex-col justify-between group transition-colors shadow-lg hover:shadow-wine-900/20'
+      className='bg-blanco/60 rounded-2xl border border-neutral-200 hover:border-verde-500/50 overflow-hidden flex flex-col justify-between group transition-colors shadow-lg hover:shadow-verde-900/20'
     >
       <div 
-        className='relative h-64 overflow-hidden bg-charcoal-900 cursor-pointer'
+        className='relative h-64 overflow-hidden bg-blanco cursor-pointer'
         onClick={() => onSelectWine(wine)}
       >
         <img
@@ -34,32 +34,32 @@ export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: Pro
           alt={wine.name}
           className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100'
         />
-        <div className='absolute top-3 left-3 bg-wine-900/80 backdrop-blur-md border border-wine-500/30 text-cream-100 text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
+        <div className='absolute top-3 left-3 bg-verde-800/80 backdrop-blur-md border border-verde-500/30 text-carbon text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
           {wine.category}
         </div>
-        <div className='absolute top-3 right-3 bg-charcoal-900/80 backdrop-blur-md text-gold-400 text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-gold-500/20'>
+        <div className='absolute top-3 right-3 bg-blanco/80 backdrop-blur-md text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>
           {wine.vintage}
         </div>
       </div>
 
       <div className='p-5 flex-1 flex flex-col justify-between'>
         <div>
-          <p className='text-gold-500/90 text-xs font-semibold uppercase tracking-widest mb-1'>
+          <p className='text-verde-salvia/90 text-xs font-semibold uppercase tracking-widest mb-1'>
             {wine.winery} • {wine.varietal}
           </p>
           <h3 
             onClick={() => onSelectWine(wine)}
-            className='text-cream-100 font-serif text-xl font-bold line-clamp-1 cursor-pointer hover:text-gold-400 transition-colors mb-2'
+            className='text-carbon font-serif text-xl font-bold line-clamp-1 cursor-pointer hover:text-verde-600 transition-colors mb-2'
           >
             {wine.name}
           </h3>
-          <p className='text-neutral-400 text-sm line-clamp-2 mb-4 font-light'>
+          <p className='text-neutral-600 text-sm line-clamp-2 mb-4 font-light'>
             {wine.description}
           </p>
         </div>
 
-        <div className='pt-4 border-t border-neutral-800/80 flex items-center justify-between mt-auto'>
-          <span className='text-cream-100 text-xl font-bold font-serif'>
+        <div className='pt-4 border-t border-neutral-200/80 flex items-center justify-between mt-auto'>
+          <span className='text-carbon text-xl font-bold font-serif'>
             {formattedPrice}
           </span>
           <div className='flex items-center gap-2'>
@@ -69,7 +69,7 @@ export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: Pro
                   e.stopPropagation()
                   onEditWine(wine)
                 }}
-                className='bg-neutral-700 hover:bg-neutral-600 text-cream-200 text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 border border-neutral-600'
+                className='bg-neutral-200 hover:bg-neutral-600 text-neutral-600 text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 border border-neutral-600'
                 aria-label={`Editar ${wine.name}`}
               >
                 Editar
@@ -77,7 +77,7 @@ export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: Pro
             )}
             <button
               onClick={() => onAddToCart(wine)}
-              className='bg-wine-700 hover:bg-wine-500 text-cream-100 text-xs uppercase tracking-wider font-bold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-wine-900/40 border border-wine-500/20 active:scale-95'
+              className='bg-verde-600 hover:bg-verde-600 text-carbon text-xs uppercase tracking-wider font-bold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-verde-900/40 border border-verde-500/20 active:scale-95'
             >
               Agregar
             </button>

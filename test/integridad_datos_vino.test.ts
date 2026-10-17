@@ -4,7 +4,6 @@ import type { Wine } from '../src/types/vino'
 import {
   CAMPOS_OPCIONALES,
   CAMPOS_REQUERIDOS,
-  CATEGORIAS_VALIDAS,
   camposRequeridosInvalidos,
   esAnioRazonable,
   esCampoOpcionalValido,
@@ -88,21 +87,46 @@ describe('INITIAL_WINES: campos requeridos', () => {
 })
 
 describe('INITIAL_WINES: category', () => {
-  it('todas las categorias pertenecen a WineCategory', () => {
+  it('todas las categorias del repo tienen forma valida', () => {
+    // Lo que se verifica es la **forma**, no el valor: desde la spec 011 la
+    // categoria es texto libre y el admin elige la que necesita. Lo que sigue
+    // having que cumplirse es que no este vacia y empiece en mayuscula.
     INITIAL_WINES.forEach((vino) => {
-      expect(CATEGORIAS_VALIDAS).toContain(vino.category)
       expect(esCategoriaValida(vino.category)).toBe(true)
     })
   })
 
-  it('rechaza categorias inventadas', () => {
-    const categoriasInvalidas = ['Tinto', 'Rosado', 'Espumante', 'Blanco', 'Orange', 'Todos']
+  it('las categorias del repo no tienen typos de mayuscula', () => {
+    // Si una quedara en minúscula, el filtro mostraria "tinto" y "Tinto" como dos
+    // categorias distintas y el mismo vino apareceria dos veces al filtrar.
+    INITIAL_WINES.forEach((vino) => {
+      expect(vino.category).toBe(vino.category.trim())
+      expect(vino.category[0]).toBe(vino.category[0]?.toUpperCase())
+    })
+  })
+})
 
-    categoriasInvalidas
-      .filter((categoria) => !CATEGORIAS_VALIDAS.includes(categoria as never))
-      .forEach((categoria) => {
-        expect(esCategoriaValida(categoria)).toBe(false)
-      })
+describe('esCategoriaValida: acepta cualquier categoria, rechaza las mal formadas', () => {
+  it('acepta categorias que antes eran imposibles', () => {
+    // Estas cuatro no existian: con el enum de Postgres cada una era una
+    // migracion. Ahora son texto, y crear una categoria es agregar un producto
+    // que la use.
+    const nuevas = ['Cerveza', 'Espirituos', 'Fiambre', 'Quesos']
+    nuevas.forEach((categoria) => {
+      expect(esCategoriaValida(categoria)).toBe(true)
+    })
+  })
+
+  it('sigue rechazando lo que estaba mal', () => {
+    const invalidas = ['', '   ', 'tinto', 'espumante', 'a'.repeat(41), null, undefined, 42, {}]
+    invalidas.forEach((valor) => {
+      expect(esCategoriaValida(valor)).toBe(false)
+    })
+  })
+
+  it('acepta justo 40 caracteres y rechaza 41', () => {
+    expect(esCategoriaValida('A'.repeat(40))).toBe(true)
+    expect(esCategoriaValida('A'.repeat(41))).toBe(false)
   })
 })
 

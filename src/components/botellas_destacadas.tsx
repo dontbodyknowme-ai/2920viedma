@@ -35,21 +35,21 @@ export const BotellasDestacadas = ({ wines, onSelectWine }: BotellasDestacadasPr
   return (
     <section
       aria-labelledby='titulo-destacadas'
-      className='relative border-t border-neutral-800/60 bg-charcoal-950/40'
+      className='relative border-t border-neutral-200/60 bg-marfil/40'
     >
       <div className='mx-auto max-w-7xl px-6 py-20'>
         <AnimatedSection>
           <header className='mb-10 max-w-2xl'>
-            <p className='text-xs font-semibold uppercase tracking-[0.3em] text-gold-500'>
+            <p className='text-xs font-semibold uppercase tracking-[0.3em] text-verde-salvia'>
               Seleccion de la casa
             </p>
             <h2
               id='titulo-destacadas'
-              className='mt-3 font-serif text-3xl font-bold text-cream-100 md:text-4xl'
+              className='mt-3 font-serif text-3xl font-bold text-carbon md:text-4xl'
             >
               Botellas destacadas
             </h2>
-            <p className='mt-3 text-neutral-400'>
+            <p className='mt-3 text-neutral-600'>
               Las tres etiquetas mas caras de la cava. Una muestra de lo que guardamos para
               pedidos especiales.
             </p>
@@ -69,7 +69,7 @@ export const BotellasDestacadas = ({ wines, onSelectWine }: BotellasDestacadasPr
               <button
                 type='button'
                 onClick={() => onSelectWine(wine)}
-                className='group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-charcoal-900 text-left transition-colors hover:border-gold-500/50'
+                className='group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-blanco text-left transition-colors hover:border-verde-salvia/50'
               >
                 <span className='relative block aspect-[4/3] w-full overflow-hidden'>
                   <img
@@ -81,7 +81,7 @@ export const BotellasDestacadas = ({ wines, onSelectWine }: BotellasDestacadasPr
                   {/* El precio arriba a la derecha: es el dato por el que esta
                       ordenada la seccion, y sobre la foto no compite con el
                       nombre. */}
-                  <span className='absolute right-3 top-3 rounded-full bg-charcoal-950/80 px-2.5 py-1 text-xs font-bold text-gold-400 backdrop-blur-sm'>
+                  <span className='absolute right-3 top-3 rounded-full bg-marfil/80 px-2.5 py-1 text-xs font-bold text-verde-salvia backdrop-blur-sm'>
                     {new Intl.NumberFormat('es-AR', {
                       style: 'currency',
                       currency: 'ARS',
@@ -91,10 +91,10 @@ export const BotellasDestacadas = ({ wines, onSelectWine }: BotellasDestacadasPr
                 </span>
 
                 <span className='flex flex-1 flex-col gap-1 p-5'>
-                  <span className='font-serif text-base font-bold text-cream-100 transition-colors group-hover:text-gold-400'>
+                  <span className='font-serif text-base font-bold text-carbon transition-colors group-hover:text-verde-600'>
                     {wine.name}
                   </span>
-                  <span className='text-sm text-neutral-400'>{wine.winery}</span>
+                  <span className='text-sm text-neutral-600'>{wine.winery}</span>
                   <span className='mt-auto pt-3 text-xs uppercase tracking-widest text-neutral-500'>
                     {wine.vintage}
                   </span>

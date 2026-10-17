@@ -34,10 +34,10 @@ export const AvisoOffline = () => {
   return (
     <div
       role='status'
-      className='flex flex-wrap items-center justify-between gap-3 border-b border-gold-500/40 bg-gold-500/10 px-4 py-2.5 text-sm text-cream-100'
+      className='flex flex-wrap items-center justify-between gap-3 border-b border-verde-salvia/40 bg-verde-salvia/10 px-4 py-2.5 text-sm text-carbon'
     >
       <span className='flex items-center gap-2'>
-        <CloudOff className='h-4 w-4 shrink-0 text-gold-400' aria-hidden='true' />
+        <CloudOff className='h-4 w-4 shrink-0 text-verde-salvia' aria-hidden='true' />
         <span>
           <strong className='font-semibold'>Modo offline.</strong> Se muestran los ultimos datos
           guardados en este navegador, que pueden no ser los actuales. Los cambios no se guardan
@@ -48,7 +48,7 @@ export const AvisoOffline = () => {
       <button
         type='button'
         onClick={reintentar}
-        className='flex shrink-0 items-center gap-1.5 rounded-lg border border-gold-500/50 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors hover:bg-gold-500/20'
+        className='flex shrink-0 items-center gap-1.5 rounded-lg border border-verde-salvia/50 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors hover:bg-verde-600/20'
       >
         <RotateCcw className='h-3.5 w-3.5' aria-hidden='true' />
         Reintentar

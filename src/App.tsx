@@ -155,6 +155,7 @@ export default function App() {
       <AnimatedSection>
         <ProductCatalog
           searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           onAddToCart={agregarAlCarrito}
           onSelectWine={setSelectedWine}
           onEditWine={editarWine}
@@ -198,7 +199,7 @@ export default function App() {
       {pedidoConfirmado && (
         <p
           role='status'
-          className='pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-gold-500/40 bg-charcoal-900/95 px-6 py-4 text-center text-sm font-semibold tracking-wider text-gold-400 shadow-2xl'
+          className='pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-verde-salvia/40 bg-blanco/95 px-6 py-4 text-center text-sm font-semibold tracking-wider text-verde-salvia shadow-2xl'
         >
           Pedido confirmado. Gracias por tu compra.
         </p>
