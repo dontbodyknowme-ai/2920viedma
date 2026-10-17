@@ -28,12 +28,17 @@
 
 html {
   scroll-behavior: smooth;
+  /* Evita el scroll horizontal: si un elemento desborda (una tarjeta, un
+     flex que no achica), la pagina no se ensancha ni hay que achicarla con
+     zoom. El contenido que desborda se recorta, que es lo que se quiere. */
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
   /* `marfil`. */
   background-color: #f7f4ee;
 }

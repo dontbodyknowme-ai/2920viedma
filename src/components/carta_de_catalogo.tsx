@@ -133,13 +133,13 @@ export const ProductCatalog = ({
         <label className='block text-sm font-medium text-carbon mb-3'>
           Precio (ARS)
         </label>
-        <div className='flex gap-3'>
+        <div className='flex flex-col gap-3'>
           <input
             type='number'
             placeholder='Mínimo'
             value={minPrice === '' ? '' : minPrice}
             onChange={(e) => onMinPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
-            className='flex-1 bg-blanco border border-neutral-300 rounded-xl px-4 py-3 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
+            className='w-full bg-blanco border border-neutral-300 rounded-xl px-4 py-3 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
             min='0'
           />
           <input
@@ -147,7 +147,7 @@ export const ProductCatalog = ({
             placeholder='Máximo'
             value={maxPrice === '' ? '' : maxPrice}
             onChange={(e) => onMaxPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
-            className='flex-1 bg-blanco border border-neutral-300 rounded-xl px-4 py-3 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
+            className='w-full bg-blanco border border-neutral-300 rounded-xl px-4 py-3 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
             min='0'
           />
         </div>
