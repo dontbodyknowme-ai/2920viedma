@@ -42,11 +42,20 @@ import {
  * panel. Aca se verifica que el navbar **no ofrece** el atajo.
  */
 
+/**
+ * `searchQuery` y `onSearchChange` estan desde que el buscador se integro al
+ * navbar (antes era `src/components/buscador.tsx`, un bloque aparte entre el
+ * header y el hero). Se pasan vacios porque a esta suite no le sirven —lo que
+ * se prueba aca es que el navbar no ofrezca atajos al panel— pero son
+ * obligatorios: sin ellos el componente no compila.
+ */
 const montarNavbar = () =>
   montarAdmin(
     createElement(Navbar, {
       cartCount: 0,
-      onOpenCart: () => {}
+      onOpenCart: () => {},
+      searchQuery: '',
+      onSearchChange: () => {}
     })
   )
 
@@ -172,6 +181,20 @@ describe('el navbar sigue sirviendo para lo suyo', () => {
     expect(
       montaje.contenedor.querySelector('[aria-label="Carrito de compras"]')
     ).not.toBeNull()
+
+    await desmontarAdmin(montaje)
+  })
+
+  it('el buscador esta adentro del header, no en una barra aparte', async () => {
+    // La afirmacion que importa no es "existe un input de busqueda" —eso lo
+    // daria cualquiera— sino **donde** esta. Si vuelve a ser el bloque suelto
+    // que hubo entre el header y el hero, este test tiene que dar rojo.
+    vi.stubGlobal('fetch', fetchDeSesion(null))
+    const montaje = await montarNavbar()
+
+    const buscador = montaje.contenedor.querySelector('[aria-label="Buscar productos"]')
+    expect(buscador).not.toBeNull()
+    expect(buscador?.closest('header')).not.toBeNull()
 
     await desmontarAdmin(montaje)
   })

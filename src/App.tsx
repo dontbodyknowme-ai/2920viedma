@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react'
 import { Wine, CartItem } from './types/vino'
 import { INITIAL_WINES } from './datos/vino'
 import { Navbar } from './components/barra_de_navegacion'
-import { Buscador } from './components/buscador'
 import { Hero } from './components/hero'
 import { Categorias } from './components/categorias'
 import { BannerPromo } from './components/banner_promo'
@@ -143,13 +142,16 @@ export default function App() {
 
   return (
     <>
+      {/* El buscador va adentro del Navbar (una sola barra, no dos), pero el
+          estado sigue siendo de la app: es el mismo `searchQuery` que filtra
+          el catalogo de mas abajo, asi que los dos inputs quedan sincronizados
+          sin props duplicadas. */}
       <Navbar
         cartCount={cartCount}
         onOpenCart={() => setCartOpen(true)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
-      <div className='bg-marfil px-6 pb-8'>
-        <Buscador searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-      </div>
 
       {/* El hero no lleva `AnimatedSection`: es la primera pantalla y tiene su
           propia animacion de entrada. Envolverlo haria que el reveal por scroll

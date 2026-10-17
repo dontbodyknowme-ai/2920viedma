@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Search } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const NAV_LINKS = [
@@ -10,9 +11,11 @@ const NAV_LINKS = [
 interface NavbarProps {
   cartCount: number
   onOpenCart: () => void
+  searchQuery: string
+  onSearchChange: (query: string) => void
 }
 
-export const Navbar = ({ cartCount, onOpenCart }: NavbarProps) => {
+export const Navbar = ({ cartCount, onOpenCart, searchQuery, onSearchChange }: NavbarProps) => {
   const { user, isLoading, isAuthenticated, logout } = useAuth()
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -29,7 +32,12 @@ export const Navbar = ({ cartCount, onOpenCart }: NavbarProps) => {
     setMobileMenuOpen(false)
     const target = document.querySelector(href)
     if (target) {
-      const headerOffset = 80
+      // El offset se **mide**, no se hardcodea. Antes valia 80 px porque el
+      // header era una sola fila; ahora lleva el buscador adentro y en movil
+      // pasa la misma fila a la segunda, asi que un numero fijo dejaba el
+      // destino —la seccion de productos— tapado debajo del header.
+      const header = document.querySelector('header')
+      const headerOffset = header ? header.getBoundingClientRect().height : 80
       const elementPosition = target.getBoundingClientRect().top
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset
       window.scrollTo({
@@ -53,13 +61,39 @@ export const Navbar = ({ cartCount, onOpenCart }: NavbarProps) => {
           isScrolled ? 'shadow-lg py-3' : 'py-4'
         }`}
       >
-        <div className='max-w-7xl mx-auto px-6 flex items-center justify-between'>
-          <a href='#hero' className='flex flex-col leading-tight'>
+        {/* Un solo contenedor con `flex-wrap` y **un solo input**, no dos
+            copias con distinto breakpoint. En movil el buscador lleva `w-full`,
+            que lo obliga a su propia fila; el `order-4` lo pone despues del
+            logo y de los botones, que se quedan arriba. En desktop vuelven los
+            tres a una sola fila, con el buscador entre el logo y los links. */}
+        <div className='max-w-7xl mx-auto px-6 flex flex-wrap items-center gap-x-6 gap-y-3'>
+          <a href='#hero' className='order-1 flex flex-col leading-tight'>
             <span className='font-serif text-2xl font-bold text-verde-600'>2920</span>
             <span className='text-xs text-neutral-500'>Todo más cerca</span>
           </a>
 
-          <nav className='flex-1 max-w-md mx-8 hidden md:block'>
+          {/* El buscador vivia en un bloque aparte entre el header y el hero
+              (`src/components/buscador.tsx`, que se borro). Ahora es parte del
+              navbar, asi que viaja con el `searchQuery` de la app igual que
+              antes: escribir aca filtra el catalogo de mas abajo. */}
+          <div className='order-4 w-full md:order-2 md:w-auto md:flex-1 md:max-w-sm'>
+            <div className='relative'>
+              <Search
+                className='pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400'
+                aria-hidden='true'
+              />
+              <input
+                type='text'
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder='¿Qué necesitás hoy?'
+                aria-label='Buscar productos'
+                className='w-full rounded-xl border border-neutral-200 bg-marfil/70 py-2.5 pl-11 pr-4 text-sm text-carbon placeholder-neutral-400 transition-colors focus:border-verde-salvia focus:bg-blanco focus:outline-none focus:ring-2 focus:ring-verde-salvia/20'
+              />
+            </div>
+          </div>
+
+          <nav className='order-2 hidden md:block md:order-3'>
             <ul className='flex items-center justify-center gap-8'>
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
@@ -75,7 +109,7 @@ export const Navbar = ({ cartCount, onOpenCart }: NavbarProps) => {
             </ul>
           </nav>
 
-          <div className='flex items-center gap-4'>
+          <div className='order-3 ml-auto flex items-center gap-4 md:order-4 md:ml-0'>
             {/* Aca no hay ningun enlace al panel, y es a proposito (gotcha 6 de
                 AGENTS.md): al panel se entra escribiendo `/admin` en la barra de
                 direcciones. Un boton en la tienda publica es una promesa de que
