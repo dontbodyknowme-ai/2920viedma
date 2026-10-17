@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 /**
@@ -18,11 +18,11 @@ type Variante = 'danger' | 'warning' | 'info'
 
 const VARIANTES: Record<Variante, { boton: string; botonOscuro: boolean }> = {
   danger: {
-    boton: 'bg-verde-600 hover:bg-verde-600 text-carbon border-verde-500/40',
+    boton: 'bg-verde-600 hover:bg-verde-600 text-blanco border-verde-500/40',
     botonOscuro: true
   },
   warning: {
-    boton: 'bg-verde-salvia hover:bg-verde-salvia text-carbon border-verde-salvia/50',
+    boton: 'bg-verde-salvia hover:bg-verde-salvia text-blanco border-verde-salvia/50',
     botonOscuro: true
   },
   info: {

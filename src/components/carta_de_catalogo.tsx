@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Wine, PublicWine, WineCategory } from '../types/vino'
 import { ProductCard } from './carta_de_productos'
@@ -145,7 +145,7 @@ export const ProductCatalog = ({
           <p className='text-verde-500 mb-4'>{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className='px-6 py-3 bg-verde-600 hover:bg-verde-600 text-carbon rounded-xl font-semibold transition-colors'
+            className='px-6 py-3 bg-verde-600 hover:bg-verde-600 text-blanco rounded-xl font-semibold transition-colors'
           >
             Reintentar
           </button>
@@ -176,7 +176,7 @@ export const ProductCatalog = ({
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                   selectedCategory === cat
-                    ? 'bg-verde-600 text-carbon border border-verde-500/50'
+                    ? 'bg-verde-600 text-blanco border border-verde-500/50'
                     : 'bg-blanco text-neutral-700 hover:bg-neutral-200 border border-neutral-300'
                 }`}
               >
@@ -209,7 +209,7 @@ export const ProductCatalog = ({
                   onClick={() => handleVarietalToggle(varietal)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     selectedVarietals.includes(varietal)
-                      ? 'bg-verde-600 text-carbon'
+                      ? 'bg-verde-600 text-blanco'
                       : 'bg-blanco text-neutral-700 hover:bg-neutral-200 border border-neutral-300'
                   }`}
                 >

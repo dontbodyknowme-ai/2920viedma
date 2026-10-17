@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+﻿import { useRef, useState } from 'react'
 import { Copy, Pencil, Plus, Power, Trash2, Upload } from 'lucide-react'
 import {
   DataTable,
@@ -221,7 +221,7 @@ export const CatalogoAdmin = () => {
           <button
             type='button'
             onClick={abrirNuevo}
-            className='flex items-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600'
+            className='flex items-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-blanco transition-colors hover:bg-verde-600'
           >
             <Plus className='h-4 w-4' aria-hidden='true' />
             Nuevo vino
@@ -230,13 +230,13 @@ export const CatalogoAdmin = () => {
       </div>
 
       {aviso !== '' && (
-        <p role='status' className='rounded-xl border border-verde-salvia/40 bg-verde-salvia/10 px-4 py-2.5 text-sm text-carbon'>
+        <p role='status' className='rounded-xl border border-verde-salvia/40 bg-verde-salvia/10 px-4 py-2.5 text-sm text-blanco'>
           {aviso}
         </p>
       )}
 
       {catalogo.error !== undefined && (
-        <p role='alert' className='rounded-xl border border-verde-500/50 bg-verde-800/40 px-4 py-2.5 text-sm text-carbon'>
+        <p role='alert' className='rounded-xl border border-verde-500/50 bg-verde-800/40 px-4 py-2.5 text-sm text-blanco'>
           {catalogo.error}
         </p>
       )}

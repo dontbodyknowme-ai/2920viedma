@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Wine } from '../types/vino'
 
@@ -88,7 +88,7 @@ export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps)
                   </p>
 
                   <div className='flex flex-wrap items-center gap-2'>
-                    <span className='bg-verde-800/80 border border-verde-500/30 text-carbon text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
+                    <span className='bg-verde-800/80 border border-verde-500/30 text-blanco text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
                       {wine.category}
                     </span>
                     <span className='bg-blanco text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>

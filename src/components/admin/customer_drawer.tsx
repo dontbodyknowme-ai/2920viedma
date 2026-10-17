@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Mail, Phone, Plus, Tag, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -282,7 +282,7 @@ export const CustomerDrawer = ({
                             onClick={() => void agregarNota()}
                             disabled={guardando}
                             aria-label='Agregar nota'
-                            className='shrink-0 self-start rounded-xl border border-verde-500/40 bg-verde-600 p-2.5 text-carbon transition-colors hover:bg-verde-600 disabled:opacity-50'
+                            className='shrink-0 self-start rounded-xl border border-verde-500/40 bg-verde-600 p-2.5 text-blanco transition-colors hover:bg-verde-600 disabled:opacity-50'
                           >
                             <Plus className='h-4 w-4' aria-hidden='true' />
                           </button>
@@ -442,7 +442,7 @@ export const CustomerDrawer = ({
                               onClick={() => void agregarTag()}
                               disabled={guardando || tagNuevo.trim() === ''}
                               aria-label='Agregar tag'
-                              className='shrink-0 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold text-carbon transition-colors hover:bg-verde-600 disabled:opacity-50'
+                              className='shrink-0 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold text-blanco transition-colors hover:bg-verde-600 disabled:opacity-50'
                             >
                               Agregar
                             </button>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { CloudOff, RotateCcw } from 'lucide-react'
 import { estaOffline, limpiarRespaldos, marcarOnline, suscribirOffline } from '../../utils/offline'
 
@@ -34,7 +34,7 @@ export const AvisoOffline = () => {
   return (
     <div
       role='status'
-      className='flex flex-wrap items-center justify-between gap-3 border-b border-verde-salvia/40 bg-verde-salvia/10 px-4 py-2.5 text-sm text-carbon'
+      className='flex flex-wrap items-center justify-between gap-3 border-b border-verde-salvia/40 bg-verde-salvia/10 px-4 py-2.5 text-sm text-blanco'
     >
       <span className='flex items-center gap-2'>
         <CloudOff className='h-4 w-4 shrink-0 text-verde-salvia' aria-hidden='true' />

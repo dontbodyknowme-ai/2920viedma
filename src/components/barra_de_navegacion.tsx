@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 
@@ -129,7 +129,7 @@ export const Navbar = ({
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className='absolute -top-1 -right-1 bg-verde-500 text-carbon text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center'
+                  className='absolute -top-1 -right-1 bg-verde-500 text-blanco text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center'
                 >
                   {cartCount}
                 </motion.span>
@@ -145,7 +145,7 @@ export const Navbar = ({
                   className='flex items-center gap-2 p-2 text-carbon hover:text-verde-600 transition-colors'
                   aria-label='Menú de usuario'
                 >
-                  <div className='w-8 h-8 bg-verde-600 rounded-full flex items-center justify-center text-sm font-semibold text-carbon'>
+                  <div className='w-8 h-8 bg-verde-600 rounded-full flex items-center justify-center text-sm font-semibold text-blanco'>
                     {user?.name?.[0]?.toUpperCase() || 'U'}
                   </div>
                   <span className='hidden sm:block text-sm font-medium'>{user?.name}</span>

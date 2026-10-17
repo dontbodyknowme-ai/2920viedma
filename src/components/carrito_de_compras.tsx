@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+﻿import { motion, AnimatePresence } from 'framer-motion'
 import { CartItem } from '../types/vino'
 
 interface CartDrawerProps {
@@ -140,7 +140,7 @@ export const CartDrawer = ({
                 </div>
                 <button
                   onClick={onCheckout}
-                  className='w-full bg-verde-600 hover:bg-verde-600 text-carbon py-3.5 rounded-xl font-semibold tracking-wider uppercase transition-all duration-300 shadow-lg shadow-verde-900/50 border border-verde-500/30'
+                  className='w-full bg-verde-600 hover:bg-verde-600 text-blanco py-3.5 rounded-xl font-semibold tracking-wider uppercase transition-all duration-300 shadow-lg shadow-verde-900/50 border border-verde-500/30'
                 >
                   Finalizar Pedido
                 </button>

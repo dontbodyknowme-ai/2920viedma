@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Wine, WineCategory } from '../types/vino'
 
@@ -334,7 +334,7 @@ export const ProductForm = ({
                   </button>
                   <button
                     type='submit'
-                    className='flex-1 bg-verde-600 hover:bg-verde-600 text-carbon py-3 rounded-xl text-xs uppercase font-semibold tracking-wider transition-colors shadow-lg shadow-verde-900/50 border border-verde-500/30'
+                    className='flex-1 bg-verde-600 hover:bg-verde-600 text-blanco py-3 rounded-xl text-xs uppercase font-semibold tracking-wider transition-colors shadow-lg shadow-verde-900/50 border border-verde-500/30'
                   >
                     {isEditing ? 'Guardar Cambios' : 'Guardar Vino'}
                   </button>

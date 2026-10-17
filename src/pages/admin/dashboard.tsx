@@ -214,7 +214,7 @@ export const Dashboard = () => {
                 className='flex items-center gap-3 rounded-xl border border-neutral-200 bg-blanco/40 p-3'
               >
                 <span
-                  className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-verde-600 text-xs font-bold text-carbon'
+                  className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-verde-600 text-xs font-bold text-blanco'
                   aria-hidden='true'
                 >
                   {indice + 1}

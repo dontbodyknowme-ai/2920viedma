@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import type { AdminWine } from '../../types/admin'
@@ -341,7 +341,7 @@ export const AdminWineForm = ({
                         <button
                           type='button'
                           onClick={() => cambiar('imageUrl', '')}
-                          className='absolute top-1 right-1 bg-verde-600/90 text-carbon rounded-full p-1 hover:bg-verde-600 transition-colors'
+                          className='absolute top-1 right-1 bg-verde-600/90 text-blanco rounded-full p-1 hover:bg-verde-600 transition-colors'
                           aria-label='Eliminar imagen'
                         >
                           <svg className='h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -405,7 +405,7 @@ export const AdminWineForm = ({
                 </label>
 
                 {error !== '' && (
-                  <p role='alert' className='rounded-xl border border-verde-500/50 bg-verde-800/40 px-4 py-3 text-sm text-carbon'>
+                  <p role='alert' className='rounded-xl border border-verde-500/50 bg-verde-800/40 px-4 py-3 text-sm text-blanco'>
                     {error}
                   </p>
                 )}
@@ -421,7 +421,7 @@ export const AdminWineForm = ({
                   <button
                     type='submit'
                     disabled={guardando}
-                    className='flex-1 rounded-xl border border-verde-500/40 bg-verde-600 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600 disabled:opacity-50'
+                    className='flex-1 rounded-xl border border-verde-500/40 bg-verde-600 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-blanco transition-colors hover:bg-verde-600 disabled:opacity-50'
                   >
                     {guardando ? 'Guardando...' : 'Guardar'}
                   </button>

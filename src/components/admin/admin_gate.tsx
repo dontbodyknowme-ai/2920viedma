@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { KeyRound, Wine } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
@@ -185,7 +185,7 @@ export const AdminGate = () => {
           <button
             type='submit'
             disabled={clave === '' || email === ''}
-            className='mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-carbon transition-colors hover:bg-verde-600 disabled:cursor-not-allowed disabled:opacity-40'
+            className='mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-blanco transition-colors hover:bg-verde-600 disabled:cursor-not-allowed disabled:opacity-40'
           >
             <KeyRound className='h-4 w-4' aria-hidden='true' />
             Entrar
