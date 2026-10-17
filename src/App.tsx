@@ -73,7 +73,6 @@ export default function App() {
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null)
   const [minPrice, setMinPrice] = useState<number | ''>('')
   const [maxPrice, setMaxPrice] = useState<number | ''>('')
-  const [selectedVarietals, setSelectedVarietals] = useState<string[]>([])
   const [pedidoConfirmado, setPedidoConfirmado] = useState(false)
   // El estado `isAdmin` y su toggle se agregan en T9, junto con el boton del
   // navbar que los consume. Declararlos en T1 dejaba el setter sin uso y el
@@ -169,10 +168,8 @@ export default function App() {
           onEditWine={editarWine}
           minPrice={minPrice}
           maxPrice={maxPrice}
-          selectedVarietals={selectedVarietals}
           onMinPriceChange={setMinPrice}
           onMaxPriceChange={setMaxPrice}
-          onVarietalsChange={setSelectedVarietals}
         />
       </AnimatedSection>
       <CartDrawer

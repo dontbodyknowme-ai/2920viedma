@@ -1,16 +1,31 @@
 ﻿import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Wine, PublicWine, WineCategory } from '../types/vino'
+import { Search } from 'lucide-react'
+import { Wine, PublicWine } from '../types/vino'
 import { ProductCard } from './carta_de_productos'
 import { filtrarVinos } from '../utils/filtros'
 import { api } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 
 /**
- * "Todos" va aparte de las categorias porque **no** es una categoria: no esta en
- * el catalogo y no se puede filtrar por ella, solo la desactiva.
+ * Las categorias del filtro del catalogo.
+ *
+ * Son **fijas**, no derivadas de los datos. El boceto de diseno de la home
+ * marca estas cinco (Todos los productos, Bebidas, Regaleria, Snacks y
+ * chocolates, Comidas) como la taxonomia de la tienda, y son las mismas que
+ * usan las tarjetas de categorias de arriba.
+ *
+ * Ojo: los productos de hoy son vinos (Tinto/Blanco/Rosado/Espumante), asi que
+ * filtrar por estas categorias todavia no devuelve resultados. El filtro esta
+ * listo para cuando el catalogo pase a esta taxonomia.
  */
-const TODOS = 'Todos'
+const CATEGORIAS_CATALOGO = [
+  'Todos los productos',
+  'Bebidas',
+  'Regalería',
+  'Snacks y chocolates',
+  'Comidas'
+]
 
 interface ProductCatalogProps {
   searchQuery: string
@@ -20,10 +35,8 @@ interface ProductCatalogProps {
   onEditWine: (wine: Wine) => void
   minPrice: number | ''
   maxPrice: number | ''
-  selectedVarietals: string[]
   onMinPriceChange: (value: number | '') => void
   onMaxPriceChange: (value: number | '') => void
-  onVarietalsChange: (value: string[]) => void
 }
 
 export const ProductCatalog = ({
@@ -34,10 +47,8 @@ export const ProductCatalog = ({
   onEditWine,
   minPrice,
   maxPrice,
-  selectedVarietals,
   onMinPriceChange,
-  onMaxPriceChange,
-  onVarietalsChange
+  onMaxPriceChange
 }: ProductCatalogProps): React.ReactElement => {
   const [wines, setWines] = useState<Wine[]>([])
 
@@ -50,33 +61,8 @@ export const ProductCatalog = ({
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<WineCategory | 'Todos'>('Todos')
+  const [selectedCategory, setSelectedCategory] = useState('Todos los productos')
   const { hasRole } = useAuth()
-
-  const availableVarietals = useMemo(
-    () => Array.from(new Set(wines.map((w) => w.varietal))).sort(),
-    [wines]
-  )
-
-  /**
-   * Las categorias salen **del catalogo**, no de una lista del codigo.
-   *
-   * Antes era `['Tinto', 'Blanco', 'Rosado', 'Espumante']` escrito a mano. Con
-   * esa lista, cargar un queso obligaba a editar el componente: el producto
-   * existia, se veia en la grilla y no aparecia en ningun filtro. Agregar una
-   * categoria era un paso que se olvidaba, y el sintoma —un producto que no se
-   * puede filtrar— no parece un bug sino que falto cargarlo.
-   *
-   * Ahora el filtro y el buscador derivan del mismo lugar, asi que no pueden
-   * desincronizarse. `esCategoriaValida` evita que entren typos y se creen
-   * categorias duplicadas (`'tinto'` y `'Tinto'`).
-   */
-  const availableCategories = useMemo(
-    () => Array.from(new Set(wines.map((w) => w.category))).sort(),
-    [wines]
-  )
-
-  const isAdminOrGestor = hasRole('admin') || hasRole('gestor')
 
   // Cargar vinos desde la API pública
   useEffect(() => {
@@ -99,48 +85,98 @@ export const ProductCatalog = ({
     categoria: selectedCategory,
     minPrice,
     maxPrice,
-    selectedVarietals,
     searchQuery
   }
 
   const filteredWines = useMemo(
     () => filtrarVinos(wines, filtros),
-    [wines, selectedCategory, minPrice, maxPrice, selectedVarietals, searchQuery]
+    [wines, selectedCategory, minPrice, maxPrice, searchQuery]
   )
 
-  const handleVarietalToggle = (varietal: string) => {
-    const newSelected = selectedVarietals.includes(varietal)
-      ? selectedVarietals.filter((v: string) => v !== varietal)
-      : [...selectedVarietals, varietal]
-    onVarietalsChange(newSelected)
-  }
+  const isAdminOrGestor = hasRole('admin') || hasRole('gestor')
 
-  const handleClearPrice = () => {
-    onMinPriceChange('')
-    onMaxPriceChange('')
-  }
+  return (
+    <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
+      <div className='mb-10'>
+        <h2 className='font-serif text-3xl font-bold text-carbon'>
+          Catálogo de productos
+        </h2>
+        <p className='mt-2 text-neutral-600'>
+          Encontrá lo que necesitás para disfrutar, regalar o compartir.
+        </p>
+      </div>
 
-  const handleClearVarietals = () => {
-    onVarietalsChange([])
-  }
+      {/* Categoría */}
+      <div className='mb-8'>
+        <label className='block text-sm font-medium text-carbon mb-3'>
+          Categoría
+        </label>
+        <div className='grid grid-cols-2 gap-3'>
+          {CATEGORIAS_CATALOGO.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`rounded-xl border px-4 py-3 text-left text-sm font-semibold transition-all duration-200 ${
+                selectedCategory === cat
+                  ? 'bg-verde-600 text-blanco border-verde-600'
+                  : 'bg-blanco text-carbon border-neutral-300 hover:border-verde-salvia'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
 
-  const hasActivePriceFilter = minPrice !== '' || maxPrice !== ''
-  const hasActiveVarietalFilter = selectedVarietals.length > 0
-  const hasActiveCategoryFilter = selectedCategory !== 'Todos'
+      {/* Precio */}
+      <div className='mb-8'>
+        <label className='block text-sm font-medium text-carbon mb-3'>
+          Precio (ARS)
+        </label>
+        <div className='flex gap-3'>
+          <input
+            type='number'
+            placeholder='Mínimo'
+            value={minPrice === '' ? '' : minPrice}
+            onChange={(e) => onMinPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
+            className='flex-1 bg-blanco border border-neutral-300 rounded-xl px-4 py-3 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
+            min='0'
+          />
+          <input
+            type='number'
+            placeholder='Máximo'
+            value={maxPrice === '' ? '' : maxPrice}
+            onChange={(e) => onMaxPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
+            className='flex-1 bg-blanco border border-neutral-300 rounded-xl px-4 py-3 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
+            min='0'
+          />
+        </div>
+      </div>
 
-  if (loading) {
-    return (
-      <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
+      {/* Búsqueda */}
+      <div className='mb-10'>
+        <div className='relative'>
+          <Search
+            className='pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400'
+            aria-hidden='true'
+          />
+          <input
+            type='text'
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder='¿Qué necesitás hoy?'
+            aria-label='Buscar productos'
+            className='w-full bg-blanco border border-neutral-300 rounded-xl py-3.5 pl-12 pr-5 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
+          />
+        </div>
+      </div>
+
+      {/* Contenido: loading, error o grilla */}
+      {loading ? (
         <div className='flex items-center justify-center py-20'>
           <div className='w-12 h-12 border-4 border-verde-salvia border-t-transparent rounded-full animate-spin' />
         </div>
-      </section>
-    )
-  }
-
-  if (error) {
-    return (
-      <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
+      ) : error ? (
         <div className='text-center py-20'>
           <p className='text-verde-500 mb-4'>{error}</p>
           <button
@@ -150,156 +186,37 @@ export const ProductCatalog = ({
             Reintentar
           </button>
         </div>
-      </section>
-    )
-  }
-
-  return (
-    <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
-      <div className='text-center mb-12'>
-        <h2 className='text-4xl md:text-5xl font-serif font-bold text-carbon mb-8'>
-          Catálogo de Productos
-        </h2>
-      </div>
-
-      {/* Filtros */}
-      <div className='mb-10 flex flex-col md:flex-row gap-6 max-w-4xl mx-auto'>
-        {/* Categorías */}
-        <div className='flex-1'>
-          <label className='block text-sm font-medium text-verde-salvia mb-2'>
-            Tipo de Producto
-          </label>
-          <div className='flex flex-wrap gap-2'>
-            {[TODOS, ...availableCategories].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                  selectedCategory === cat
-                    ? 'bg-verde-600 text-blanco border border-verde-500/50'
-                    : 'bg-blanco text-neutral-700 hover:bg-neutral-200 border border-neutral-300'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Cepas */}
-        {availableVarietals.length > 0 && (
-          <div className='flex-1'>
-            <div className='flex items-center justify-between mb-2'>
-              <label className='block text-sm font-medium text-verde-salvia'>
-                Cepa
-              </label>
-              {selectedVarietals.length > 0 && (
-                <button
-                  onClick={handleClearVarietals}
-                  className='text-xs text-verde-salvia hover:text-verde-salvia underline'
-                >
-                  Limpiar
-                </button>
-              )}
-            </div>
-            <div className='flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2'>
-              {availableVarietals.map((varietal) => (
-                <button
-                  key={varietal}
-                  onClick={() => handleVarietalToggle(varietal)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    selectedVarietals.includes(varietal)
-                      ? 'bg-verde-600 text-blanco'
-                      : 'bg-blanco text-neutral-700 hover:bg-neutral-200 border border-neutral-300'
-                  }`}
-                >
-                  {varietal}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Rango de precio */}
-        <div className='flex-1 min-w-[200px]'>
-          <label className='block text-sm font-medium text-verde-salvia mb-2'>
-            Rango de Precio (ARS)
-          </label>
-          <div className='flex gap-2'>
-            <input
-              type='number'
-              placeholder='Mín'
-              value={minPrice === '' ? '' : minPrice}
-              onChange={(e) => onMinPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
-              className='flex-1 bg-blanco border border-neutral-300 rounded-xl px-4 py-2.5 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia text-sm'
-              min='0'
-            />
-            <input
-              type='number'
-              placeholder='Máx'
-              value={maxPrice === '' ? '' : maxPrice}
-              onChange={(e) => onMaxPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
-              className='flex-1 bg-blanco border border-neutral-300 rounded-xl px-4 py-2.5 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia text-sm'
-              min='0'
-            />
-          </div>
-          {(hasActivePriceFilter || hasActiveVarietalFilter || hasActiveCategoryFilter) && (
-            <button
-              onClick={() => {
-                handleClearPrice()
-                handleClearVarietals()
-                setSelectedCategory('Todos')
-              }}
-              className='mt-2 w-full text-xs text-verde-salvia hover:text-verde-salvia underline'
+      ) : (
+        <AnimatePresence mode='popLayout'>
+          {filteredWines.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='text-center py-20'
             >
-              Limpiar todos los filtros
-            </button>
+              <p className='text-neutral-600 text-lg'>
+                No se encontraron productos con los filtros actuales
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              layout
+              className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+            >
+              {filteredWines.map((wine) => (
+                <ProductCard
+                  key={wine.id}
+                  wine={wine}
+                  onAddToCart={onAddToCart}
+                  onSelectWine={onSelectWine}
+                  onEditWine={isAdminOrGestor ? onEditWine : undefined}
+                />
+              ))}
+            </motion.div>
           )}
-        </div>
-      </div>
-
-      {/* Búsqueda */}
-      <div className='mb-10 max-w-2xl mx-auto'>
-        <input
-          type='text'
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder='Buscar por nombre, marca o categoría...'
-          aria-label='Buscar productos'
-          className='w-full bg-blanco/80 border border-neutral-300/50 rounded-xl px-6 py-3.5 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia text-lg'
-        />
-      </div>
-
-      {/* Grid de productos */}
-      <AnimatePresence mode='popLayout'>
-        {filteredWines.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className='text-center py-20'
-          >
-            <p className='text-neutral-600 text-lg'>
-              No se encontraron vinos con los filtros actuales
-            </p>
-          </motion.div>
-        ) : (
-          <motion.div
-            layout
-            className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-          >
-            {filteredWines.map((wine) => (
-              <ProductCard
-                key={wine.id}
-                wine={wine}
-                onAddToCart={onAddToCart}
-                onSelectWine={onSelectWine}
-                onEditWine={isAdminOrGestor ? onEditWine : undefined}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      )}
     </section>
   )
 }

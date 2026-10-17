@@ -29,10 +29,9 @@ const vino = (over: Partial<Wine> = {}): Wine => ({
 
 /** Filtros vacios: es lo que hay cuando el usuario todavia no toco nada. */
 const sinFiltros = {
-  categoria: 'Todos' as const,
+  categoria: 'Todos los productos' as const,
   minPrice: '' as const,
   maxPrice: '' as const,
-  selectedVarietals: [] as string[],
   searchQuery: ''
 }
 

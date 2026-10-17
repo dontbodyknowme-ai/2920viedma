@@ -47,9 +47,8 @@ export interface CartItem {
 }
 
 export interface WineFilterState {
-  category: WineCategory | 'Todos'
+  category: WineCategory | 'Todos los productos'
   maxPrice: number | ''
   searchQuery: string
   minPrice: number | ''
-  selectedVarietals: string[]
 }
