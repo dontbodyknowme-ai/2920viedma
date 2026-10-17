@@ -42,6 +42,8 @@ export interface Wine {
   winery: string
   varietal: string
   category: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
+  /** Grupo de la tienda. Eje distinto de `category`: un Malbec es Tinto y Bebidas. */
+  departamento: string
   vintage: number
   price: number
   description: string | null
@@ -60,6 +62,8 @@ export interface PublicWine {
   winery: string
   varietal: string
   category: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
+  /** Grupo de la tienda. Eje distinto de `category`: un Malbec es Tinto y Bebidas. */
+  departamento: string
   vintage: number
   price: number
   description: string | null

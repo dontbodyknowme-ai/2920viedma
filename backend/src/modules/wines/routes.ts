@@ -12,7 +12,7 @@ function normalizeRow(row: Record<string, string>): Record<string, any> {
   for (const [key, value] of Object.entries(row)) {
     const k = key.trim().toLowerCase()
     let v = value.trim()
-    if (k === 'id' || k === 'name' || k === 'winery' || k === 'varietal' || k === 'category' || k === 'description' || k === 'tastingnotes' || k === 'foodpairing' || k === 'imageurl') {
+    if (k === 'id' || k === 'name' || k === 'winery' || k === 'varietal' || k === 'category' || k === 'departamento' || k === 'description' || k === 'tastingnotes' || k === 'foodpairing' || k === 'imageurl') {
       normalized[k === 'tastingnotes' ? 'tastingNotes' : k === 'foodpairing' ? 'foodPairing' : k === 'imageurl' ? 'imageUrl' : k] = v
     } else if (k === 'vintage' || k === 'price' || k === 'stock') {
       normalized[k] = v ? parseInt(v, 10) : 0
@@ -46,7 +46,7 @@ export const winesRoutes = async (fastify: FastifyInstance): Promise<void> => {
       schema: jsonSchemas.wines.list
     },
     async (request) => {
-      const { page, limit, search, category, varietal, status } = request.query as any
+      const { page, limit, search, category, departamento, varietal, status } = request.query as any
       const where: any = {}
 
       if (search) {
@@ -57,6 +57,10 @@ export const winesRoutes = async (fastify: FastifyInstance): Promise<void> => {
         ]
       }
       if (category) where.category = category
+      // El departamento va **junto** al filtro de categoria, no en su lugar: son
+      // ejes distintos (tipo de vino y grupo de la tienda) y una fila puede
+      // filtrarse por los dos a la vez.
+      if (departamento) where.departamento = departamento
       if (varietal) where.varietal = { contains: varietal, mode: 'insensitive' }
       if (status === 'activo') where.activo = true
       if (status === 'inactivo') where.activo = false

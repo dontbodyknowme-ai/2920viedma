@@ -9,6 +9,11 @@ import { StatusBadge } from '../../components/admin/status_badge'
 import { ConfirmDialog } from '../../components/admin/confirm_dialog'
 import { AdminWineForm } from '../../components/admin/admin_wine_form'
 import { ESTADOS, useCatalogo } from '../../hooks/useCatalogo'
+import {
+  DEPARTAMENTOS,
+  PESTAÑA_TODOS,
+  SIN_DEPARTAMENTO
+} from '../../utils/departamentos'
 import type { AdminWine } from '../../types/admin'
 
 /**
@@ -19,6 +24,23 @@ import type { AdminWine } from '../../types/admin'
  * seguido de una recarga. El estado local de la pagina es solo lo que el
  * usuario esta haciendo ahora: que vino esta en el formulario, cual esta
  * confirmado para eliminar.
+ *
+ * ## El stock esta separado por departamento
+ *
+ * Arriba de la tabla hay una barra de pestañas —"Todos", "Stock de bebidas",
+ * "Stock de regaleria", "Stock de snacks y chocolates", "Stock de comidas"— y
+ * cada una es la misma tabla con `?departamento=` puesto.
+ *
+ * No son cuatro tablas ni cuatro rutas: es un filtro, y por eso el trabajo lo
+ * hace el servidor. La eleccion de por que van como pestañas y no como entradas
+ * del menu esta en `router.tsx`/`permisos.ts`: cuatro rutas mas habria que
+ * repetirlas en la tabla de permisos, que esta cruzada con el `requireRole` del
+ * backend por un test que fija las 14 declaraciones a mano.
+ *
+ * **El departamento va en `departamento` y no en el filtro de "Categoria"**,
+ * porque son dos ejes: `category` es el tipo de vino (Tinto, Blanco) y
+ * `departamento` el grupo de la tienda (Bebidas, Regaleria). Un Malbec es las dos
+ * a la vez. Meter el grupo en `category` habria hecho perder el tipo.
  */
 
 const dinero = (valor: number): string =>
@@ -56,6 +78,20 @@ const columnas = (categorias: readonly string[]) => [
     )
   }),
   columnaHelper<AdminWine>().accessor('varietal', { header: 'Cepa' }),
+  /**
+   * "Departamento" va **antes** de "Categoria" y no al lado de "Cepa": es el
+   * campo por el que esta filtrada la tabla (la pestana de stock), asi que si
+   * aparece al final queda fuera de pantalla en una laptop y parece que la
+   * columna no existe.
+   *
+   * Y **no lleva filtro desplegable**, a diferencia de "Categoria" y "Estado".
+   * La pestana de arriba ya escribe este mismo campo, y dos controles sobre un
+   * solo estado se pisan: elegis una pestana y despues usas el desplegable, el
+   * desplegable manda, la tabla cambia y **la pestana sigue marcada con el
+   * valor viejo**. La pantalla dice una cosa y muestra otra. Un solo control
+   * por estado: la pestana.
+   */
+  columnaHelper<AdminWine>().accessor('departamento', { header: 'Departamento' }),
   columnaConFiltro(columnaHelper<AdminWine>().accessor('category', { header: 'Categoria' }),
     categorias.map((categoria) => ({ valor: categoria, etiqueta: categoria }))
   ),
@@ -95,6 +131,14 @@ export const CatalogoAdmin = () => {
   const catalogo = useCatalogo()
   const columnasCatalogo = columnas(catalogo.categorias)
 
+  /**
+   * Que pestana de stock esta activa. El valor guardado es el **departamento**,
+   * no un indice ni un id de pestaña: asi el filtro se manda al servidor tal
+   * cual y recargar la pagina no depende de que las pestañas sigan en el mismo
+   * orden.
+   */
+  const [departamento, setDepartamento] = useState<string>(SIN_DEPARTAMENTO)
+
   const [formAbierto, setFormAbierto] = useState(false)
   const [vinoEnEdicion, setVinoEnEdicion] = useState<AdminWine | null>(null)
   const [porEliminar, setPorEliminar] = useState<AdminWine | null>(null)
@@ -105,6 +149,25 @@ export const CatalogoAdmin = () => {
   const abrirNuevo = (): void => {
     setVinoEnEdicion(null)
     setFormAbierto(true)
+  }
+
+  /**
+   * Cambiar de pestana.
+   *
+   * El filtro va por `aplicarFiltros` y no por un `useState` propio: asi el
+   * `departamento` queda en el mismo lugar que los demas filtros y la tabla se
+   * recarga sola. Ademas `aplicarFiltros` vuelve a la pagina 1, que es lo que
+   * hay que hacer: la pagina 3 de "Stock de bebidas" no existe si el filtro
+   * recargado tiene 1 sola pagina, y quedarse ahi muestra una tabla vacia con
+   * paginacion que no cuadra.
+   *
+   * **No manda `category: ''`**: la columna "Categoria" tiene su propio
+   * desplegable, y esa eleccion se tiene que conservar al cambiar de pestana de
+   * stock. Filtrar por departamento y por tipo de vino son cosas distintas.
+   */
+  const cambiarDepartamento = (valor: string): void => {
+    setDepartamento(valor)
+    catalogo.aplicarFiltros({ departamento: valor })
   }
 
   const abrirEdicion = (vino: AdminWine): void => {
@@ -188,13 +251,20 @@ export const CatalogoAdmin = () => {
     }
   }
 
+  const pestanaActual = DEPARTAMENTOS.find((d) => d.valor === departamento)
+
   return (
     <div className='space-y-4'>
-      <div className='flex flex-wrap items-center justify-between gap-3'>
+      {/* El titulo cambia con la pestana. Decir "Catalogo de vinos" arriba de la
+          tabla de "Stock de regaleria" obliga a leer las dos lineas para saber
+          que se esta viendo; el nombre de la pestana ya lo dice. */}
+      <div className='flex flex-wrap items-start justify-between gap-3'>
         <div>
-          <h2 className='font-serif text-lg font-bold text-carbon'>Catalogo de vinos</h2>
+          <h2 className='font-serif text-lg font-bold text-carbon'>
+            {pestanaActual === undefined ? 'Catalogo de productos' : pestanaActual.etiqueta}
+          </h2>
           <p className='text-sm text-neutral-500'>
-            {catalogo.total} {catalogo.total === 1 ? 'vino' : 'vinos'} en el catalogo
+            {catalogo.total} {catalogo.total === 1 ? 'producto' : 'productos'} en esta seccion
           </p>
         </div>
 
@@ -228,6 +298,41 @@ export const CatalogoAdmin = () => {
           </button>
         </div>
       </div>
+
+      {/*
+        La barra de stock.
+
+        Va **arriba del todo y no pegada a la tabla**: es el filtro principal,
+        y un filtro que esta abajo de 20 filas es un filtro que nadie usa. Es
+        tambien lo que hace obvio que las dos cosas de arriba —el titulo y el
+        contador— son de la seccion activa.
+
+        El ancho es `flex-wrap` y no una grilla de 5 columnas: "Stock de snacks y
+        chocolates" no entra en una quinta de una pantalla de panel sin partirse
+        en tres lineas de dos palabras, que se lee peor que la lista de dos.
+      */}
+      <nav aria-label='Secciones de stock' className='flex flex-wrap gap-2'>
+        {[{ valor: SIN_DEPARTAMENTO, etiqueta: PESTAÑA_TODOS }, ...DEPARTAMENTOS].map(
+          (pestana) => {
+            const activa = departamento === pestana.valor
+            return (
+              <button
+                key={pestana.valor === SIN_DEPARTAMENTO ? 'todos' : pestana.valor}
+                type='button'
+                onClick={() => cambiarDepartamento(pestana.valor)}
+                aria-current={activa ? 'page' : undefined}
+                className={`rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  activa
+                    ? 'border-verde-600 bg-verde-600 text-blanco'
+                    : 'border-neutral-300 bg-blanco/40 text-neutral-600 hover:border-verde-salvia hover:text-carbon'
+                }`}
+              >
+                {pestana.etiqueta}
+              </button>
+            )
+          }
+        )}
+      </nav>
 
       {aviso !== '' && (
         <p role='status' className='rounded-xl border border-verde-salvia/40 bg-verde-salvia/10 px-4 py-2.5 text-sm text-blanco'>

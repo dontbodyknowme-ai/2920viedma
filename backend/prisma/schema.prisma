@@ -79,6 +79,24 @@ model Wine {
   /// migraciones desde el panel. Con un `String`, la categoria se crea cargando
   /// un producto que la use, y el filtro del catalogo la deriva de ahi.
   category     String
+  /// Departamento de la tienda: es el eje con el que el panel separa el stock
+  /// (pestañas "Stock de bebidas", "Stock de regaleria", etc.).
+  ///
+  /// **Es un eje distinto de `category`, no lo reemplaza.** `category` sigue
+  /// siendo el tipo de vino —Tinto, Blanco, Rosado, Espumante—, que es closed
+  /// list en la API a proposito. El departamento es el grupo de la tienda. Un
+  /// Malbec es las dos cosas a la vez: categoria Tinto, departamento Bebidas.
+  /// Meter el departamento en `category` habria hecho perder el tipo de vino.
+  ///
+  /// **Texto libre, no enum**, por la misma razon que `category`: ampliar un
+  /// enum de Postgres es una migracion, y el admin no puede correr migraciones
+  /// desde el panel. Con un `String`, un departamento nuevo aparece cargando un
+  /// producto que lo use.
+  ///
+  /// El default es 'Bebidas' porque todo lo que hay en la base son vinos. Sin
+  /// default, la migracion tendria que decidir un valor para cada fila existente
+  /// y no hay forma de que elija bien: seria una suposicion escrita en SQL.
+  departamento String       @default("Bebidas")
   vintage      Int
   /// Pesos argentinos enteros. NO centavos (D-15).
   price        Int
@@ -93,6 +111,7 @@ model Wine {
   updatedAt    DateTime     @updatedAt
 
   @@index([category])
+  @@index([departamento])
   @@index([varietal])
   @@index([activo])
   @@index([name])

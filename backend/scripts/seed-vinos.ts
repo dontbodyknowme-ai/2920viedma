@@ -46,6 +46,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Bodega Catena Zapata',
     varietal: 'Malbec',
     category: 'Tinto',
+
+    departamento: 'Bebidas',
     vintage: 2020,
     price: 45000,
     description: 'Vino tinto de gran cuerpo con notas de frutos rojos maduros y roble frances.',
@@ -61,6 +63,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'El Enemigo',
     varietal: 'Chardonnay',
     category: 'Blanco',
+
+    departamento: 'Bebidas',
     vintage: 2021,
     price: 38000,
     description: 'Elegente blanco con gran acidez, mineralidad y paso por barrica.',
@@ -76,6 +80,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Catena Chadwick',
     varietal: 'Cabernet Sauvignon',
     category: 'Tinto',
+
+    departamento: 'Bebidas',
     vintage: 2019,
     price: 62000,
     description: 'Cabernet de guarda con estructura firme y final largo de cedro.',
@@ -91,6 +97,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Luigi Bosca',
     varietal: 'Pinot Noir',
     category: 'Tinto',
+
+    departamento: 'Bebidas',
     vintage: 2021,
     price: 39500,
     description: 'Delicado, aromatico, con fruta roja brillante y taninos sedosos.',
@@ -106,6 +114,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Bodega Norton',
     varietal: 'Malbec',
     category: 'Tinto',
+
+    departamento: 'Bebidas',
     vintage: 2018,
     price: 28000,
     description: 'Malbec de acceso, maduro y facil de beber, con buena estructura.',
@@ -121,6 +131,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Pulenta Estate',
     varietal: 'Cabernet Franc',
     category: 'Tinto',
+
+    departamento: 'Bebidas',
     vintage: 2020,
     price: 33500,
     description: 'Vermut taste en taza, herbaceo, con grafito y fruta roja.',
@@ -136,6 +148,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Trapiche',
     varietal: 'Sauvignon Blanc',
     category: 'Blanco',
+
+    departamento: 'Bebidas',
     vintage: 2022,
     price: 24500,
     description: 'Blanco fresco y aromatico, de acidez vibrante.',
@@ -151,6 +165,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Los Cemillos',
     varietal: 'Riesling',
     category: 'Blanco',
+
+    departamento: 'Bebidas',
     vintage: 2021,
     price: 31000,
     description: 'Blanco seco de moscatel con acidez brillante y un fondo mineral.',
@@ -166,6 +182,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Chateau Peyrelongue',
     varietal: 'Grenache',
     category: 'Rosado',
+
+    departamento: 'Bebidas',
     vintage: 2022,
     price: 22000,
     description: 'Rosado seco, fluido, de color palido y frescura vibrante.',
@@ -181,6 +199,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Bodega Cono Sur',
     varietal: 'Chardonnay',
     category: 'Espumante',
+
+    departamento: 'Bebidas',
     vintage: 2020,
     price: 19500,
     description: 'Espumante de Charmat, seco y fresco, con burbuja fina y persistente.',
@@ -196,6 +216,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Chandon',
     varietal: 'Pinot Noir',
     category: 'Espumante',
+
+    departamento: 'Bebidas',
     vintage: 2021,
     price: 36000,
     description: 'Espumante rosado elegante, con fruta roja y burbuja sedosa.',
@@ -211,6 +233,8 @@ const CATALOGO: VinoSeed[] = [
     winery: 'Valderramero',
     varietal: 'Merlot',
     category: 'Tinto',
+
+    departamento: 'Bebidas',
     vintage: 2017,
     price: 21500,
     description: 'Merlot suave, con fruta madura y taninos pulidos.',

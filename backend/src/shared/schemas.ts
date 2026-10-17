@@ -27,6 +27,15 @@ const wineBaseSchema = z.object({
   winery: z.string().min(1).max(200),
   varietal: z.string().min(1).max(100),
   category: z.enum(['Tinto', 'Blanco', 'Rosado', 'Espumante']),
+  /// Departamento de la tienda. **Texto libre, no enum**: ampliar un enum de
+  /// Postgres es una migracion y el admin no puede correr migraciones desde el
+  /// panel. Es ademas un eje distinto de `category` —este sigue siendo el tipo
+  /// de vino— asi que no reemplaza el enum de arriba.
+  ///
+  /// El default cubre el import de CSV: `wineImportSchema` exige que esten las
+  /// columnas de siempre y un CSV viejo no tiene `departamento`. Con el default,
+  /// esa fila entra como Bebidas en vez de ser rechazada.
+  departamento: z.string().min(1).max(80).default('Bebidas'),
   vintage: z.number().int().min(1900).max(2100),
   price: z.number().int().positive(),
   description: z.string().max(5000).optional(),
@@ -47,6 +56,9 @@ export const wineQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
   category: z.enum(['Tinto', 'Blanco', 'Rosado', 'Espumante']).optional(),
+  /// Filtro del stock por departamento. Texto libre como el campo: el panel
+  /// manda el valor exacto de la pestaña activa.
+  departamento: z.string().optional(),
   varietal: z.string().optional(),
   status: z.enum(['activo', 'inactivo']).optional()
 })

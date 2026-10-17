@@ -27,6 +27,11 @@ const wineBaseSchema = z.object({
   winery: z.string().min(1).max(200),
   varietal: z.string().min(1).max(100),
   category: z.enum(['Tinto', 'Blanco', 'Rosado', 'Espumante']),
+  // Eje distinto de `category`: el grupo de la tienda. Texto libre con default
+  // para que un CSV viejo (sin la columna) entre en vez de ser rechazado. Es el
+  // espejo exacto de `wineBaseSchema` del backend — los dos validan el mismo
+  // cuerpo, asi que si divergen el rechazo llega del lado que no se prueba.
+  departamento: z.string().min(1).max(80).default('Bebidas'),
   vintage: z.number().int().min(1900).max(2100),
   price: z.number().int().positive(),
   description: z.string().max(5000).optional(),
@@ -47,6 +52,7 @@ export const wineQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
   category: z.enum(['Tinto', 'Blanco', 'Rosado', 'Espumante']).optional(),
+  departamento: z.string().optional(),
   varietal: z.string().optional(),
   status: z.enum(['activo', 'inactivo']).optional()
 })
@@ -166,6 +172,8 @@ export interface Wine {
   winery: string
   varietal: string
   category: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
+  /** El grupo de la tienda. Eje distinto de `category`. */
+  departamento: string
   vintage: number
   price: number
   description: string | null
@@ -184,6 +192,8 @@ export interface PublicWine {
   winery: string
   varietal: string
   category: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
+  /** El grupo de la tienda. Eje distinto de `category`. */
+  departamento: string
   vintage: number
   price: number
   description: string | null

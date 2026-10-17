@@ -20,6 +20,7 @@ const vino = (over: Partial<Wine> = {}): Wine => ({
   winery: 'Bodega Norton',
   varietal: 'Malbec',
   category: 'Tinto',
+  departamento: 'Bebidas',
   vintage: 2020,
   price: 45000,
   description: 'Crianza en barrica',

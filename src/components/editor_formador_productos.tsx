@@ -76,6 +76,13 @@ export const ProductForm = ({
       winery,
       varietal: varietal || 'Blend',
       category,
+      // Este es el formulario **publico** (`ProductForm`), el que produce un
+      // `Wine` y no un `AdminWine`: lo usa el que carga productos sin panel. No
+      // tiene campo de departamento, asi que lo que carga va a Bebidas, que es
+      // lo unico que un formulario de la tienda publica puede afirmar. Si
+      // llegara a ficar en "" el producto no apareceria en ninguna pestaña de
+      // stock del panel, que es peor que aparecer en la de bebidas.
+      departamento: 'Bebidas',
       vintage: Number(vintage),
       price: Number(price),
       description,

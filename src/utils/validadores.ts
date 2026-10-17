@@ -48,6 +48,7 @@ export const CAMPOS_REQUERIDOS: ReadonlyArray<keyof Wine> = [
   'winery',
   'varietal',
   'category',
+  'departamento',
   'vintage',
   'price',
   'description',

@@ -19,6 +19,20 @@ export interface Wine {
   winery: string
   varietal: string
   category: WineCategory
+  /**
+   * El grupo de la tienda, que es un eje **distinto** de `category`.
+   *
+   * `category` dice que tipo de vino es —Tinto, Blanco, Rosado, Espumante— y
+   * `departamento` dice a que seccion de la tienda pertenece: Bebidas,
+   * Regalería, Snacks y chocolates, Comidas. Un Malbec es las dos a la vez, y por
+   * eso no se metio el departamento adentro de `category`: habria que elegir uno
+   * y se pierde el otro.
+   *
+   * Es texto libre y no una lista cerrada por el mismo motivo que
+   * `WineCategory`. Ver `src/utils/departamentos.ts` para los cuatro que usa la
+   * interfaz.
+   */
+  departamento: string
   vintage: number
   price: number
   description: string
@@ -33,6 +47,8 @@ export interface PublicWine {
   winery: string
   varietal: string
   category: WineCategory
+  /** El grupo de la tienda. Eje distinto de `category`. Ver `Wine`. */
+  departamento: string
   vintage: number
   price: number
   description: string | null

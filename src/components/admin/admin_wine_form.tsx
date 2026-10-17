@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import type { AdminWine } from '../../types/admin'
 import { CATEGORIAS_ARRANCAMIENTO } from './constantes_categoria'
+import { DEPARTAMENTOS } from '../../utils/departamentos'
 import { api } from '../../api/client'
 
 /**
@@ -41,6 +42,17 @@ const CAMPOS_VACIOS = {
   winery: '',
   varietal: '',
   category: CATEGORIAS_ARRANCAMIENTO,
+  // El departamento arranca en Bebidas, que es lo mismo que hace el backend y
+  // el `default` de la columna. Si aca arrancara vacio, un producto nuevo
+  // guardado sin tocar el campo llegaria a la base sin departamento —y con eso
+  // no apareceria en ninguna pestaña de stock, que es peor que estar en la
+  // equivocada.
+  //
+  // El `as string` no es cosmetico: `DEPARTAMENTOS` es `as const`, asi que
+  // `DEPARTAMENTOS[0].valor` es el literal `'Bebidas'` y el campo del estado
+  // quedaria tipado como ese unico valor. El `<select>` puede poner cualquiera
+  // de los cuatro y `cambiar('departamento', ...)` deja de compilar.
+  departamento: DEPARTAMENTOS[0].valor as string,
   vintage: String(ANIO_EN_CURSO),
   price: '',
   stock: '0',
@@ -81,6 +93,11 @@ export const AdminWineForm = ({
       winery: vino.winery,
       varietal: vino.varietal,
       category: vino.category,
+      // `?? ''` y no un default: un producto que ya existia puede no tener
+      // departamento si entro por una fila escrita a mano en SQL. Sin el fallback
+      // el `<select>` queda sin valor —y `value` sin `onChange` valido es un
+      // select deshabilitado en React.
+      departamento: vino.departamento ?? '',
       vintage: String(vino.vintage),
       price: String(vino.price),
       stock: String(vino.stock),
@@ -131,6 +148,7 @@ export const AdminWineForm = ({
         winery: bodega,
         varietal: campos.varietal.trim() === '' ? 'Blend' : campos.varietal.trim(),
         category: campos.category,
+        departamento: campos.departamento,
         vintage: cosecha,
         price: precio,
         stock,
@@ -253,6 +271,40 @@ export const AdminWineForm = ({
                         <option key={categoria} value={categoria} />
                       ))}
                     </datalist>
+                  </div>
+                  <div>
+                    {/*
+                      Este es un `<select>` y no un input con `datalist`, al
+                      contrario que "Categoria". La diferencia es a proposito:
+
+                      - **Categoria** es texto libre: el admin carga una cerveza y
+                        esa categoria tiene que poder existir sin tocar codigo.
+                      - **Departamento** es la taxonomia de la tienda, que son
+                        cuatro y estan decididas. Aceptar un quinto escrito a mano
+                        haria que ese producto no aparezca en ninguna pestaña —
+                        el usuario lo carga, no lo ve, y no hay error.
+
+                      Y `value` controlado sin `onChange` es un select
+                      deshabilitado en React, asi que el fallback de `''` de
+                      arriba lleva su `<option>` vacio para que haya siempre algo
+                      seleccionable.
+                    */}
+                    <label htmlFor='admin-departamento' className={etiqueta}>
+                      Departamento *
+                    </label>
+                    <select
+                      id='admin-departamento'
+                      value={campos.departamento}
+                      onChange={(e) => cambiar('departamento', e.target.value)}
+                      className={campo}
+                    >
+                      {campos.departamento === '' && <option value=''>— sin departamento —</option>}
+                      {DEPARTAMENTOS.map((departamento) => (
+                        <option key={departamento.valor} value={departamento.valor}>
+                          {departamento.etiqueta}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label htmlFor='admin-vintage' className={etiqueta}>Cosecha *</label>

@@ -26,6 +26,7 @@ const vinoValido = (): Wine => ({
   winery: 'Bodega Test',
   varietal: 'Malbec',
   category: 'Tinto',
+  departamento: 'Bebidas',
   vintage: 2020,
   price: 45000,
   description: 'Vino de prueba para validar el contrato de datos.',
@@ -102,10 +103,26 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
 })
 
 describe('validadores: cobertura de CAMPOS_REQUERIDOS', () => {
-  it('incluye los 9 campos obligatorios de la interface Wine', () => {
-    expect(CAMPOS_REQUERIDOS).toHaveLength(9)
+  it('incluye los 10 campos obligatorios de la interface Wine', () => {
+    // Son 10 desde que `departamento` se sumo al contrato (antes 9). El numero
+    // esta a proposito: es lo que hace que agregar un campo a `Wine` **no** pase
+    // en verde. Sin el, el unico aviso seria que un fixture quedara sin el campo
+    // nuevo —y eso recien lo ve `tsc` si el campo es requerido, que no siempre
+    // pasa—. Con el, hay que decidir aca que el campo entra.
+    expect(CAMPOS_REQUERIDOS).toHaveLength(10)
     expect([...CAMPOS_REQUERIDOS].sort()).toEqual(
-      ['category', 'description', 'id', 'imageUrl', 'name', 'price', 'varietal', 'vintage', 'winery'].sort()
+      [
+        'category',
+        'departamento',
+        'description',
+        'id',
+        'imageUrl',
+        'name',
+        'price',
+        'varietal',
+        'vintage',
+        'winery'
+      ].sort()
     )
   })
 

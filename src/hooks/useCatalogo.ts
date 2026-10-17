@@ -20,6 +20,15 @@ import type { AdminWine, ImportResult, Paginated } from '../types/admin'
 export interface FiltrosCatalogo {
   search: string
   category: string
+  /**
+   * El departamento de la pestaña de stock activa. `''` es "sin filtro", que es
+   * lo que muestra la pestaña "Todos".
+   *
+   * Va **junto** a `category`, no en su lugar: `category` es el tipo de vino
+   * (Tinto, Blanco) y `departamento` el grupo de la tienda (Bebidas, Regaleria).
+   * Se pueden filtrar los dos a la vez.
+   */
+  departamento: string
   varietal: string
   status: string
   sortColumn: string
@@ -29,6 +38,7 @@ export interface FiltrosCatalogo {
 const FILTROS_VACIOS: FiltrosCatalogo = {
   search: '',
   category: '',
+  departamento: '',
   varietal: '',
   status: '',
   sortColumn: '',
@@ -47,6 +57,7 @@ const construirUrl = (filtros: FiltrosCatalogo, page: number, limit: number): st
 
   if (filtros.search.trim() !== '') params.set('search', filtros.search.trim())
   if (filtros.category !== '') params.set('category', filtros.category)
+  if (filtros.departamento !== '') params.set('departamento', filtros.departamento)
   if (filtros.varietal !== '') params.set('varietal', filtros.varietal)
   if (filtros.status !== '') params.set('status', filtros.status)
   if (filtros.sortColumn !== '') {
@@ -231,6 +242,7 @@ export const useCatalogo = (): EstadoCatalogo => {
     const params = new URLSearchParams({ page: '1', limit: '100' })
     if (filtros.search.trim() !== '') params.set('search', filtros.search.trim())
     if (filtros.category !== '') params.set('category', filtros.category)
+    if (filtros.departamento !== '') params.set('departamento', filtros.departamento)
     if (filtros.varietal !== '') params.set('varietal', filtros.varietal)
     if (filtros.status !== '') params.set('status', filtros.status)
 
