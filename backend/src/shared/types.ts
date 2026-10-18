@@ -39,12 +39,20 @@ export interface Paginated<T> {
 export interface Wine {
   id: string
   name: string
-  winery: string
-  varietal: string
-  category: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
-  /** Grupo de la tienda. Eje distinto de `category`: un Malbec es Tinto y Bebidas. */
+  /** Bodega. `null` para lo que no viene de una. */
+  winery: string | null
+  /** Cepa. `null` para lo que no la tiene. */
+  varietal: string | null
+  /** Anada. `null` para lo que no es vino. */
+  vintage: number | null
+  /** La hoja de la taxonomia: Vinos, Cerveza, Gaseosas, Jugos. */
+  category: string
+  /** El grupo de la tienda. Eje distinto de `category`. */
   departamento: string
-  vintage: number
+  /** Nivel medio: "Con alcohol", "Sin alcohol". `null` si cuelga suelto. */
+  grupo: string | null
+  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  tipoVino: string | null
   price: number
   description: string | null
   tastingNotes: string | null
@@ -59,12 +67,16 @@ export interface Wine {
 export interface PublicWine {
   id: string
   name: string
-  winery: string
-  varietal: string
-  category: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
-  /** Grupo de la tienda. Eje distinto de `category`: un Malbec es Tinto y Bebidas. */
+  winery: string | null
+  varietal: string | null
+  vintage: number | null
+  category: string
+  /** El grupo de la tienda. Eje distinto de `category`. */
   departamento: string
-  vintage: number
+  /** Nivel medio de la taxonomia. `null` si cuelga suelto. */
+  grupo: string | null
+  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  tipoVino: string | null
   price: number
   description: string | null
   tastingNotes: string | null

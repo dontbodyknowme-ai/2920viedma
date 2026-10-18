@@ -29,8 +29,10 @@ export const csvCatalogo = (vinos: readonly AdminWine[]): string => {
     'Nombre',
     'Bodega',
     'Cepa',
-    'Categoria',
     'Departamento',
+    'Grupo',
+    'Categoria',
+    'Tipo de vino',
     'Cosecha',
     'Precio',
     'Stock',
@@ -41,11 +43,16 @@ export const csvCatalogo = (vinos: readonly AdminWine[]): string => {
   const filas = vinos.map((vino) => [
     vino.id,
     vino.name,
-    vino.winery,
-    vino.varietal,
-    vino.category,
+    // Los tres que se volvieron opcionales van como celda vacia, no como la
+    // palabra "null": el CSV se reimporta, y `null` en una celda entra a la base
+    // como el texto "null".
+    vino.winery ?? '',
+    vino.varietal ?? '',
     vino.departamento,
-    String(vino.vintage),
+    vino.grupo ?? '',
+    vino.category,
+    vino.tipoVino ?? '',
+    vino.vintage === null ? '' : String(vino.vintage),
     String(vino.price),
     String(vino.stock),
     vino.activo ? 'si' : 'no',

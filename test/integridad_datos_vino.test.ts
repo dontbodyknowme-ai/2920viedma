@@ -39,7 +39,17 @@ describe('INITIAL_WINES: forma del catalogo', () => {
   })
 
   it('no expone propiedades fuera del contrato de Wine', () => {
-    const permitidas = new Set<string>([...CAMPOS_REQUERIDOS, ...CAMPOS_OPCIONALES])
+    // `grupo` y `tipoVino` se suman a mano porque **no estan en ninguna de las
+    // dos listas a proposito**: los dos admiten `null` de legitimo —un
+    // energizante cuelga sin grupo y una cerveza no tiene color de vino— y son
+    // justo el caso para el que ninguna de las dos listas sirve. Ver la nota de
+    // `CAMPOS_REQUERIDOS` en `validadores.ts`.
+    const permitidas = new Set<string>([
+      ...CAMPOS_REQUERIDOS,
+      ...CAMPOS_OPCIONALES,
+      'grupo',
+      'tipoVino'
+    ])
 
     INITIAL_WINES.forEach((vino) => {
       const extras = Object.keys(vino).filter((clave) => !permitidas.has(clave))
@@ -67,8 +77,10 @@ describe('INITIAL_WINES: campos requeridos', () => {
     })
   })
 
-  it('los campos de texto (name, winery, varietal, description) son strings no vacios', () => {
-    const camposDeTexto = ['name', 'winery', 'varietal', 'description'] as const
+  it('los campos de texto (name, description) son strings no vacios', () => {
+    // Bodega y cepa se separaron en su propio test: son `string | null` desde que
+    // la tienda vendio cosas que no tienen. Un producto sin bodega es valido.
+    const camposDeTexto = ['name', 'description'] as const
 
     INITIAL_WINES.forEach((vino) => {
       camposDeTexto.forEach((campo) => {
@@ -76,6 +88,26 @@ describe('INITIAL_WINES: campos requeridos', () => {
         expect(esTextoNoVacio(vino[campo])).toBe(true)
       })
     })
+  })
+
+  it('bodega y cepa, cuando estan, son strings no vacios', () => {
+    const opcionalesDeTexto = ['winery', 'varietal'] as const
+
+    INITIAL_WINES.forEach((producto) => {
+      opcionalesDeTexto.forEach((campo) => {
+        const valor = producto[campo]
+        // `null` es "no tiene bodega". Lo que no se permite es el string vacio:
+        // eso es "la bodega se guardo vacia", que es un error de carga.
+        if (valor !== null) {
+          expect(typeof valor).toBe('string')
+          expect(esTextoNoVacio(valor)).toBe(true)
+        }
+      })
+    })
+
+    // Y tiene que haber productos **sin** bodega: si el catalogo entero la
+    // tuviera, este test pasaria sin comprobar que `null` es valido.
+    expect(INITIAL_WINES.some((producto) => producto.winery === null)).toBe(true)
   })
 
   it('el id es un string no vacio en cada vino', () => {
@@ -152,21 +184,33 @@ describe('INITIAL_WINES: price', () => {
 })
 
 describe('INITIAL_WINES: vintage', () => {
-  it('es un numero entero dentro de un rango razonable', () => {
+  it('es un numero entero dentro de un rango razonable cuando esta', () => {
+    // **La vintage puede ser `null`.** Una gaseosa no tiene anada, y fue
+    // justamente exigirla lo que hacia imposible vender cualquier cosa fuera del
+    // vino. Un numero de anada pegado a una gaseosa seria informacion falsa.
     const anioActual = new Date().getFullYear()
+    let conAnada = 0
 
-    INITIAL_WINES.forEach((vino) => {
-      expect(typeof vino.vintage).toBe('number')
-      expect(Number.isInteger(vino.vintage)).toBe(true)
-      expect(esAnioRazonable(vino.vintage)).toBe(true)
-      expect(vino.vintage).toBeGreaterThanOrEqual(1850)
-      expect(vino.vintage).toBeLessThanOrEqual(anioActual + 1)
+    INITIAL_WINES.forEach((producto) => {
+      if (producto.vintage === null) return
+      conAnada++
+      expect(typeof producto.vintage).toBe('number')
+      expect(Number.isInteger(producto.vintage)).toBe(true)
+      expect(esAnioRazonable(producto.vintage)).toBe(true)
+      expect(producto.vintage).toBeGreaterThanOrEqual(1850)
+      expect(producto.vintage).toBeLessThanOrEqual(anioActual + 1)
     })
+
+    // Tiene que haber **de las dos clases**. Si el catalogo entero tuviera anada,
+    // esto pasaria sin comprobar que `null` es un valor valido.
+    expect(conAnada).toBeGreaterThan(0)
+    expect(INITIAL_WINES.some((producto) => producto.vintage === null)).toBe(true)
   })
 
   it('las cosechas presentes son posteriores a 1900', () => {
-    INITIAL_WINES.forEach((vino) => {
-      expect(vino.vintage).toBeGreaterThan(1900)
+    INITIAL_WINES.forEach((producto) => {
+      if (producto.vintage === null) return
+      expect(producto.vintage).toBeGreaterThan(1900)
     })
   })
 
@@ -214,17 +258,37 @@ describe('INITIAL_WINES: imageUrl', () => {
 })
 
 describe('INITIAL_WINES: campos opcionales', () => {
-  it('tastingNotes y foodPairing estan ausentes o son strings no vacios', () => {
-    INITIAL_WINES.forEach((vino) => {
-      CAMPOS_OPCIONALES.forEach((campo) => {
-        expect(esCampoOpcionalValido(vino[campo])).toBe(true)
+  it('los de texto estan ausentes, en null, o son strings no vacios', () => {
+    // `vintage` queda afuera del bucle a proposito: es el unico opcional que **no
+    // es texto**, y mandarlo por `esCampoOpcionalValido` daria `false` siempre
+    // (ni `undefined` ni `null` ni texto). Se verifica en su propio `describe`.
+    const deTexto = CAMPOS_OPCIONALES.filter((campo) => campo !== 'vintage')
+
+    INITIAL_WINES.forEach((producto) => {
+      deTexto.forEach((campo) => {
+        expect(esCampoOpcionalValido(producto[campo])).toBe(true)
       })
     })
   })
 
-  it('rechaza opcionales presentes pero vacios, en blanco o nulos', () => {
-    ;['', '   ', null, 0, false, {}].forEach((valor) => {
+  it('rechaza opcionales presentes pero vacios, en blanco o de otro tipo', () => {
+    // El `null` **ya no se rechaza**: paso a ser valido cuando la tienda dejo de
+    // vender solo vinos. Una API que serializa `String?` de Prisma manda `null`
+    // para la bodega de una gaseosa, y seguir rechazandolo marcaba el producto
+    // entero como invalido.
+    //
+    // Lo que se sigue rechazando es el string vacio: `''` no es "no tiene
+    // bodega", es "la bodega se guardo vacia", que es un error de carga.
+    ;['', '   ', 0, false, {}].forEach((valor) => {
       expect(esCampoOpcionalValido(valor)).toBe(false)
     })
+  })
+
+  it('acepta null y undefined como "no tiene"', () => {
+    // Los dos ausentes valen: `null` es lo que manda la API y `undefined` lo que
+    // queda cuando el campo no se escribio. Confundirlos seria hacer que un
+    // producto valido se descarte segun de donde vino el objeto.
+    expect(esCampoOpcionalValido(null)).toBe(true)
+    expect(esCampoOpcionalValido(undefined)).toBe(true)
   })
 })

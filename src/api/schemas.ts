@@ -169,12 +169,16 @@ export interface Paginated<T> {
 export interface Wine {
   id: string
   name: string
-  winery: string
-  varietal: string
-  category: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
+  winery: string | null
+  varietal: string | null
+  category: string
   /** El grupo de la tienda. Eje distinto de `category`. */
   departamento: string
-  vintage: number
+  /** Nivel medio de la taxonomia. `null` si cuelga suelto. */
+  grupo: string | null
+  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  tipoVino: string | null
+  vintage: number | null
   price: number
   description: string | null
   tastingNotes: string | null
@@ -189,12 +193,16 @@ export interface Wine {
 export interface PublicWine {
   id: string
   name: string
-  winery: string
-  varietal: string
-  category: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
+  winery: string | null
+  varietal: string | null
+  category: string
   /** El grupo de la tienda. Eje distinto de `category`. */
   departamento: string
-  vintage: number
+  /** Nivel medio de la taxonomia. `null` si cuelga suelto. */
+  grupo: string | null
+  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  tipoVino: string | null
+  vintage: number | null
   price: number
   description: string | null
   tastingNotes: string | null

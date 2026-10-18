@@ -104,11 +104,17 @@ export const useCatalogo = (): EstadoCatalogo => {
   const url = useMemo(() => construirUrl(filtros, page, limit), [filtros, page, limit])
   const { data, isLoading, error, refetch } = useApi<Paginated<AdminWine>>(url, { respaldo: 'vinos' })
 
-  // Las cepas salen de los datos mock cargados, no de una constante: si el
-  // admin agrega un vino con una cepa nueva, el filtro tiene que ofrecerla sin
-  // que nadie venga y la escriba a mano en el codigo.
+  /**
+   * Las cepas disponibles, para el desplegable de filtro.
+   *
+   * Se derivan de los datos y no de una constante, pero **se descartan los
+   * `null`**: desde que la tienda vendio cosas sin bodega ni cepa, una gaseosa
+   * llega con `varietal: null` y un desplegable con una opcion vacia que dice
+   * `null` es peor que no tener la opcion.
+   */
   const cepas = useMemo(
-    () => [...new Set((data?.data ?? []).map((vino) => vino.varietal))].sort(),
+    () =>
+      [...new Set((data?.data ?? []).map((vino) => vino.varietal).filter((v) => v !== null))].sort(),
     [data]
   )
 

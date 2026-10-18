@@ -42,20 +42,46 @@ export const esCategoriaValida = (valor: unknown): valor is string => {
   return limpia[0] === limpia[0]?.toUpperCase()
 }
 
+/**
+ * Los campos que **siempre** tiene que tener un producto.
+ *
+ * `grupo` y `tipoVino` son obligatorios de negocio pero admiten `null` de
+ * legitimo —"Energizantes" cuelga sin grupo y una cerveza no tiene color de
+ * vino—, asi que **no entran en ninguna de las dos listas**: no son requeridos
+ * (hay productos sin ellos) y tampoco son opcionales a la vista de
+ * `esCampoOpcionalValido`, que acepta `undefined` y no `null`. Meterlos en
+ * `CAMPOS_OPCIONALES` los haria pasar por ausentes, que en runtime es otra cosa:
+ * la API manda `null`.
+ *
+ * Los verifica `test/taxonomia.test.ts`, que mira el arbol entero y no campos
+ * sueltos.
+ */
 export const CAMPOS_REQUERIDOS: ReadonlyArray<keyof Wine> = [
   'id',
   'name',
-  'winery',
-  'varietal',
   'category',
   'departamento',
-  'vintage',
   'price',
   'description',
   'imageUrl'
 ]
 
-export const CAMPOS_OPCIONALES: ReadonlyArray<keyof Wine> = ['tastingNotes', 'foodPairing']
+/**
+ * Opcionales de verdad.
+ *
+ * `winery`, `varietal` y `vintage` se volvieron opcionales cuando la tienda dejo
+ * de ser una vinateria: una gaseosa no tiene bodega, ni cepa, ni anada.
+ * `undefined` y `null` valen los dos —una API puede mandar cualquiera de los
+ * dos—, asi que el validador acepta `undefined` y el `null` se cubre en el test
+ * de taxonomia.
+ */
+export const CAMPOS_OPCIONALES: ReadonlyArray<keyof Wine> = [
+  'tastingNotes',
+  'foodPairing',
+  'winery',
+  'varietal',
+  'vintage'
+]
 
 // Un vino no puede ser mas viejo que las primeras cosechas vpn documentadas,
 // ni del futuro (salvo la tolerancia de una vendimia en curso).
@@ -100,8 +126,6 @@ export const camposRequeridosInvalidos = (vino: Wine): Array<string> =>
     switch (campo) {
       case 'category':
         return !esCategoriaValida(valor)
-      case 'vintage':
-        return !esAnioRazonable(valor)
       case 'price':
         return !esPrecioValido(valor)
       case 'imageUrl':
@@ -112,8 +136,17 @@ export const camposRequeridosInvalidos = (vino: Wine): Array<string> =>
   }).map((campo) => String(campo))
 
 /**
- * Un campo opcional es valido si esta ausente (`undefined`) o si es un string
- * no vacio. Se rechaza `null` y el string vacio.
+ * Un campo opcional es valido si esta ausente (`undefined`), si es un `null`, o
+ * si es un string no vacio.
+ *
+ * **El `null` se sumo cuando la tienda dejo de vender solo vinos.** Una API que
+ * serializa `String?` de Prisma manda `null` para una gaseosa sin bodega, y sin
+ * aceptarlo el producto entero se marcaba como invalido. Antes solo se
+ * aceptaba `undefined`, y `null` se rechazaba a proposito: era un dato roto.
+ * Ahora `null` es la forma correcta de decir "este producto no tiene bodega".
+ *
+ * Sigue rechazando el string vacio: `''` no es "no tiene bodega", es "la bodega
+ * se guardo vacia", que es un error de carga.
  */
 export const esCampoOpcionalValido = (valor: unknown): boolean =>
-  valor === undefined || esTextoNoVacio(valor)
+  valor === undefined || valor === null || esTextoNoVacio(valor)

@@ -20,6 +20,8 @@ export const publicWinesRoutes = async (fastify: FastifyInstance): Promise<void>
           varietal: true,
           category: true,
           departamento: true,
+          grupo: true,
+          tipoVino: true,
           vintage: true,
           price: true,
           description: true,

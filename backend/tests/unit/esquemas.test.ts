@@ -54,15 +54,45 @@ describe('wineCreateSchema', () => {
     expect(wineCreateSchema.safeParse({ ...vinoValido, price: -1 }).success).toBe(false)
   })
 
-  it('rechaza una categoria fuera de la lista cerrada', () => {
-    // Sin `.enum` esto seria un string libre y el filtro del panel no tendria
-    // con que comparar.
-    const resultado = wineCreateSchema.safeParse({ ...vinoValido, category: 'Orange' })
-
-    expect(resultado.success).toBe(false)
+  it('acepta cualquier categoria y rechaza la vacia', () => {
+    // **Este test invertio su asercion cuando la tienda paso a ser un kiosco.**
+    //
+    // Antes decia "rechaza una categoria fuera de la lista cerrada" y probaba que
+    // `category: 'Orange'` fuera rechazado, porque el enum era de tipo de vino.
+    // Con una tienda que vende de todo, esa asercion era el bug: una cerveza, una
+    // gaseosa o una galletita daban **400** y no habia forma de venderlas.
+    //
+    // Ahora `category` es la hoja de la taxonomia y es texto libre. Lo que si
+    // tiene que seguir siendo un error es la categoria **vacia**: un producto sin
+    // categoria no aparece en ningun filtro y el admin no lo va a encontrar.
+    expect(wineCreateSchema.safeParse({ ...vinoValido, category: 'Cerveza' }).success).toBe(true)
+    expect(wineCreateSchema.safeParse({ ...vinoValido, category: 'Gaseosas' }).success).toBe(true)
+    expect(wineCreateSchema.safeParse({ ...vinoValido, category: '' }).success).toBe(false)
   })
 
-  it('rechaza una vintage fuera de rango', () => {
+  it('acepta un producto que no es vino y por lo tanto no tiene bodega, anada ni cepa', () => {
+    // Una gaseosa no tiene de donde sacarle una añada. Antes `vintage`, `winery` y
+    // `varietal` eran obligatorios, asi que un producto sin ellos no se podia
+    // cargar ni por CSV. Exigirles un valor seria escribir informacion falsa.
+    const resultado = wineCreateSchema.safeParse({
+      name: 'Gaseosa de cola 2L',
+      price: 3500,
+      category: 'Gaseosas',
+      departamento: 'Bebidas',
+      grupo: 'Sin alcohol',
+      imageUrl: 'https://cdn.vinoteca.local/gaseosa.webp'
+    })
+
+    expect(resultado.success).toBe(true)
+    if (resultado.success) {
+      expect(resultado.data.vintage).toBeUndefined()
+      expect(resultado.data.winery).toBeUndefined()
+    }
+  })
+
+  it('rechaza una anada fuera de rango cuando viene', () => {
+    // Opcional no es "cualquier cosa": si el admin la manda, tiene que ser una
+    // anada de verdad.
     expect(wineCreateSchema.safeParse({ ...vinoValido, vintage: 1800 }).success).toBe(false)
     expect(wineCreateSchema.safeParse({ ...vinoValido, vintage: 2200 }).success).toBe(false)
   })

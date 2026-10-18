@@ -24,19 +24,31 @@ export type LogoutInput = z.infer<typeof logoutSchema>
 const wineBaseSchema = z.object({
   id: z.string().cuid().optional(),
   name: z.string().min(1).max(200),
-  winery: z.string().min(1).max(200),
-  varietal: z.string().min(1).max(100),
-  category: z.enum(['Tinto', 'Blanco', 'Rosado', 'Espumante']),
-  /// Departamento de la tienda. **Texto libre, no enum**: ampliar un enum de
-  /// Postgres es una migracion y el admin no puede correr migraciones desde el
-  /// panel. Es ademas un eje distinto de `category` —este sigue siendo el tipo
-  /// de vino— asi que no reemplaza el enum de arriba.
-  ///
-  /// El default cubre el import de CSV: `wineImportSchema` exige que esten las
-  /// columnas de siempre y un CSV viejo no tiene `departamento`. Con el default,
-  /// esa fila entra como Bebidas en vez de ser rechazada.
+  // Bodega, anada y cepa son **opcionales** desde que la tienda dejo de ser una
+  // vinateria. Una gaseosa no tiene bodega ni anada ni cepa, y lo unico que se
+  // puede exigir es que no mientan: si el admin las deja vacias, el producto
+  // existe sin ellas. Concederles un valor por default seria escribir datos
+  // falsos en la base.
+  winery: z.string().min(1).max(200).optional(),
+  varietal: z.string().min(1).max(100).optional(),
+  vintage: z.number().int().min(1900).max(2100).optional(),
+  // La categoria es la **hoja** de la taxonomia: Vinos, Cerveza, Gaseosas,
+  // Jugos. Dejo de ser el enum de tipo de vino cuando la tienda paso a vender de
+  // todo; el color del vino vive en `tipoVino`.
+  //
+  // Texto libre y no enum por la misma razon de siempre: ampliar un enum de
+  // Postgres es una migracion y el admin no puede correr migraciones desde el
+  // panel. Con el enum de antes, crear una cerveza daba **400**.
+  category: z.string().min(1).max(80),
+  /// Departamento de la tienda. Texto libre con default para que un CSV viejo
+  /// (sin la columna) entre en vez de ser rechazado.
   departamento: z.string().min(1).max(80).default('Bebidas'),
-  vintage: z.number().int().min(1900).max(2100),
+  /// Nivel medio. Opcional porque "Energizantes" cuelga directo de Bebidas: no
+  /// es ni con alcohol ni sin alcohol, y hacerlo obligatorio lo obligaria a
+  /// mentir con el grupo.
+  grupo: z.string().min(1).max(80).optional(),
+  /// Color del vino, solo para la categoria "Vinos".
+  tipoVino: z.string().min(1).max(40).optional(),
   price: z.number().int().positive(),
   description: z.string().max(5000).optional(),
   tastingNotes: z.string().max(5000).optional(),
@@ -55,10 +67,16 @@ export const wineQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
-  category: z.enum(['Tinto', 'Blanco', 'Rosado', 'Espumante']).optional(),
+  // La categoria dejo de ser enum: es la hoja de la taxonomia y hay que poder
+  // filtrar por "Cerveza". Con `z.enum` el filtro daria 400 en vez de resultados.
+  category: z.string().optional(),
   /// Filtro del stock por departamento. Texto libre como el campo: el panel
   /// manda el valor exacto de la pestaña activa.
   departamento: z.string().optional(),
+  /// Filtro del nivel medio. Es lo que usa el catalogo publico cuando se elige
+  /// "Con alcohol": tiene que devolver cervezas y aperitivos sin que la pantalla
+  /// sepa de antemano cuales son.
+  grupo: z.string().optional(),
   varietal: z.string().optional(),
   status: z.enum(['activo', 'inactivo']).optional()
 })

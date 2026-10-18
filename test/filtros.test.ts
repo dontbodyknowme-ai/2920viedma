@@ -1,26 +1,31 @@
 import { describe, it, expect } from 'vitest'
+import { filtrarVinos, type Filtros } from '../src/utils/filtros'
 import type { Wine } from '../src/types/vino'
-import { filtrarVinos } from '../src/utils/filtros'
 
 /**
- * Tests del filtrado del catalogo.
+ * El filtro del catalogo publico, con la taxonomia de tres niveles.
  *
- * El foco es `matchesSearch`, porque el placeholder de los dos buscadores
- * ("Buscar por nombre, marca o categoria...") promete cuatro cosas: nombre,
- * marca (bodega) y categoria. Si una de las tres no se busca, el texto miente:
- * el usuario escribe, no aparece nada, y no hay forma de saber si fallo la
- * busqueda o si el producto no existe.
+ * ## Que se verifica y por que importa
  *
- * `matchesCategory` es la que decide el filtro "Tipo de Producto".
+ * Que los tres niveles **achiquen** y no se reemplacen. Es el error que hace la
+ * diferencia entre un filtro y una pestana: si el ultimo elegido gana, elegir
+ * "Bebidas" y despues "Cerveza" devuelve las cervezas de toda la tienda, y el
+ * usuario cree que esta viendo las bebidas.
+ *
+ * Y el caso del grupo `null` —"Energizantes", que cuelga directo de Bebidas—
+ * que es el unico que un `wine.grupo === filtros.grupo` a secas no puede
+ * distinguir de "no filtrar por grupo".
  */
 
 const vino = (over: Partial<Wine> = {}): Wine => ({
   id: 'v1',
-  name: 'Malbec Reserva',
-  winery: 'Bodega Norton',
+  name: 'Gran Reserva Malbec',
+  winery: 'Bodega Catena Zapata',
   varietal: 'Malbec',
-  category: 'Tinto',
+  category: 'Vinos',
   departamento: 'Bebidas',
+  grupo: 'Con alcohol',
+  tipoVino: 'Tinto',
   vintage: 2020,
   price: 45000,
   description: 'Crianza en barrica',
@@ -29,82 +34,174 @@ const vino = (over: Partial<Wine> = {}): Wine => ({
 })
 
 /** Filtros vacios: es lo que hay cuando el usuario todavia no toco nada. */
-const sinFiltros = {
-  categoria: 'Todos los productos' as const,
-  minPrice: '' as const,
-  maxPrice: '' as const,
+const sinFiltros: Filtros = {
+  departamento: '',
+  grupo: '',
+  category: '',
+  minPrice: '',
+  maxPrice: '',
   searchQuery: ''
 }
 
 describe('filtrarVinos: la busqueda tiene que cubrir lo que promete el placeholder', () => {
   it('encuentra por nombre', () => {
-    const r = filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'malbec' })
-    expect(r).toHaveLength(1)
+    expect(filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'malbec' })).toHaveLength(1)
   })
 
   it('encuentra por marca (bodega)', () => {
-    const r = filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'norton' })
-    expect(r).toHaveLength(1)
+    expect(filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'catena' })).toHaveLength(1)
   })
 
   it('encuentra por cepa (varietal)', () => {
-    const r = filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'Malbec' })
-    expect(r).toHaveLength(1)
+    expect(filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'Malbec' })).toHaveLength(1)
   })
 
-  it('encuentra por CATEGORIA — este es el que faltaba', () => {
-    // Sin esta linea, escribir "Tinto" no encontraba nada aunque el placeholder
-    // prometa "categoria". El vino de `vino()` es de categoria "Tinto".
-    const r = filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'tinto' })
-    expect(r).toHaveLength(1)
+  it('encuentra por categoria', () => {
+    // Sin esta linea, escribir "Gaseosas" no encontraba nada aunque el
+    // placeholder prometa "categoria".
+    const gaseosa = vino({ id: 'g', name: 'Cola 2L', category: 'Gaseosas', grupo: 'Sin alcohol' })
+    expect(filtrarVinos([gaseosa], { ...sinFiltros, searchQuery: 'gaseosas' })).toHaveLength(1)
   })
 
-  it('buscar por CATEGORIA no confunde una con otra', () => {
-    // Regresion de la linea de arriba: "Espumante" no puede devolver un Tinto.
-    const r = filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'espumante' })
-    expect(r).toHaveLength(0)
+  it('encuentra por DEPARTAMENTO y por GRUPO', () => {
+    // Son las palabras que el usuario escribe ("busco algo de regalería") y no
+    // estan en el nombre del producto: sin esto, no encuentra nada.
+    expect(filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'bebidas' })).toHaveLength(1)
+    expect(filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'con alcohol' })).toHaveLength(1)
+  })
+
+  it('encuentra por el color del vino', () => {
+    // "Tinto" es un `tipoVino`, no una categoria: es donde lo busca el usuario
+    // que quiere un tinto y no le importa si el vino es de Bodega o no.
+    expect(filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'tinto' })).toHaveLength(1)
+  })
+
+  it('buscar por una categoria no confunde una con otra', () => {
+    expect(filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'cerveza' })).toHaveLength(0)
   })
 
   it('no matchea cuando la consulta no esta en ningun campo', () => {
-    const r = filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'zzzz' })
-    expect(r).toHaveLength(0)
+    expect(filtrarVinos([vino()], { ...sinFiltros, searchQuery: 'zzzz' })).toHaveLength(0)
   })
 
   it('es insensible a mayusculas', () => {
-    const r = filtrarVinos([vino({ name: 'MALBEC' })], {
-      ...sinFiltros,
-      searchQuery: 'malbec'
-    })
-    expect(r).toHaveLength(1)
+    expect(
+      filtrarVinos([vino({ name: 'MALBEC' })], { ...sinFiltros, searchQuery: 'malbec' })
+    ).toHaveLength(1)
   })
 
   it('ignora espacios al principio y al final', () => {
-    const r = filtrarVinos([vino()], { ...sinFiltros, searchQuery: '   malbec  ' })
-    expect(r).toHaveLength(1)
+    expect(
+      filtrarVinos([vino()], { ...sinFiltros, searchQuery: '   malbec  ' })
+    ).toHaveLength(1)
   })
 
   it('una consulta vacia devuelve todo', () => {
-    // Regresion: si `consulta` vacia no matcheara, el catalogo arranque vacio.
-    const r = filtrarVinos([vino(), vino({ id: 'v2' })], sinFiltros)
-    expect(r).toHaveLength(2)
+    // Regresion: si `consulta` vacia no matcheara, el catalogo arranca vacio.
+    expect(filtrarVinos([vino(), vino({ id: 'v2' })], sinFiltros)).toHaveLength(2)
+  })
+
+  it('un producto sin bodega ni anada no rompe la busqueda', () => {
+    // Una gaseosa viene con `winery: null` y `vintage: null`. Con
+    // `wine.winery.toLowerCase()` a secas eso es un `TypeError` y el catalogo
+    // entero no renderiza.
+    const gaseosa = vino({
+      id: 'g',
+      name: 'Gaseosa de Cola 2L',
+      category: 'Gaseosas',
+      grupo: 'Sin alcohol',
+      winery: null,
+      varietal: null,
+      vintage: null
+    })
+    expect(() => filtrarVinos([gaseosa], { ...sinFiltros, searchQuery: 'cola' })).not.toThrow()
+    expect(filtrarVinos([gaseosa], { ...sinFiltros, searchQuery: 'cola' })).toHaveLength(1)
   })
 })
 
-describe('filtrarVinos: filtro por categoria (el boton "Tipo de Producto")', () => {
+describe('filtrarVinos: los tres niveles de la taxonomia', () => {
+  /** Un producto por rama, que es lo que hace falta para que el filtro distinga. */
   const catalogo = [
-    vino({ id: 'a', category: 'Tinto' }),
-    vino({ id: 'b', category: 'Blanco' }),
-    vino({ id: 'c', category: 'Espumante' })
+    vino({ id: 'vino-tinto', category: 'Vinos', grupo: 'Con alcohol', tipoVino: 'Tinto' }),
+    vino({ id: 'vino-blanco', category: 'Vinos', grupo: 'Con alcohol', tipoVino: 'Blanco' }),
+    vino({ id: 'cerveza', category: 'Cerveza', grupo: 'Con alcohol', tipoVino: null, varietal: null, vintage: null }),
+    vino({ id: 'gaseosa', category: 'Gaseosas', grupo: 'Sin alcohol', tipoVino: null }),
+    vino({ id: 'energizante', category: 'Energizantes', grupo: null, tipoVino: null }),
+    vino({ id: 'copas', name: 'Set de Copas', category: 'Vajilla', departamento: 'Regalería', grupo: null, tipoVino: null })
   ]
 
-  it('"Todos" devuelve el catalogo completo', () => {
-    expect(filtrarVinos(catalogo, sinFiltros)).toHaveLength(3)
+  it('sin filtros devuelve el catalogo completo', () => {
+    expect(filtrarVinos(catalogo, sinFiltros)).toHaveLength(6)
   })
 
-  it('una categoria devuelve solo la suya', () => {
-    const r = filtrarVinos(catalogo, { ...sinFiltros, categoria: 'Blanco' })
-    expect(r).toHaveLength(1)
-    expect(r[0].id).toBe('b')
+  it('el departamento acota a lo suyo', () => {
+    const r = filtrarVinos(catalogo, { ...sinFiltros, departamento: 'Bebidas' })
+    expect(r.map((w) => w.id)).toEqual([
+      'vino-tinto',
+      'vino-blanco',
+      'cerveza',
+      'gaseosa',
+      'energizante'
+    ])
+  })
+
+  it('el grupo acota DENTRO del departamento', () => {
+    // Este es el test que distingue "achicar" de "reemplazar": si el grupo
+    // borrara el departamento, "Con alcohol" traeria tambien las copas.
+    const r = filtrarVinos(catalogo, {
+      ...sinFiltros,
+      departamento: 'Bebidas',
+      grupo: 'Con alcohol'
+    })
+    expect(r.map((w) => w.id)).toEqual(['vino-tinto', 'vino-blanco', 'cerveza'])
+  })
+
+  it('la categoria acota dentro del grupo, y los tres se suman', () => {
+    const r = filtrarVinos(catalogo, {
+      ...sinFiltros,
+      departamento: 'Bebidas',
+      grupo: 'Con alcohol',
+      category: 'Vinos'
+    })
+    expect(r.map((w) => w.id)).toEqual(['vino-tinto', 'vino-blanco'])
+  })
+
+  it('un grupo que no existe da vacio, no todo', () => {
+    const r = filtrarVinos(catalogo, {
+      ...sinFiltros,
+      departamento: 'Bebidas',
+      grupo: 'ConWithoutAlcohol'
+    })
+    expect(r).toHaveLength(0)
+  })
+
+  it('un producto SIN grupo no aparece al filtrar por un grupo', () => {
+    // El energizante cuelga directo de Bebidas. Si el filtro de grupo no
+    // distinguishiera "sin grupo" de "todos", apareceria bajo "Con alcohol".
+    const r = filtrarVinos(catalogo, {
+      ...sinFiltros,
+      departamento: 'Bebidas',
+      grupo: 'Con alcohol'
+    })
+    expect(r.map((w) => w.id)).not.toContain('energizante')
+  })
+
+  it('pero SI aparece cuando no se filtra por grupo', () => {
+    const r = filtrarVinos(catalogo, { ...sinFiltros, departamento: 'Bebidas', grupo: '' })
+    expect(r.map((w) => w.id)).toContain('energizante')
+  })
+
+  it('el grupo no se aplica si no hay departamento elegido', () => {
+    // Filtrar por grupo sin departamento es una combinacion que la pantalla
+    // nunca produce: la fila de grupos no se renderiza sin departamento. Si
+    // llegara, el filtro tiene que ignorarlo en vez de devolver una tabla
+    // rarísima.
+    const r = filtrarVinos(catalogo, { ...sinFiltros, grupo: 'Con alcohol' })
+    expect(r).toHaveLength(6)
+  })
+
+  it('un departamento que no existe da vacio', () => {
+    expect(filtrarVinos(catalogo, { ...sinFiltros, departamento: 'Ferretería' })).toHaveLength(0)
   })
 })
 
@@ -126,24 +223,25 @@ describe('filtrarVinos: rango de precio', () => {
   })
 
   it('min y max juntos acotan los dos extremos', () => {
-    const r = filtrarVinos(catalogo, {
-      ...sinFiltros,
-      minPrice: 20000,
-      maxPrice: 50000
-    })
+    const r = filtrarVinos(catalogo, { ...sinFiltros, minPrice: 20000, maxPrice: 50000 })
     expect(r.map((w) => w.id)).toEqual(['medio'])
   })
 })
 
 describe('filtrarVinos: los filtros se combinan con AND', () => {
   const catalogo = [
-    vino({ id: 'tinto-barato', category: 'Tinto', price: 10000 }),
-    vino({ id: 'tinto-caro', category: 'Tinto', price: 90000 }),
-    vino({ id: 'blanco-medio', category: 'Blanco', price: 30000 })
+    vino({ id: 'tinto-barato', category: 'Vinos', tipoVino: 'Tinto', price: 10000 }),
+    vino({ id: 'tinto-caro', category: 'Vinos', tipoVino: 'Tinto', price: 90000 }),
+    vino({ id: 'blanco-medio', category: 'Vinos', tipoVino: 'Blanco', price: 30000 })
   ]
 
   it('categoria + precio deja solo lo que cumple las dos', () => {
-    const r = filtrarVinos(catalogo, { ...sinFiltros, categoria: 'Tinto', maxPrice: 20000 })
+    const r = filtrarVinos(catalogo, {
+      ...sinFiltros,
+      departamento: 'Bebidas',
+      category: 'Vinos',
+      maxPrice: 20000
+    })
     expect(r.map((w) => w.id)).toEqual(['tinto-barato'])
   })
 

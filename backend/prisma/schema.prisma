@@ -71,33 +71,51 @@ model RefreshToken {
 model Wine {
   id           String       @id @default(cuid())
   name         String
-  winery       String
-  varietal     String
   /// Texto libre, no enum. Antes era `WineCategory` (Tinto/Blanco/Rosado/
   /// Espumante) y `prisma migrate dev` no era una opcion para agregar una:
   /// ampliar un enum de Postgres es una migracion, y el admin no puede correr
   /// migraciones desde el panel. Con un `String`, la categoria se crea cargando
   /// un producto que la use, y el filtro del catalogo la deriva de ahi.
+  ///
+  /// **Ahora es la hoja de la taxonomia, no el tipo de vino**: Vinos, Cerveza,
+  /// Gaseosas, Jugos. El color del vino vive en `tipoVino`.
   category     String
   /// Departamento de la tienda: es el eje con el que el panel separa el stock
   /// (pestañas "Stock de bebidas", "Stock de regaleria", etc.).
   ///
-  /// **Es un eje distinto de `category`, no lo reemplaza.** `category` sigue
-  /// siendo el tipo de vino —Tinto, Blanco, Rosado, Espumante—, que es closed
-  /// list en la API a proposito. El departamento es el grupo de la tienda. Un
-  /// Malbec es las dos cosas a la vez: categoria Tinto, departamento Bebidas.
-  /// Meter el departamento en `category` habria hecho perder el tipo de vino.
+  /// **Es un eje distinto de `category`, no lo reemplaza.** `category` es la
+  /// hoja (Vinos, Cerveza), `departamento` el grupo de la tienda (Bebidas,
+  /// Regaleria) y `grupo` el intermedio. Un Malbec es Bebidas / Con alcohol /
+  /// Vinos / Tinto a la vez.
   ///
-  /// **Texto libre, no enum**, por la misma razon que `category`: ampliar un
-  /// enum de Postgres es una migracion, y el admin no puede correr migraciones
-  /// desde el panel. Con un `String`, un departamento nuevo aparece cargando un
-  /// producto que lo use.
+  /// Texto libre, no enum, por la misma razon que `category`: ampliar un enum
+  /// de Postgres es una migracion y el admin no puede correr migraciones desde
+  /// el panel.
   ///
-  /// El default es 'Bebidas' porque todo lo que hay en la base son vinos. Sin
-  /// default, la migracion tendria que decidir un valor para cada fila existente
-  /// y no hay forma de que elija bien: seria una suposicion escrita en SQL.
+  /// El default es 'Bebidas' porque casi todo lo que hay en una tienda es
+  /// bebida. Sin default, la migracion tendria que decidir un valor para cada
+  /// fila existente y no hay forma de que elija bien.
   departamento String       @default("Bebidas")
-  vintage      Int
+  /// Nivel medio de la taxonomia: "Con alcohol", "Sin alcohol", "Energizantes".
+  ///
+  /// **Nullable a proposito.** "Energizantes" cuelga directo de Bebidas porque
+  /// no es ni con alcohol ni sin alcohol; si `grupo` fuera obligatorio, ese
+  /// producto tendria que mentir con el grupo o quedarse sin departamento.
+  grupo        String?
+  /// Color del vino. **Solo se llena en productos de la categoria "Vinos".**
+  ///
+  /// Es un campo aparte y no una categoria mas porque "Tinto" y "Blanco" cuelgan
+  /// de "Vinos": son un atributo de esa categoria, no una categoria hermana. Y
+  /// por lo mismo no es texto libre —el admin elige de una lista— para que dos
+  /// Malbec no puedan quedar con colores distintos sin que nadie lo note.
+  tipoVino     String?
+  /// Anada. Nulo para todo lo que no sea vino: una gaseosa no tiene cosecha, y
+  /// un numero de ano pegado a un producto que no lo tiene es informacion falsa.
+  vintage      Int?
+  /// Bodega. Nulo para lo que no viene de una: una galletita no es de ninguna.
+  winery       String?
+  /// Cepa. Nulo para lo que no la tiene; para un blend es "Blend".
+  varietal     String?
   /// Pesos argentinos enteros. NO centavos (D-15).
   price        Int
   description  String?
@@ -112,6 +130,7 @@ model Wine {
 
   @@index([category])
   @@index([departamento])
+  @@index([grupo])
   @@index([varietal])
   @@index([activo])
   @@index([name])

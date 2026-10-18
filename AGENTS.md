@@ -102,10 +102,8 @@
   drawer de móvil no se ve nunca
 - **Montaje**: `montarApp()` en `test/andamiaje.ts` (sin StrictMode; evita doble sincronización a localStorage)
 - **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
-- **Cobertura**: 160 tests en 10 archivos (`csv`, `data_table`, `dashboard`,
-  `date_range`, `integridad_datos_vino`, `validadores`, `permisos`,
-  `admin/sidebar`, `admin/layout_rutas`, `admin/login_fallido`)
-  + `carrito_agregado`, que monta `App` entero interceptando `fetch`;
+- **Cobertura**: 221 tests en 14 archivos. `admin/stock_por_departamento` y
+  `carrito_agregado` interceptan `fetch` y montan `CatalogoAdmin` / `App` enteros;
   `npm test` pasa en modo no interactivo (`watch: false`)
 - **Nota 004-c**: se borraron los tests que dependían de `src/mocks/*` y de `admin_acceso.ts`.
   Con MSW eliminado no queda nada que probar ahí; la cobertura de API real vive en el backend.
@@ -271,3 +269,8 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
     Ese `-600` con la pagina scrolleada 600 px es un navbar **desperdigado**, igual que si no fuera `sticky`. Y la red no hacia falta: medido a 320/390/486/1440 px, `scrollWidth === clientWidth` y ningun elemento es mas ancho que el viewport. **Un elemento mas ancho que la pantalla se corrige en el elemento**, no escondiendolo en el `body`.
 34. **Ocultar el navbar con `translate` en un `sticky` deja el hueco** (2026-10-17). El `sticky` participa del flujo: aplicarle un `-translate-y-full` y nada más, el header sigue reservando su alto y el hero arranca 134 px más abajo, con un rectángulo vacío en medio de la pantalla. Va `max-h-0` + `overflow-hidden`.
     Y en el mismo componente: **si el `<header>` lleva `initial`/`animate` de Framer Motion, su `transform` inline le gana a cualquier clase de Tailwind** y el `-translate-y-full` deja de hacer nada sin que se note por que. O el header se mueve con CSS y no lleva esas props, o el movimiento se hace con `animate={{ y: ... }}`.
+35. **Un `z.enum` de la API es una puerta que no se puede abrir** (2026-10-17). `category` era `z.enum(['Tinto', 'Blanco', 'Rosado', 'Espumante'])`, y habia un test **fijando** que `'Orange'` fuera rechazado — o sea, el enum estaba protegido a proposito. Mientras la tienda fue una vinateria eso cerraba bien. Cuando paso a ser un kiosco, **el enum era el bug**: cargar una cerveza, una gaseosa o una galletita daba `400` y no habia forma de venderlas. El enum en Prisma ya se habia sacar en la spec 011 (`category` es `String`), pero **el de Zod se quedo**, y esa diferencia es invisible: el uno acepta texto libre y el otro no.
+    La regla que quedo: **el enum en la frontera y el `String` en la base tienen que moverse juntos.** Si uno ya es texto libre, el otro tambien; y el test que fijaba el enum viejo hay que invertirlo, no borrar — "rechaza 'Cerveza'" es exactamente la afirmacion que hay que dejar de poder hacer.
+    Y de ahi sale la siguiente: `vintage`, `winery` y `varietal` eran **obligatorios**, porque todos los productos eran vinos. Concederles valor a una gaseosa (`2024`, `"Bodega X"`, `"Blend"`) es escribir informacion falsa en la base, asi que pasaron a nullable — y con eso `esCampoOpcionalValido` tuvo que **aceptar `null`**, que antes rechazaba a proposito. `null` paso de ser "dato roto" a ser "este producto no tiene bodega".
+36. **`CAMPOS_REQUERIDOS` con `toHaveLength` es lo que avisa de un cambio de modelo** (2026-10-17). Ese numero esta a proposito y no es decorativo: cuando `winery`/`varietal`/`vintage` volvieron opcionales, el test fijo en 10 fallo y obligo a decidir explicitamente que pasaban a `CAMPOS_OPCIONALES`. Sin el numero, el unico aviso seria un fixture sin el campo —y eso lo ve `tsc` **solo si el campo es requerido**, que es justo el caso que no aplica cuando el campo nuevo es opcional.
+    El riesgo del otro lado es peor: si se sacan de `CAMPOS_REQUERIDOS` y no entran en `CAMPOS_OPCIONALES`, quedan **en ninguna de las dos listas** y `integridad_datos_vino.test.ts` los trata como propiedades fuera del contrato. Hay un test para eso ("los que se volvieron opcionales estan en CAMPOS_OPCIONALES").

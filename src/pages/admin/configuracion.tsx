@@ -164,7 +164,16 @@ export const ConfiguracionAdmin = () => {
     }
   }
 
-  const cepas = [...new Set((vinos.data?.data ?? []).map((vino) => vino.varietal))].sort()
+  // El `.filter((v) => v !== null)` descarta los `null`: desde que la tienda
+  // vendio cosas sin bodega ni cepa, una gaseosa llega con `varietal: null` y la
+  // lista mostraria una entrada vacia que dice "null". La cuenta de al lado
+  // (`Cepas (3)`) tambien contaria esos nulos, asi que el filtro va antes del
+  // `new Set`, no despues.
+  const cepas = [
+    ...new Set(
+      (vinos.data?.data ?? []).map((vino) => vino.varietal).filter((v) => v !== null)
+    )
+  ].sort()
   const categorias = [...new Set((vinos.data?.data ?? []).map((vino) => vino.category))].sort()
 
   return (

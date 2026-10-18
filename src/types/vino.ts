@@ -16,24 +16,39 @@ export type WineCategory = string
 export interface Wine {
   id: string
   name: string
-  winery: string
-  varietal: string
+  /** Bodega. `null` para lo que no viene de una. */
+  winery: string | null
+  /** Cepa. `null` para lo que no la tiene. */
+  varietal: string | null
+  /** Anada. `null` para lo que no es vino. */
+  vintage: number | null
+  /**
+   * La **hoja** de la taxonomia: Vinos, Cerveza, Gaseosas, Jugos.
+   *
+   * Antes era el tipo de vino —Tinto, Blanco, Rosado, Espumante— y el backend la
+   * validaba con un enum cerrado, que rechazaba una cerveza con un 400. Ahora es
+   * texto libre y el color del vino vive en `tipoVino`.
+   */
   category: WineCategory
   /**
-   * El grupo de la tienda, que es un eje **distinto** de `category`.
+   * El departamento de la tienda: el nivel mas alto.
    *
-   * `category` dice que tipo de vino es —Tinto, Blanco, Rosado, Espumante— y
-   * `departamento` dice a que seccion de la tienda pertenece: Bebidas,
-   * Regalería, Snacks y chocolates, Comidas. Un Malbec es las dos a la vez, y por
-   * eso no se metio el departamento adentro de `category`: habria que elegir uno
-   * y se pierde el otro.
-   *
-   * Es texto libre y no una lista cerrada por el mismo motivo que
-   * `WineCategory`. Ver `src/utils/departamentos.ts` para los cuatro que usa la
-   * interfaz.
+   * Los tres niveles son ejes distintos y un producto los tiene **a la vez**:
+   * un Malbec es `departamento: 'Bebidas'`, `grupo: 'Con alcohol'`,
+   * `category: 'Vinos'` y `tipoVino: 'Tinto'`. Filtrar por cualquiera de los tres
+   * acota a los anteriores, no lo reemplaza.
    */
   departamento: string
-  vintage: number
+  /**
+   * El nivel medio: "Con alcohol", "Sin alcohol".
+   *
+   * `null` cuando el producto cuelga directo del departamento. "Energizantes" es
+   * el caso: no es ni con alcohol ni sin alcohol, y colgarlo de un grupo seria
+   * mentir sobre el producto.
+   */
+  grupo: string | null
+  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  tipoVino: string | null
   price: number
   description: string
   tastingNotes?: string
@@ -44,12 +59,13 @@ export interface Wine {
 export interface PublicWine {
   id: string
   name: string
-  winery: string
-  varietal: string
+  winery: string | null
+  varietal: string | null
+  vintage: number | null
   category: WineCategory
-  /** El grupo de la tienda. Eje distinto de `category`. Ver `Wine`. */
   departamento: string
-  vintage: number
+  grupo: string | null
+  tipoVino: string | null
   price: number
   description: string | null
   tastingNotes: string | null

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Wine } from '../src/types/vino'
 import {
+  CAMPOS_OPCIONALES,
   CAMPOS_REQUERIDOS,
   camposRequeridosInvalidos,
   esAnioRazonable,
@@ -25,8 +26,10 @@ const vinoValido = (): Wine => ({
   name: 'Test Malbec',
   winery: 'Bodega Test',
   varietal: 'Malbec',
-  category: 'Tinto',
+  category: 'Vinos',
   departamento: 'Bebidas',
+  grupo: 'Con alcohol',
+  tipoVino: 'Tinto',
   vintage: 2020,
   price: 45000,
   description: 'Vino de prueba para validar el contrato de datos.',
@@ -59,8 +62,6 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
     { campo: 'id', valor: '   ' },
     { campo: 'id', valor: 7 },
     { campo: 'name', valor: '' },
-    { campo: 'winery', valor: '   ' },
-    { campo: 'varietal', valor: undefined },
     // Desde la spec 011 la categoria es texto libre, asi que `'Naranja'` y
     // `'Todos'` ya no son invalidas: son categorias bien formadas. Lo que sigue
     // siendo invalido es la **forma** —vacia, en minuscula, o demasiado larga—
@@ -70,14 +71,28 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
     { campo: 'category', valor: '   ' },
     { campo: 'category', valor: 'tinto' },
     { campo: 'category', valor: 'A'.repeat(41) },
-    { campo: 'vintage', valor: 1700 },
-    { campo: 'vintage', valor: '2020' },
+    // `departamento` y `grupo` son los dos niveles de la taxonomia de la tienda
+    // y los dos tienen que estar: un producto sin departamento no aparece en
+    // ninguna pestaña de stock, y uno sin grupo no se puede colocar en "Con
+    // alcohol" ni en "Sin alcohol".
+    { campo: 'departamento', valor: '' },
+    { campo: 'departamento', valor: '   ' },
+    { campo: 'departamento', valor: 42 },
     { campo: 'price', valor: 0 },
     { campo: 'price', valor: -100 },
     { campo: 'description', valor: '' },
     { campo: 'imageUrl', valor: 'no-es-una-url' },
     { campo: 'imageUrl', valor: '/ruta/local.jpg' }
   ]
+
+  /**
+   * `winery`, `varietal` y `vintage` **no** aparecen en la lista de arriba.
+   *
+   * Antes eran requeridos y estas mutaciones los detectaban. Dejaron de serlo
+   * cuando la tienda paso a vender cosas que no son vino: una gaseosa no tiene
+   * bodega, ni cepa, ni anada, y exigirlas era lo que hacia imposible cargarla.
+   * Ver el `describe` de abajo, que si los cubre.
+   */
 
   mutaciones.forEach(({ campo, valor }) => {
     it(`detecta ${String(campo)} = ${JSON.stringify(valor)}`, () => {
@@ -100,16 +115,45 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
       ['category', 'imageUrl', 'name', 'price'].sort()
     )
   })
+
+  it('un producto sin bodega, ni cepa, ni anada NO se marca como roto', () => {
+    // La regresion de este cambio: los tres campos volvieron opcionales porque
+    // una gaseosa no los tiene. Con ellos en `CAMPOS_REQUERIDOS`, este producto
+    // —que es perfectamente valido— se reportaria con tres campos invalidos y el
+    // catalogo entero se veria como datos rotos.
+    const gaseosa = {
+      ...vinoValido(),
+      category: 'Gaseosas',
+      grupo: 'Sin alcohol',
+      tipoVino: null,
+      winery: null,
+      varietal: null,
+      vintage: null
+    }
+
+    expect(camposRequeridosInvalidos(gaseosa as Wine)).toEqual([])
+  })
+
+  it('pero un producto con la bodega en blanco SI se marca', () => {
+    // `null` es "no tiene bodega". `''` es "la bodega se guardo vacia", que es un
+    // error de carga distinto y no se debe colar.
+    const conBodegaVacia = { ...vinoValido(), winery: '' }
+
+    expect(esCampoOpcionalValido(conBodegaVacia.winery)).toBe(false)
+  })
 })
 
 describe('validadores: cobertura de CAMPOS_REQUERIDOS', () => {
-  it('incluye los 10 campos obligatorios de la interface Wine', () => {
-    // Son 10 desde que `departamento` se sumo al contrato (antes 9). El numero
-    // esta a proposito: es lo que hace que agregar un campo a `Wine` **no** pase
-    // en verde. Sin el, el unico aviso seria que un fixture quedara sin el campo
-    // nuevo —y eso recien lo ve `tsc` si el campo es requerido, que no siempre
-    // pasa—. Con el, hay que decidir aca que el campo entra.
-    expect(CAMPOS_REQUERIDOS).toHaveLength(10)
+  it('incluye los 7 campos obligatorios de la interface Wine', () => {
+    // **Son 7, antes 10.** `winery`, `varietal` y `vintage` dejaron de ser
+    // requeridos cuando la tienda paso a vender cosas que no son vino, y se
+    // movieron a `CAMPOS_OPCIONALES`. Quedan 10 − 3 = 7.
+    //
+    // El numero esta a proposito: es lo que hace que agregar un campo a `Wine`
+    // **no** pase en verde. Sin el, el unico aviso seria que un fixture quedara
+    // sin el campo nuevo —y eso recien lo ve `tsc` si el campo es requerido, que
+    // no siempre pasa—. Con el, hay que decidir aca que el campo entra.
+    expect(CAMPOS_REQUERIDOS).toHaveLength(7)
     expect([...CAMPOS_REQUERIDOS].sort()).toEqual(
       [
         'category',
@@ -118,17 +162,26 @@ describe('validadores: cobertura de CAMPOS_REQUERIDOS', () => {
         'id',
         'imageUrl',
         'name',
-        'price',
-        'varietal',
-        'vintage',
-        'winery'
+        'price'
       ].sort()
     )
+  })
+
+  it('los que se volvieron opcionales estan en CAMPOS_OPCIONALES', () => {
+    // El otro lado del mismo cambio: si se sacaron de los requeridos y no
+    // entraron en los opcionales, quedan **en ninguna de las dos listas** y el
+    // test de integridad los trataria como propiedades fuera del contrato.
+    expect(CAMPOS_OPCIONALES).toContain('winery')
+    expect(CAMPOS_OPCIONALES).toContain('varietal')
+    expect(CAMPOS_OPCIONALES).toContain('vintage')
   })
 
   it('no incluye los campos opcionales', () => {
     expect(CAMPOS_REQUERIDOS).not.toContain('tastingNotes')
     expect(CAMPOS_REQUERIDOS).not.toContain('foodPairing')
+    expect(CAMPOS_REQUERIDOS).not.toContain('winery')
+    expect(CAMPOS_REQUERIDOS).not.toContain('varietal')
+    expect(CAMPOS_REQUERIDOS).not.toContain('vintage')
   })
 
   it('un objeto vacio reporta todos los campos requeridos como invalidos', () => {

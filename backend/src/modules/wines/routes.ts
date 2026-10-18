@@ -12,10 +12,22 @@ function normalizeRow(row: Record<string, string>): Record<string, any> {
   for (const [key, value] of Object.entries(row)) {
     const k = key.trim().toLowerCase()
     let v = value.trim()
-    if (k === 'id' || k === 'name' || k === 'winery' || k === 'varietal' || k === 'category' || k === 'departamento' || k === 'description' || k === 'tastingnotes' || k === 'foodpairing' || k === 'imageurl') {
-      normalized[k === 'tastingnotes' ? 'tastingNotes' : k === 'foodpairing' ? 'foodPairing' : k === 'imageurl' ? 'imageUrl' : k] = v
+    if (k === 'id' || k === 'name' || k === 'winery' || k === 'varietal' || k === 'category' || k === 'departamento' || k === 'grupo' || k === 'tipovino' || k === 'description' || k === 'tastingnotes' || k === 'foodpairing' || k === 'imageurl') {
+      normalized[k === 'tastingnotes' ? 'tastingNotes' : k === 'foodpairing' ? 'foodPairing' : k === 'imageurl' ? 'imageUrl' : k === 'tipovino' ? 'tipoVino' : k] = v
     } else if (k === 'vintage' || k === 'price' || k === 'stock') {
-      normalized[k] = v ? parseInt(v, 10) : 0
+      // `vintage` es nullable desde que la tienda vendio cosas sin anada: una
+      // celda vacia tiene que llegar como `null`. Con `parseInt('')` sale `NaN`, y
+      // `NaN` en Prisma es un error de base, no un `null`.
+      //
+      // `price` y `stock` en cambio son NOT NULL, y su celda vacia sigue yendo a
+      // `0` como antes. Un `null` ahi revienta la base; el `0` es lo que el
+      // `wineBaseSchema` valida con `.positive()` y `.nonnegative()` segun el
+      // campo, asi que la fila se rechaza con un mensaje y no revienta el import.
+      if (k === 'vintage') {
+        normalized.vintage = v === '' ? null : parseInt(v, 10)
+      } else {
+        normalized[k] = v ? parseInt(v, 10) : 0
+      }
     } else if (k === 'activo') {
       normalized.activo = v.toLowerCase() === 'true' || v === '1' || v.toLowerCase() === 'sí' || v.toLowerCase() === 'si'
     }
@@ -46,7 +58,7 @@ export const winesRoutes = async (fastify: FastifyInstance): Promise<void> => {
       schema: jsonSchemas.wines.list
     },
     async (request) => {
-      const { page, limit, search, category, departamento, varietal, status } = request.query as any
+      const { page, limit, search, category, departamento, grupo, tipoVino, varietal, status } = request.query as any
       const where: any = {}
 
       if (search) {
@@ -57,10 +69,13 @@ export const winesRoutes = async (fastify: FastifyInstance): Promise<void> => {
         ]
       }
       if (category) where.category = category
-      // El departamento va **junto** al filtro de categoria, no en su lugar: son
-      // ejes distintos (tipo de vino y grupo de la tienda) y una fila puede
-      // filtrarse por los dos a la vez.
+      // Los tres ejes de la taxonomia se filtran **juntos**, no uno en lugar del
+      // otro: departamento, grupo y hoja son niveles de la misma rama. Filtrar por
+      // `departamento` solo ya devuelve los tres grupos de Bebidas; el `grupo`
+      // acota a uno.
       if (departamento) where.departamento = departamento
+      if (grupo) where.grupo = grupo
+      if (tipoVino) where.tipoVino = tipoVino
       if (varietal) where.varietal = { contains: varietal, mode: 'insensitive' }
       if (status === 'activo') where.activo = true
       if (status === 'inactivo') where.activo = false

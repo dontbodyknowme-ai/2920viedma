@@ -3,7 +3,12 @@ import { act, createElement } from 'react'
 import type { AdminWine } from '../../src/types/admin'
 import { montarAdmin, desmontarAdmin, type MontajeAdmin } from './andamiaje_admin'
 import { CatalogoAdmin } from '../../src/pages/admin/catalogo'
-import { DEPARTAMENTOS, PESTAÑA_TODOS, SIN_DEPARTAMENTO } from '../../src/utils/departamentos'
+import {
+  DEPARTAMENTOS,
+  PESTAÑA_TODOS,
+  SIN_DEPARTAMENTO,
+  etiquetaDeStock
+} from '../../src/utils/departamentos'
 import { CLAVE_CARRITO, CLAVE_VINOS } from '../andamiaje'
 
 /**
@@ -33,8 +38,10 @@ const VINOS: AdminWine[] = DEPARTAMENTOS.map((departamento, indice) => ({
   name: `Producto de ${departamento.valor}`,
   winery: 'Bodega Test',
   varietal: 'Malbec',
-  category: 'Tinto',
+  category: 'Vinos',
   departamento: departamento.valor,
+  grupo: 'Con alcohol',
+  tipoVino: 'Tinto',
   vintage: 2021,
   price: 10000 + indice,
   description: 'Producto de prueba.',
@@ -170,8 +177,7 @@ describe('las pestañas de stock', () => {
       PESTAÑA_TODOS,
       'Stock de bebidas',
       'Stock de regalería',
-      'Stock de snacks y chocolates',
-      'Stock de comidas'
+      'Stock de gastronomía'
     ])
 
     await desmontarAdmin(montaje)
@@ -184,14 +190,13 @@ describe('las pestañas de stock', () => {
     expect(DEPARTAMENTOS.map((d) => d.valor)).toEqual([
       'Bebidas',
       'Regalería',
-      'Snacks y chocolates',
-      'Comidas'
+      'Gastronomía'
     ])
     // El `String(...)` es para que el guard siga siendo de runtime: con `as
     // const`, TypeScript ya prueba que los dos son literales distintos y
     // rechaza la comparacion como "no hay solapamiento" (TS2367). Sin el
     // ensanchado, el test no compila — y un test que no compila no corre.
-    expect(DEPARTAMENTOS.every((d) => String(d.valor) !== String(d.etiqueta))).toBe(true)
+    expect(DEPARTAMENTOS.every((d) => etiquetaDeStock(d.valor) !== d.valor)).toBe(true)
   })
 
   it('arranca en "Todos", y sin parametro de departamento en la peticion', async () => {
@@ -209,13 +214,13 @@ describe('las pestañas de stock', () => {
     for (const departamento of DEPARTAMENTOS) {
       const montaje = await montarCatalogo()
 
-      await pulsarPestana(montaje, departamento.etiqueta)
+      await pulsarPestana(montaje, etiquetaDeStock(departamento.valor))
 
       expect(
         ultimaPeticionDeCatalogo().searchParams.get('departamento'),
-        `"${departamento.etiqueta}" no pidio su departamento`
+        `"${etiquetaDeStock(departamento.valor)}" no pidio su departamento`
       ).toBe(departamento.valor)
-      expect(pestanaActiva(montaje)).toBe(departamento.etiqueta)
+      expect(pestanaActiva(montaje)).toBe(etiquetaDeStock(departamento.valor))
       // Solo una marcada: dos `aria-current` serian dos "esta" en pantalla.
       expect(
         montaje.contenedor.querySelectorAll('nav[aria-label] button[aria-current]')
@@ -231,7 +236,7 @@ describe('las pestañas de stock', () => {
     // recargar la pagina.
     const montaje = await montarCatalogo()
 
-    await pulsarPestana(montaje, DEPARTAMENTOS[0].etiqueta)
+    await pulsarPestana(montaje, etiquetaDeStock(DEPARTAMENTOS[0].valor))
     expect(ultimaPeticionDeCatalogo().searchParams.get('departamento')).not.toBeNull()
 
     await pulsarPestana(montaje, PESTAÑA_TODOS)
@@ -243,10 +248,10 @@ describe('las pestañas de stock', () => {
   it('el titulo dice que stock se esta viendo', async () => {
     const montaje = await montarCatalogo()
 
-    await pulsarPestana(montaje, DEPARTAMENTOS[2].etiqueta)
+    await pulsarPestana(montaje, etiquetaDeStock(DEPARTAMENTOS[2].valor))
 
     expect(montaje.contenedor.querySelector('h2')?.textContent).toBe(
-      DEPARTAMENTOS[2].etiqueta
+      etiquetaDeStock(DEPARTAMENTOS[2].valor)
     )
 
     await desmontarAdmin(montaje)

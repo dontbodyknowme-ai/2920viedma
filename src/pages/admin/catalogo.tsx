@@ -12,7 +12,8 @@ import { ESTADOS, useCatalogo } from '../../hooks/useCatalogo'
 import {
   DEPARTAMENTOS,
   PESTAÑA_TODOS,
-  SIN_DEPARTAMENTO
+  SIN_DEPARTAMENTO,
+  etiquetaDeStock
 } from '../../utils/departamentos'
 import type { AdminWine } from '../../types/admin'
 
@@ -261,7 +262,9 @@ export const CatalogoAdmin = () => {
       <div className='flex flex-wrap items-start justify-between gap-3'>
         <div>
           <h2 className='font-serif text-lg font-bold text-carbon'>
-            {pestanaActual === undefined ? 'Catalogo de productos' : pestanaActual.etiqueta}
+            {pestanaActual === undefined
+              ? 'Catalogo de productos'
+              : etiquetaDeStock(pestanaActual.valor)}
           </h2>
           <p className='text-sm text-neutral-500'>
             {catalogo.total} {catalogo.total === 1 ? 'producto' : 'productos'} en esta seccion
@@ -327,7 +330,9 @@ export const CatalogoAdmin = () => {
                     : 'border-neutral-300 bg-blanco/40 text-neutral-600 hover:border-verde-salvia hover:text-carbon'
                 }`}
               >
-                {pestana.etiqueta}
+                {pestana.valor === SIN_DEPARTAMENTO
+                  ? PESTAÑA_TODOS
+                  : etiquetaDeStock(pestana.valor)}
               </button>
             )
           }

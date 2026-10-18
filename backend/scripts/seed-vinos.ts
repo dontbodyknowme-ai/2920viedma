@@ -26,10 +26,19 @@ const p = new PrismaClient()
 interface VinoSeed {
   id: string
   name: string
-  winery: string
-  varietal: string
-  category: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante'
-  vintage: number
+  /** `null` para lo que no viene de una bodega. */
+  winery: string | null
+  /** `null` para lo que no tiene cepa. */
+  varietal: string | null
+  /** `null` para lo que no es vino: una gaseosa no tiene añada. */
+  vintage: number | null
+  /** La hoja de la taxonomia: Vinos, Cerveza, Gaseosas, Jugos. */
+  category: string
+  departamento: string
+  /** Nivel medio. `null` si cuelga directo del departamento ("Energizantes"). */
+  grupo: string | null
+  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  tipoVino: string | null
   price: number
   description: string
   tastingNotes: string
@@ -45,9 +54,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Gran Reserva Malbec',
     winery: 'Bodega Catena Zapata',
     varietal: 'Malbec',
-    category: 'Tinto',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Tinto',
     vintage: 2020,
     price: 45000,
     description: 'Vino tinto de gran cuerpo con notas de frutos rojos maduros y roble frances.',
@@ -62,9 +72,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Chardonnay White Bones',
     winery: 'El Enemigo',
     varietal: 'Chardonnay',
-    category: 'Blanco',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Blanco',
     vintage: 2021,
     price: 38000,
     description: 'Elegente blanco con gran acidez, mineralidad y paso por barrica.',
@@ -79,9 +90,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Cabernet Sauvignon Reserva',
     winery: 'Catena Chadwick',
     varietal: 'Cabernet Sauvignon',
-    category: 'Tinto',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Tinto',
     vintage: 2019,
     price: 62000,
     description: 'Cabernet de guarda con estructura firme y final largo de cedro.',
@@ -96,9 +108,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Pinot Noir Seleccion',
     winery: 'Luigi Bosca',
     varietal: 'Pinot Noir',
-    category: 'Tinto',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Tinto',
     vintage: 2021,
     price: 39500,
     description: 'Delicado, aromatico, con fruta roja brillante y taninos sedosos.',
@@ -113,9 +126,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Malbec Reserva Familia',
     winery: 'Bodega Norton',
     varietal: 'Malbec',
-    category: 'Tinto',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Tinto',
     vintage: 2018,
     price: 28000,
     description: 'Malbec de acceso, maduro y facil de beber, con buena estructura.',
@@ -130,9 +144,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Cabernet Franc',
     winery: 'Pulenta Estate',
     varietal: 'Cabernet Franc',
-    category: 'Tinto',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Tinto',
     vintage: 2020,
     price: 33500,
     description: 'Vermut taste en taza, herbaceo, con grafito y fruta roja.',
@@ -147,9 +162,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Sauvignon Blanc',
     winery: 'Trapiche',
     varietal: 'Sauvignon Blanc',
-    category: 'Blanco',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Blanco',
     vintage: 2022,
     price: 24500,
     description: 'Blanco fresco y aromatico, de acidez vibrante.',
@@ -164,9 +180,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Riesling Trocken',
     winery: 'Los Cemillos',
     varietal: 'Riesling',
-    category: 'Blanco',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Blanco',
     vintage: 2021,
     price: 31000,
     description: 'Blanco seco de moscatel con acidez brillante y un fondo mineral.',
@@ -181,9 +198,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Rose Provence',
     winery: 'Chateau Peyrelongue',
     varietal: 'Grenache',
-    category: 'Rosado',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Rosado',
     vintage: 2022,
     price: 22000,
     description: 'Rosado seco, fluido, de color palido y frescura vibrante.',
@@ -198,9 +216,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Espumante Brut Nature',
     winery: 'Bodega Cono Sur',
     varietal: 'Chardonnay',
-    category: 'Espumante',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Espumante',
     vintage: 2020,
     price: 19500,
     description: 'Espumante de Charmat, seco y fresco, con burbuja fina y persistente.',
@@ -215,9 +234,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Espumante Rose',
     winery: 'Chandon',
     varietal: 'Pinot Noir',
-    category: 'Espumante',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Espumante',
     vintage: 2021,
     price: 36000,
     description: 'Espumante rosado elegante, con fruta roja y burbuja sedosa.',
@@ -232,9 +252,10 @@ const CATALOGO: VinoSeed[] = [
     name: 'Merlot Vintage',
     winery: 'Valderramero',
     varietal: 'Merlot',
-    category: 'Tinto',
-
+    category: 'Vinos',
     departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: 'Tinto',
     vintage: 2017,
     price: 21500,
     description: 'Merlot suave, con fruta madura y taninos pulidos.',
@@ -243,6 +264,141 @@ const CATALOGO: VinoSeed[] = [
     imageUrl: 'https://images.unsplash.com/photo-1473973266408-ed4e27abdd47?auto=format&fit=crop&q=80&w=800',
     stock: 28,
     activo: false
+  },
+
+  /*
+   * Productos que NO son vino.
+   *
+   * Estan porque el catalogo dejo de ser una vinateria, y un seed de doce
+   * Malbec no demuestra eso: con todos los productos en "Bebidas / Con alcohol /
+   * Vinos", los filtros de "Cerveza", "Gaseosas" y "Energizantes" salen vacios y
+   * no hay forma de saber si es porque el filtro esta mal o porque no hay nada.
+   *
+   * Cada uno de estos exercita una parte distinta del modelo:
+   *
+   * - **Cerveza**: con `grupo`, como todo lo que tiene alcohol.
+   * - **Gaseosa**: `grupo` "Sin alcohol", y `winery`/`varietal`/`vintage` en
+   *   `null`. Antes esos tres campos eran obligatorios, asi que este producto
+   *   **no se podia cargar**.
+   * - **Energizante**: `grupo` en `null`. Cuelga directo de Bebidas porque no es
+   *   ni con alcohol ni sin alcohol.
+   * - **Regalería** y **Gastronomía**: los dos departamentos que todavia no
+   *   tienen estructura. Dicen la verdad sobre el catalogo —estan vacios de
+   *   subcategorias— en vez de fingir un arbol que el boceto no dibujo.
+   */
+  {
+    id: 'bebida-cerveza-artesanal-ipa',
+    name: 'Cerveza Artesanal IPA 355ml',
+    winery: 'Cervecería del Puerto',
+    varietal: null,
+    category: 'Cerveza',
+    departamento: 'Bebidas',
+    grupo: 'Con alcohol',
+    tipoVino: null,
+    vintage: null,
+    price: 4800,
+    description: 'IPA rubia de fermentacion alta, con hopperscitrus y amargor limpio.',
+    tastingNotes: 'Limon, maracuya, rescoldo de pan y un amargor que se seca.',
+    foodPairing: 'Carniceria, hamburguesas y queso azul.',
+    imageUrl: 'https://images.unsplash.com/photo-1516458464372-eea4ab222b31?auto=format&fit=crop&q=80&w=800',
+    stock: 60,
+    activo: true
+  },
+  {
+    id: 'bebida-gaseosa-cola-2l',
+    name: 'Gaseosa de Cola 2L',
+    winery: null,
+    varietal: null,
+    category: 'Gaseosas',
+    departamento: 'Bebidas',
+    grupo: 'Sin alcohol',
+    tipoVino: null,
+    vintage: null,
+    price: 3900,
+    description: 'Gaseosa de cola en botella de 2 litros, para compartir.',
+    tastingNotes: 'Azucarado, con burbuja fina y final largo.',
+    foodPairing: 'Parrilla, hamburguesas y picnic.',
+    imageUrl: 'https://images.unsplash.com/photo-1581636625402-29b2a704ef13?auto=format&fit=crop&q=80&w=800',
+    stock: 120,
+    activo: true
+  },
+  {
+    id: 'bebida-agua-saborizada-limon',
+    name: 'Agua Saborizada Limón 500ml',
+    winery: null,
+    varietal: null,
+    category: 'Agua saborizada',
+    departamento: 'Bebidas',
+    grupo: 'Sin alcohol',
+    tipoVino: null,
+    vintage: null,
+    price: 1900,
+    description: 'Agua con infusion de limon, endulzada levemente y sin gas.',
+    tastingNotes: 'Lima y un toque de menta al final.',
+    foodPairing: 'Todo el dia: oficina, gimnasio o viaje.',
+    imageUrl: 'https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&q=80&w=800',
+    stock: 90,
+    activo: true
+  },
+  {
+    id: 'bebida-energizante-red-bull-250',
+    name: 'Energizante 250ml',
+    winery: null,
+    varietal: null,
+    category: 'Energizantes',
+    departamento: 'Bebidas',
+    // `grupo` en null a proposito: los energizantes no son ni con alcohol ni sin
+    // alcohol, asi que colgarlos de un grupo seria mentir sobre el producto.
+    grupo: null,
+    tipoVino: null,
+    vintage: null,
+    price: 3200,
+    description: 'Energizante con cafeina y taurina, en lata de 250 ml.',
+    tastingNotes: 'Amarga, con un final largo de cafeina.',
+    foodPairing: 'No es alimento: es una bebida de tono despierto.',
+    imageUrl: 'https://images.unsplash.com/photo-1610873167013-2dd675d30ef4?auto=format&fit=crop&q=80&w=800',
+    stock: 75,
+    activo: true
+  },
+  {
+    id: 'regaleria-set-copas',
+    name: 'Set de Copas x2',
+    winery: null,
+    varietal: null,
+    // `categoria` es NOT NULL en la base, asi que un producto de Regaleria igual
+    // tiene que decir que es. Lo que **no** tiene es grupo: el boceto dibuja la
+    // jerarquia solo de Bebidas, y regular un grupo aca seria inventar el arbol
+    // de un negocio que todavia no existe.
+    category: 'Vajilla',
+    departamento: 'Regalería',
+    grupo: null,
+    tipoVino: null,
+    vintage: null,
+    price: 28000,
+    description: 'Set de dos copas de cristal, para regalar o para la mesa.',
+    tastingNotes: 'Vidrio fino, base estable.',
+    foodPairing: 'Vinos tintos y blancos.',
+    imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=800',
+    stock: 15,
+    activo: true
+  },
+  {
+    id: 'gastronomia-queso-brie',
+    name: 'Queso Brie',
+    winery: null,
+    varietal: null,
+    category: 'Quesos',
+    departamento: 'Gastronomía',
+    grupo: null,
+    tipoVino: null,
+    vintage: null,
+    price: 12000,
+    description: 'Queso brie de pasta suave, porcion de 250 g.',
+    tastingNotes: 'Corteza telada, notas de champinones y final suave.',
+    foodPairing: 'Vino blanco, pan de campagne y uvas.',
+    imageUrl: 'https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&q=80&w=800',
+    stock: 22,
+    activo: true
   }
 ]
 
@@ -263,7 +419,7 @@ async function main() {
   const total = await p.wine.count()
   const activos = await p.wine.count({ where: { activo: true } })
 
-  console.log(`\nCatalogo listo: ${total} vinos, ${activos} activos.`)
+  console.log(`\nCatalogo listo: ${total} productos, ${activos} activos.`)
 }
 
 main()

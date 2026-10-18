@@ -42,10 +42,14 @@ export const ProductForm = ({
   useEffect(() => {
     if (wineToEdit) {
       setName(wineToEdit.name)
-      setWinery(wineToEdit.winery)
-      setVarietal(wineToEdit.varietal)
+      // Bodega, cepa y anada pueden ser `null` desde que la tienda vendio cosas
+      // que no las tienen. El `?? ''` es lo que evita que un `<input type="text">`
+      // reciba `null` —que en React lo deja sin controlar— y que un `<input
+      // type="number">` reciba algo que no puede mostrar.
+      setWinery(wineToEdit.winery ?? '')
+      setVarietal(wineToEdit.varietal ?? '')
       setCategory(wineToEdit.category)
-      setVintage(wineToEdit.vintage)
+      setVintage(wineToEdit.vintage ?? 0)
       setPrice(wineToEdit.price)
       setDescription(wineToEdit.description)
       setImageUrl(wineToEdit.imageUrl)
@@ -75,14 +79,16 @@ export const ProductForm = ({
       name,
       winery,
       varietal: varietal || 'Blend',
-      category,
+      category: 'Vinos',
+      departamento: 'Bebidas',
       // Este es el formulario **publico** (`ProductForm`), el que produce un
       // `Wine` y no un `AdminWine`: lo usa el que carga productos sin panel. No
-      // tiene campo de departamento, asi que lo que carga va a Bebidas, que es
-      // lo unico que un formulario de la tienda publica puede afirmar. Si
-      // llegara a ficar en "" el producto no apareceria en ninguna pestaña de
-      // stock del panel, que es peor que aparecer en la de bebidas.
-      departamento: 'Bebidas',
+      // tiene campo de departamento ni de grupo, asi que lo que carga va a
+      // Bebidas / Con alcohol, que es lo unico que un formulario de la tienda
+      // publica puede afirmar sin inventar. Cargar una gaseosa desde aca la deja
+      // en la rama del vino; el panel es donde se elige la rama correcta.
+      grupo: 'Con alcohol',
+      tipoVino: null,
       vintage: Number(vintage),
       price: Number(price),
       description,
