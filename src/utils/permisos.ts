@@ -18,7 +18,7 @@ import type { PublicUser } from '../api/schemas.js'
  *
  * La defensa es el `requireRole` del backend, y ya existe:
  *
- *   /api/wines       admin, gestor
+ *   /api/products       admin, gestor
  *   /api/customers   admin, gestor
  *   /api/metrics     admin
  *   /api/orders      admin, gestor, vendedor

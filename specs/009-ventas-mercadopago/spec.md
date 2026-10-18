@@ -28,7 +28,7 @@ Permitir que un visitante compre productos de la tienda sin necesidad de registr
 
 | Aspecto | Valor |
 |---|---|
-| Catálogo | 12 vinos mock generados con PRNG sembrado |
+| Catálogo | 12 productos mock generados con PRNG sembrado |
 | Carrito | `localStorage` con `vinoteca_cart` |
 | Backend | Fastify en `:3000`, spec 004-b completa |
 | Auth | JWT access 15min + refresh rotativo 7d cookie httpOnly (solo admin/gestor/vendedor) |

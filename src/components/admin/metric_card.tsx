@@ -7,12 +7,12 @@ import type { LucideIcon } from 'lucide-react'
  * "carritos abandonados" y "conversion" no suben ni bajan bien.
  */
 
-type Tono = 'gold' | 'wine' | 'cream' | 'neutral'
+type Tono = 'salvia' | 'verde' | 'carbon' | 'neutral'
 
 const TONOS: Record<Tono, { icono: string; marco: string }> = {
-  gold: { icono: 'text-verde-salvia', marco: 'border-verde-salvia/30' },
-  wine: { icono: 'text-verde-500', marco: 'border-verde-500/40' },
-  cream: { icono: 'text-carbon', marco: 'border-neutral-300' },
+  salvia: { icono: 'text-verde-salvia', marco: 'border-verde-salvia/30' },
+  verde: { icono: 'text-verde-500', marco: 'border-verde-500/40' },
+  carbon: { icono: 'text-carbon', marco: 'border-neutral-300' },
   neutral: { icono: 'text-neutral-600', marco: 'border-neutral-200' }
 }
 
@@ -25,7 +25,7 @@ interface MetricCardProps {
   tone?: Tono
 }
 
-export const MetricCard = ({ label, value, trend, icon: Icono, tone = 'gold' }: MetricCardProps) => {
+export const MetricCard = ({ label, value, trend, icon: Icono, tone = 'salvia' }: MetricCardProps) => {
   const estilos = TONOS[tone]
   const esPositiva = trend !== undefined && trend.value >= 0
 

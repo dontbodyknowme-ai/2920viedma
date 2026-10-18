@@ -62,7 +62,7 @@ Conectar el **frontend existente** (React + Vite + MSW) al **backend real** (Fas
 6. **Admin: Pedidos** — Listar, detalle, timeline, cambio estado contra `GET/PATCH /api/orders`
 7. **Admin: Clientes** — Listar, detalle, notas, tags contra `GET/PATCH /api/customers`
 8. **Admin: Métricas** — `GET /api/metrics` reemplaza mock
-9. **Upload real** — `POST /api/upload` en `ProductForm` / `AdminWineForm` (Sharp→WebP→S3)
+9. **Upload real** — `POST /api/upload` en `ProductForm` / `AdminProductoForm` (Sharp→WebP→S3)
 10. **Eliminación MSW** — Borrar `src/mocks/`, `mockServiceWorker.js`, desregistrar worker
 11. **Variables de entorno** — `VITE_API_URL`, `VITE_ADMIN_PASSWORD` (legacy para compat)
 
@@ -106,19 +106,19 @@ Conectar el **frontend existente** (React + Vite + MSW) al **backend real** (Fas
 
 ### 4.4 Catálogo público (`ProductCatalog` + `ProductCard`)
 
-- **RF-15** — CUANDO se monta el catálogo público, EL SISTEMA carga vinos con `GET /api/wines/public` (sin auth)
-- **RF-16** — LOS FILTROS (tipo, cepa, precio, búsqueda) se aplican en frontend sobre datos recibidos (dataset completo, ~12 vinos)
+- **RF-15** — CUANDO se monta el catálogo público, EL SISTEMA carga productos con `GET /api/wines/public` (sin auth)
+- **RF-16** — LOS FILTROS (tipo, cepa, precio, búsqueda) se aplican en frontend sobre datos recibidos (dataset completo, ~12 productos)
 - **RF-17** — CUANDO usuario hace click "Agregar al carrito", EL SISTEMA usa `localStorage` (frontend-only, sin backend)
 - **RF-18** — EL BOTÓN "Editar" en `ProductCard` **solo se muestra** si usuario tiene rol `admin` o `gestor` (verifica `useAuth`)
 
-### 4.5 Admin: Vinos (`ProductCatalog` admin + `AdminWineForm`)
+### 4.5 Admin: Vinos (`ProductCatalog` admin + `AdminProductoForm`)
 
 - **RF-19** — LISTADO: `GET /api/wines?page&limit&search&category&varietal&status` con paginación servidor
-- **RF-20** — CREAR: `POST /api/wines` con body validado (Zod), respuesta 201 con vino creado
-- **RF-21** — EDITAR: `PATCH /api/wines/:id` con body parcial, respuesta 200 con vino actualizado
+- **RF-20** — CREAR: `POST /api/wines` con body validado (Zod), respuesta 201 con producto creado
+- **RF-21** — EDITAR: `PATCH /api/wines/:id` con body parcial, respuesta 200 con producto actualizado
 - **RF-22** — ELIMINAR: `DELETE /api/wines/:id` → 204 si ok, 409 si tiene pedidos (`HAS_ORDERS`)
 - **RF-23** — IMPORT CSV: `POST /api/wines/import` multipart/form-data → respuesta 201/207 con `{created, updated, errors}`
-- **RF-24** — FORMULARIO: `AdminWineForm` usa `POST /api/upload` para imagen → obtiene signed URL → envía `imageUrl` en create/update
+- **RF-24** — FORMULARIO: `AdminProductoForm` usa `POST /api/upload` para imagen → obtiene signed URL → envía `imageUrl` en create/update
 
 ### 4.6 Admin: Pedidos (`OrderDrawer` + listado)
 
@@ -140,7 +140,7 @@ Conectar el **frontend existente** (React + Vite + MSW) al **backend real** (Fas
 
 ### 4.9 Upload real
 
-- **RF-34** — `ProductForm` / `AdminWineForm`: input file → `POST /api/upload` → recibe `{id, url}` signed URL (1h) → usa `url` como `imageUrl` en create/update
+- **RF-34** — `ProductForm` / `AdminProductoForm`: input file → `POST /api/upload` → recibe `{id, url}` signed URL (1h) → usa `url` como `imageUrl` en create/update
 - **RF-35** — VALIDACIÓN: solo imágenes (mimetype), máx 5MB, transformación Sharp→WebP 1920px quality 80
 
 ### 4.10 Eliminación MSW
@@ -178,7 +178,7 @@ Conectar el **frontend existente** (React + Vite + MSW) al **backend real** (Fas
 | CE-04 | Login con credenciales inválidas | Error toast "Credenciales incorrectas" (no revelar si email existe) |
 | CE-05 | Upload archivo > 5MB o no imagen | Error toast "Archivo inválido" (validación frontend + backend) |
 | CE-06 | Usuario sin rol admin accede a `/admin` | Redirect a `/` o 403 (backend) |
-| CE-07 | Carrito con vinos que ya no existen en backend | Mantener en localStorage; al checkout validar existencia |
+| CE-07 | Carrito con productos que ya no existen en backend | Mantener en localStorage; al checkout validar existencia |
 | CE-08 | Refresh token rotado concurrentemente | Backend maneja rotación; cliente reintenta una vez |
 
 ---
@@ -217,7 +217,7 @@ Conectar el **frontend existente** (React + Vite + MSW) al **backend real** (Fas
 
 | # | Criterio | Verificación |
 |---|---|---|
-| CA-05 | Catálogo carga de API | `GET /api/wines/public` → renderiza vinos sin MSW |
+| CA-05 | Catálogo carga de API | `GET /api/wines/public` → renderiza productos sin MSW |
 | CA-06 | Filtros funcionan | Tipo/cepa/precio/búsqueda filtran en frontend sobre datos API |
 | CA-07 | Carrito usa localStorage | Agregar/quitar/cambiar cantidad persiste en `localStorage` |
 | CA-08 | Botón editar condicional | Solo visible si `hasRole('admin'/'gestor')` |
@@ -226,11 +226,11 @@ Conectar el **frontend existente** (React + Vite + MSW) al **backend real** (Fas
 
 | # | Criterio | Verificación |
 |---|---|---|
-| CA-09 | Listado vinos paginado | `GET /api/wines?page=1&limit=10` → `{data, total, page, limit, totalPages}` |
-| CA-10 | Crear vino | `POST /api/wines` → 201 + vino con `id`, `createdAt`, `stock`, `activo` |
-| CA-11 | Editar vino | `PATCH /api/wines/:id` → 200 + vino actualizado |
-| CA-12 | Eliminar vino sin pedidos | `DELETE /api/wines/:id` → 204 |
-| CA-13 | Eliminar vino con pedidos | `DELETE /api/wines/:id` → 409 `{code: 'HAS_ORDERS', count}` |
+| CA-09 | Listado productos paginado | `GET /api/wines?page=1&limit=10` → `{data, total, page, limit, totalPages}` |
+| CA-10 | Crear producto | `POST /api/wines` → 201 + producto con `id`, `createdAt`, `stock`, `activo` |
+| CA-11 | Editar producto | `PATCH /api/wines/:id` → 200 + producto actualizado |
+| CA-12 | Eliminar producto sin pedidos | `DELETE /api/wines/:id` → 204 |
+| CA-13 | Eliminar producto con pedidos | `DELETE /api/wines/:id` → 409 `{code: 'HAS_ORDERS', count}` |
 | CA-14 | Import CSV | `POST /api/wines/import` → 201/207 + `{created, updated, errors}` |
 | CA-15 | Upload imagen | `POST /api/upload` → 201 `{id, url}` signed URL 1h |
 

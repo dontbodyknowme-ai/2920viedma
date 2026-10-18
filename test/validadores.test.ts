@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Wine } from '../src/types/vino'
+import type { Producto } from '../src/types/producto'
 import {
   CAMPOS_OPCIONALES,
   CAMPOS_REQUERIDOS,
@@ -17,11 +17,11 @@ import {
  *
  * Su proposito es evitar que la suite de integridad de datos pase en verde por
  * una asercion vacia: si un validador acceptara cualquier cosa, estos tests
- * fallarian. Cada caso parte de un vino valido y le inyecta una sola mutacion,
+ * fallarian. Cada caso parte de un producto valido y le inyecta una sola mutacion,
  * verificando que el validador la detecta y que reporta el campo exacto.
  */
 
-const vinoValido = (): Wine => ({
+const vinoValido = (): Producto => ({
   id: 'test-1',
   name: 'Test Malbec',
   winery: 'Bodega Test',
@@ -35,29 +35,29 @@ const vinoValido = (): Wine => ({
   description: 'Vino de prueba para validar el contrato de datos.',
   tastingNotes: 'Ciruela y vainilla.',
   foodPairing: 'Carnes rojas.',
-  imageUrl: 'https://example.com/vino.jpg'
+  imageUrl: 'https://example.com/producto.jpg'
 })
 
 describe('validadores: punto de partida', () => {
-  it('un vino de referencia no reporta campos invalidos', () => {
+  it('un producto de referencia no reporta campos invalidos', () => {
     expect(camposRequeridosInvalidos(vinoValido())).toEqual([])
   })
 
-  it('el vino de referencia cumple cada validador por separado', () => {
-    const vino = vinoValido()
+  it('el producto de referencia cumple cada validador por separado', () => {
+    const producto = vinoValido()
 
-    expect(esTextoNoVacio(vino.name)).toBe(true)
-    expect(esCategoriaValida(vino.category)).toBe(true)
-    expect(esPrecioValido(vino.price)).toBe(true)
-    expect(esAnioRazonable(vino.vintage)).toBe(true)
-    expect(esUrlHttpValida(vino.imageUrl)).toBe(true)
-    expect(esCampoOpcionalValido(vino.tastingNotes)).toBe(true)
+    expect(esTextoNoVacio(producto.name)).toBe(true)
+    expect(esCategoriaValida(producto.category)).toBe(true)
+    expect(esPrecioValido(producto.price)).toBe(true)
+    expect(esAnioRazonable(producto.vintage)).toBe(true)
+    expect(esUrlHttpValida(producto.imageUrl)).toBe(true)
+    expect(esCampoOpcionalValido(producto.tastingNotes)).toBe(true)
     expect(esCampoOpcionalValido(undefined)).toBe(true)
   })
 })
 
 describe('validadores: deteccion de mutaciones campo por campo', () => {
-  const mutaciones: Array<{ campo: keyof Wine; valor: unknown }> = [
+  const mutaciones: Array<{ campo: keyof Producto; valor: unknown }> = [
     { campo: 'id', valor: '' },
     { campo: 'id', valor: '   ' },
     { campo: 'id', valor: 7 },
@@ -89,16 +89,16 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
    * `winery`, `varietal` y `vintage` **no** aparecen en la lista de arriba.
    *
    * Antes eran requeridos y estas mutaciones los detectaban. Dejaron de serlo
-   * cuando la tienda paso a vender cosas que no son vino: una gaseosa no tiene
+   * cuando la tienda paso a vender cosas que no son producto: una gaseosa no tiene
    * bodega, ni cepa, ni anada, y exigirlas era lo que hacia imposible cargarla.
    * Ver el `describe` de abajo, que si los cubre.
    */
 
   mutaciones.forEach(({ campo, valor }) => {
     it(`detecta ${String(campo)} = ${JSON.stringify(valor)}`, () => {
-      const vino = { ...vinoValido(), [campo]: valor }
+      const producto = { ...vinoValido(), [campo]: valor }
 
-      expect(camposRequeridosInvalidos(vino as Wine)).toEqual([String(campo)])
+      expect(camposRequeridosInvalidos(producto as Producto)).toEqual([String(campo)])
     })
   })
 
@@ -111,7 +111,7 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
       category: 'rosa'
     }
 
-    expect(camposRequeridosInvalidos(roto as Wine).sort()).toEqual(
+    expect(camposRequeridosInvalidos(roto as Producto).sort()).toEqual(
       ['category', 'imageUrl', 'name', 'price'].sort()
     )
   })
@@ -131,7 +131,7 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
       vintage: null
     }
 
-    expect(camposRequeridosInvalidos(gaseosa as Wine)).toEqual([])
+    expect(camposRequeridosInvalidos(gaseosa as Producto)).toEqual([])
   })
 
   it('pero un producto con la bodega en blanco SI se marca', () => {
@@ -144,12 +144,12 @@ describe('validadores: deteccion de mutaciones campo por campo', () => {
 })
 
 describe('validadores: cobertura de CAMPOS_REQUERIDOS', () => {
-  it('incluye los 7 campos obligatorios de la interface Wine', () => {
+  it('incluye los 7 campos obligatorios de la interface Producto', () => {
     // **Son 7, antes 10.** `winery`, `varietal` y `vintage` dejaron de ser
-    // requeridos cuando la tienda paso a vender cosas que no son vino, y se
+    // requeridos cuando la tienda paso a vender cosas que no son producto, y se
     // movieron a `CAMPOS_OPCIONALES`. Quedan 10 − 3 = 7.
     //
-    // El numero esta a proposito: es lo que hace que agregar un campo a `Wine`
+    // El numero esta a proposito: es lo que hace que agregar un campo a `Producto`
     // **no** pase en verde. Sin el, el unico aviso seria que un fixture quedara
     // sin el campo nuevo —y eso recien lo ve `tsc` si el campo es requerido, que
     // no siempre pasa—. Con el, hay que decidir aca que el campo entra.
@@ -185,7 +185,7 @@ describe('validadores: cobertura de CAMPOS_REQUERIDOS', () => {
   })
 
   it('un objeto vacio reporta todos los campos requeridos como invalidos', () => {
-    expect(camposRequeridosInvalidos({} as Wine).sort()).toEqual([...CAMPOS_REQUERIDOS].map(String).sort())
+    expect(camposRequeridosInvalidos({} as Producto).sort()).toEqual([...CAMPOS_REQUERIDOS].map(String).sort())
   })
 })
 

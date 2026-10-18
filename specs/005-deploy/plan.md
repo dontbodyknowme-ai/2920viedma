@@ -32,14 +32,14 @@ Quedan en el `CMD`: `prisma migrate deploy && node dist/main.js`. Es seguro corr
 
 Este es el cambio de diseño más importante de la spec.
 
-Hoy `POST /api/upload` devuelve una URL firmada con `expiresIn: 3600`, y `admin_wine_form.tsx:286` la guarda como `imageUrl` del vino. El resultado es que **la imagen deja de verse una hora después de subirla**, y así queda en la base para siempre. No es un caso borde: es el flujo normal de cargar un vino.
+Hoy `POST /api/upload` devuelve una URL firmada con `expiresIn: 3600`, y `admin_producto_form.tsx:286` la guarda como `imageUrl` del producto. El resultado es que **la imagen deja de verse una hora después de subirla**, y así queda en la base para siempre. No es un caso borde: es el flujo normal de cargar un producto.
 
 Se elige bucket público con URL estable porque:
 - unas fotos de producto de una vinoteca **no son secretas**;
 - elimina de raíz la clase de bug, sin cambiar esquema ni contratos;
 - una URL que caduca en una base de datos es una bomba de tiempo, no una función.
 
-**Alternativa descartada:** re-firmar en cada lectura. Es la solución correcta si las imágenes tienen que ser privadas, pero obliga a guardar la *clave* del objeto en vez de la URL, cambiar el esquema de vinos y el contrato de `GET /api/wines/*`. Es otra spec. Queda anotado en "fuera de alcance".
+**Alternativa descartada:** re-firmar en cada lectura. Es la solución correcta si las imágenes tienen que ser privadas, pero obliga a guardar la *clave* del objeto en vez de la URL, cambiar el esquema de productos y el contrato de `GET /api/wines/*`. Es otra spec. Queda anotado en "fuera de alcance".
 
 ### D-F — `vercel.json` con rewrite de SPA
 
@@ -87,7 +87,7 @@ T1 y T2 son de código y no dependen de nada: se pueden hacer y mergear de entra
 | `PUBLIC_API_URL` mal puesta | Las URLs del OpenAPI apuntan a `localhost` | RF-21: es variable obligatoria y validada |
 | Se corre `migrate dev` en producción | El deploy se cuelga esperando un prompt | D-B: el script de deploy usa `migrate deploy` |
 | Se forgets `NODE_ENV=production` | El backend no arranca | Ya corregido en el logger; T6 lo verifica contra el healthcheck |
-| El seed pisa datos reales | Se pierden los vinos cargados | D-I: seed manual, y solo crea los tres usuarios |
+| El seed pisa datos reales | Se pierden los productos cargados | D-I: seed manual, y solo crea los tres usuarios |
 
 ## Impacto de los requisitos futuros (sección 8 de la spec)
 

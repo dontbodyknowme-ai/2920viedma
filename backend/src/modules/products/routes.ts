@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest } from 'fastify'
-import { wineImportSchema } from '../../shared/schemas.js'
+import { productoImportSchema } from '../../shared/schemas.js'
 import { jsonSchemas } from '../../shared/json-schemas.js'
 import { requireRole } from '../auth/middleware.js'
 import Papa from 'papaparse'
@@ -21,7 +21,7 @@ function normalizeRow(row: Record<string, string>): Record<string, any> {
       //
       // `price` y `stock` en cambio son NOT NULL, y su celda vacia sigue yendo a
       // `0` como antes. Un `null` ahi revienta la base; el `0` es lo que el
-      // `wineBaseSchema` valida con `.positive()` y `.nonnegative()` segun el
+      // `productoBaseSchema` valida con `.positive()` y `.nonnegative()` segun el
       // campo, asi que la fila se rechaza con un mensaje y no revienta el import.
       if (k === 'vintage') {
         normalized.vintage = v === '' ? null : parseInt(v, 10)
@@ -48,14 +48,14 @@ async function parseCsvStream(stream: Readable): Promise<Record<string, string>[
   })
 }
 
-export const winesRoutes = async (fastify: FastifyInstance): Promise<void> => {
+export const productsRoutes = async (fastify: FastifyInstance): Promise<void> => {
   const { prisma } = fastify
 
   fastify.get(
-    '/api/wines',
+    '/api/products',
     {
       preHandler: requireRole('admin', 'gestor'),
-      schema: jsonSchemas.wines.list
+      schema: jsonSchemas.products.list
     },
     async (request) => {
       const { page, limit, search, category, departamento, grupo, tipoVino, varietal, status } = request.query as any
@@ -81,13 +81,13 @@ export const winesRoutes = async (fastify: FastifyInstance): Promise<void> => {
       if (status === 'inactivo') where.activo = false
 
       const [data, total] = await Promise.all([
-        prisma.wine.findMany({
+        prisma.product.findMany({
           where,
           skip: (page - 1) * limit,
           take: limit,
           orderBy: { createdAt: 'desc' }
         }),
-        prisma.wine.count({ where })
+        prisma.product.count({ where })
       ])
 
       return {
@@ -101,62 +101,62 @@ export const winesRoutes = async (fastify: FastifyInstance): Promise<void> => {
   )
 
   fastify.post(
-    '/api/wines',
+    '/api/products',
     {
       preHandler: requireRole('admin', 'gestor'),
-      schema: jsonSchemas.wines.create
+      schema: jsonSchemas.products.create
     },
     async (request, reply) => {
-      const wine = await prisma.wine.create({ data: request.body as any })
-      return reply.status(201).send(wine)
+      const producto = await prisma.product.create({ data: request.body as any })
+      return reply.status(201).send(producto)
     }
   )
 
   fastify.patch(
-    '/api/wines/:id',
+    '/api/products/:id',
     {
       preHandler: requireRole('admin', 'gestor'),
-      schema: jsonSchemas.wines.update
+      schema: jsonSchemas.products.update
     },
     async (request) => {
       const { id } = request.params as any
-      const wine = await prisma.wine.update({
+      const producto = await prisma.product.update({
         where: { id },
         data: request.body as any
       })
-      return wine
+      return producto
     }
   )
 
   fastify.delete(
-    '/api/wines/:id',
+    '/api/products/:id',
     {
       preHandler: requireRole('admin'),
-      schema: jsonSchemas.wines.delete
+      schema: jsonSchemas.products.delete
     },
     async (request, reply) => {
       const { id } = request.params as any
 
-      const count = await prisma.orderItem.count({ where: { wineId: id } })
+      const count = await prisma.orderItem.count({ where: { productoId: id } })
       if (count > 0) {
         return reply.status(409).send({ code: 'HAS_ORDERS', count })
       }
 
-      const wine = await prisma.wine.findUnique({ where: { id } })
-      if (!wine) {
-        return reply.status(404).send({ code: 'NOT_FOUND', message: 'Vino no encontrado' })
+      const producto = await prisma.product.findUnique({ where: { id } })
+      if (!producto) {
+        return reply.status(404).send({ code: 'NOT_FOUND', message: 'Producto no encontrado' })
       }
 
-      await prisma.wine.delete({ where: { id } })
+      await prisma.product.delete({ where: { id } })
       return reply.status(204).send()
     }
   )
 
   fastify.post(
-    '/api/wines/import',
+    '/api/products/import',
     {
       preHandler: requireRole('admin', 'gestor'),
-      schema: jsonSchemas.wines.import
+      schema: jsonSchemas.products.import
     },
     async (request: FastifyRequest, reply) => {
       const file = await request.file()
@@ -189,7 +189,7 @@ export const winesRoutes = async (fastify: FastifyInstance): Promise<void> => {
         const rowIndex = i + 2
         const normalized = normalizeRow(rows[i])
 
-        const parsed = wineImportSchema.safeParse(normalized)
+        const parsed = productoImportSchema.safeParse(normalized)
 
         if (!parsed.success) {
           result.errors.push({
@@ -201,12 +201,12 @@ export const winesRoutes = async (fastify: FastifyInstance): Promise<void> => {
         }
 
         try {
-          const existing = await prisma.wine.findUnique({ where: { id: parsed.data.id } })
+          const existing = await prisma.product.findUnique({ where: { id: parsed.data.id } })
           if (existing) {
-            await prisma.wine.update({ where: { id: parsed.data.id }, data: parsed.data })
+            await prisma.product.update({ where: { id: parsed.data.id }, data: parsed.data })
             result.updated++
           } else {
-            await prisma.wine.create({ data: parsed.data })
+            await prisma.product.create({ data: parsed.data })
             result.created++
           }
         } catch (err: any) {

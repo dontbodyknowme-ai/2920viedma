@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { INITIAL_WINES } from '../src/datos/vino'
-import type { Wine } from '../src/types/vino'
+import { PRODUCTOS_INICIALES } from '../src/datos/productos'
+import type { Producto } from '../src/types/producto'
 import {
   CAMPOS_OPCIONALES,
   CAMPOS_REQUERIDOS,
@@ -13,35 +13,35 @@ import {
   esUrlHttpValida
 } from '../src/utils/validadores'
 
-// Asercion de tipo en tiempo de compilacion: si `INITIAL_WINES` dejara de
-// cumplir `Wine[]`, esta linea pasaria a ser un error de TypeScript.
-const _conformidadDeTipos: Wine[] = INITIAL_WINES
+// Asercion de tipo en tiempo de compilacion: si `PRODUCTOS_INICIALES` dejara de
+// cumplir `Producto[]`, esta linea pasaria a ser un error de TypeScript.
+const _conformidadDeTipos: Producto[] = PRODUCTOS_INICIALES
 void _conformidadDeTipos
 
-describe('INITIAL_WINES: forma del catalogo', () => {
+describe('PRODUCTOS_INICIALES: forma del catalogo', () => {
   it('es un array no vacio', () => {
-    expect(Array.isArray(INITIAL_WINES)).toBe(true)
-    expect(INITIAL_WINES.length).toBeGreaterThan(0)
+    expect(Array.isArray(PRODUCTOS_INICIALES)).toBe(true)
+    expect(PRODUCTOS_INICIALES.length).toBeGreaterThan(0)
   })
 
-  it('contiene al menos los dos vinos base de la tienda', () => {
-    const ids = INITIAL_WINES.map((vino) => vino.id)
+  it('contiene al menos los dos productos base de la tienda', () => {
+    const ids = PRODUCTOS_INICIALES.map((producto) => producto.id)
 
     expect(ids).toContain('1')
     expect(ids).toContain('2')
   })
 
   it('tiene ids unicos', () => {
-    const ids = INITIAL_WINES.map((vino) => vino.id)
+    const ids = PRODUCTOS_INICIALES.map((producto) => producto.id)
     const unicos = new Set(ids)
 
     expect(unicos.size).toBe(ids.length)
   })
 
-  it('no expone propiedades fuera del contrato de Wine', () => {
+  it('no expone propiedades fuera del contrato de Producto', () => {
     // `grupo` y `tipoVino` se suman a mano porque **no estan en ninguna de las
     // dos listas a proposito**: los dos admiten `null` de legitimo —un
-    // energizante cuelga sin grupo y una cerveza no tiene color de vino— y son
+    // energizante cuelga sin grupo y una cerveza no tiene color de producto— y son
     // justo el caso para el que ninguna de las dos listas sirve. Ver la nota de
     // `CAMPOS_REQUERIDOS` en `validadores.ts`.
     const permitidas = new Set<string>([
@@ -51,28 +51,28 @@ describe('INITIAL_WINES: forma del catalogo', () => {
       'tipoVino'
     ])
 
-    INITIAL_WINES.forEach((vino) => {
-      const extras = Object.keys(vino).filter((clave) => !permitidas.has(clave))
+    PRODUCTOS_INICIALES.forEach((producto) => {
+      const extras = Object.keys(producto).filter((clave) => !permitidas.has(clave))
 
       expect(extras).toEqual([])
     })
   })
 })
 
-describe('INITIAL_WINES: campos requeridos', () => {
-  it('todos los vinos tienen todos los campos requeridos con tipo correcto', () => {
-    const invalidos = INITIAL_WINES.map((vino) => ({
-      id: vino.id,
-      campos: camposRequeridosInvalidos(vino)
+describe('PRODUCTOS_INICIALES: campos requeridos', () => {
+  it('todos los productos tienen todos los campos requeridos con tipo correcto', () => {
+    const invalidos = PRODUCTOS_INICIALES.map((producto) => ({
+      id: producto.id,
+      campos: camposRequeridosInvalidos(producto)
     })).filter(({ campos }) => campos.length > 0)
 
     expect(invalidos).toEqual([])
   })
 
-  it('cada vino declara exactamente los campos requeridos que espera la interface', () => {
-    INITIAL_WINES.forEach((vino) => {
+  it('cada producto declara exactamente los campos requeridos que espera la interface', () => {
+    PRODUCTOS_INICIALES.forEach((producto) => {
       CAMPOS_REQUERIDOS.forEach((campo) => {
-        expect(Object.prototype.hasOwnProperty.call(vino, campo)).toBe(true)
+        expect(Object.prototype.hasOwnProperty.call(producto, campo)).toBe(true)
       })
     })
   })
@@ -82,10 +82,10 @@ describe('INITIAL_WINES: campos requeridos', () => {
     // la tienda vendio cosas que no tienen. Un producto sin bodega es valido.
     const camposDeTexto = ['name', 'description'] as const
 
-    INITIAL_WINES.forEach((vino) => {
+    PRODUCTOS_INICIALES.forEach((producto) => {
       camposDeTexto.forEach((campo) => {
-        expect(typeof vino[campo]).toBe('string')
-        expect(esTextoNoVacio(vino[campo])).toBe(true)
+        expect(typeof producto[campo]).toBe('string')
+        expect(esTextoNoVacio(producto[campo])).toBe(true)
       })
     })
   })
@@ -93,7 +93,7 @@ describe('INITIAL_WINES: campos requeridos', () => {
   it('bodega y cepa, cuando estan, son strings no vacios', () => {
     const opcionalesDeTexto = ['winery', 'varietal'] as const
 
-    INITIAL_WINES.forEach((producto) => {
+    PRODUCTOS_INICIALES.forEach((producto) => {
       opcionalesDeTexto.forEach((campo) => {
         const valor = producto[campo]
         // `null` es "no tiene bodega". Lo que no se permite es el string vacio:
@@ -107,33 +107,33 @@ describe('INITIAL_WINES: campos requeridos', () => {
 
     // Y tiene que haber productos **sin** bodega: si el catalogo entero la
     // tuviera, este test pasaria sin comprobar que `null` es valido.
-    expect(INITIAL_WINES.some((producto) => producto.winery === null)).toBe(true)
+    expect(PRODUCTOS_INICIALES.some((producto) => producto.winery === null)).toBe(true)
   })
 
-  it('el id es un string no vacio en cada vino', () => {
-    INITIAL_WINES.forEach((vino) => {
-      expect(typeof vino.id).toBe('string')
-      expect(esTextoNoVacio(vino.id)).toBe(true)
+  it('el id es un string no vacio en cada producto', () => {
+    PRODUCTOS_INICIALES.forEach((producto) => {
+      expect(typeof producto.id).toBe('string')
+      expect(esTextoNoVacio(producto.id)).toBe(true)
     })
   })
 })
 
-describe('INITIAL_WINES: category', () => {
+describe('PRODUCTOS_INICIALES: category', () => {
   it('todas las categorias del repo tienen forma valida', () => {
     // Lo que se verifica es la **forma**, no el valor: desde la spec 011 la
     // categoria es texto libre y el admin elige la que necesita. Lo que sigue
     // having que cumplirse es que no este vacia y empiece en mayuscula.
-    INITIAL_WINES.forEach((vino) => {
-      expect(esCategoriaValida(vino.category)).toBe(true)
+    PRODUCTOS_INICIALES.forEach((producto) => {
+      expect(esCategoriaValida(producto.category)).toBe(true)
     })
   })
 
   it('las categorias del repo no tienen typos de mayuscula', () => {
     // Si una quedara en minúscula, el filtro mostraria "tinto" y "Tinto" como dos
-    // categorias distintas y el mismo vino apareceria dos veces al filtrar.
-    INITIAL_WINES.forEach((vino) => {
-      expect(vino.category).toBe(vino.category.trim())
-      expect(vino.category[0]).toBe(vino.category[0]?.toUpperCase())
+    // categorias distintas y el mismo producto apareceria dos veces al filtrar.
+    PRODUCTOS_INICIALES.forEach((producto) => {
+      expect(producto.category).toBe(producto.category.trim())
+      expect(producto.category[0]).toBe(producto.category[0]?.toUpperCase())
     })
   })
 })
@@ -162,17 +162,17 @@ describe('esCategoriaValida: acepta cualquier categoria, rechaza las mal formada
   })
 })
 
-describe('INITIAL_WINES: price', () => {
-  it('es un numero mayor que cero en todos los vinos', () => {
-    INITIAL_WINES.forEach((vino) => {
-      expect(typeof vino.price).toBe('number')
-      expect(esPrecioValido(vino.price)).toBe(true)
+describe('PRODUCTOS_INICIALES: price', () => {
+  it('es un numero mayor que cero en todos los productos', () => {
+    PRODUCTOS_INICIALES.forEach((producto) => {
+      expect(typeof producto.price).toBe('number')
+      expect(esPrecioValido(producto.price)).toBe(true)
     })
   })
 
   it('es un entero, porque la UI lo formatea con maximumFractionDigits: 0', () => {
-    INITIAL_WINES.forEach((vino) => {
-      expect(Number.isInteger(vino.price)).toBe(true)
+    PRODUCTOS_INICIALES.forEach((producto) => {
+      expect(Number.isInteger(producto.price)).toBe(true)
     })
   })
 
@@ -183,15 +183,15 @@ describe('INITIAL_WINES: price', () => {
   })
 })
 
-describe('INITIAL_WINES: vintage', () => {
+describe('PRODUCTOS_INICIALES: vintage', () => {
   it('es un numero entero dentro de un rango razonable cuando esta', () => {
     // **La vintage puede ser `null`.** Una gaseosa no tiene anada, y fue
     // justamente exigirla lo que hacia imposible vender cualquier cosa fuera del
-    // vino. Un numero de anada pegado a una gaseosa seria informacion falsa.
+    // producto. Un numero de anada pegado a una gaseosa seria informacion falsa.
     const anioActual = new Date().getFullYear()
     let conAnada = 0
 
-    INITIAL_WINES.forEach((producto) => {
+    PRODUCTOS_INICIALES.forEach((producto) => {
       if (producto.vintage === null) return
       conAnada++
       expect(typeof producto.vintage).toBe('number')
@@ -204,11 +204,11 @@ describe('INITIAL_WINES: vintage', () => {
     // Tiene que haber **de las dos clases**. Si el catalogo entero tuviera anada,
     // esto pasaria sin comprobar que `null` es un valor valido.
     expect(conAnada).toBeGreaterThan(0)
-    expect(INITIAL_WINES.some((producto) => producto.vintage === null)).toBe(true)
+    expect(PRODUCTOS_INICIALES.some((producto) => producto.vintage === null)).toBe(true)
   })
 
   it('las cosechas presentes son posteriores a 1900', () => {
-    INITIAL_WINES.forEach((producto) => {
+    PRODUCTOS_INICIALES.forEach((producto) => {
       if (producto.vintage === null) return
       expect(producto.vintage).toBeGreaterThan(1900)
     })
@@ -223,13 +223,13 @@ describe('INITIAL_WINES: vintage', () => {
   })
 })
 
-describe('INITIAL_WINES: imageUrl', () => {
-  it('es una URL http/https parseable en todos los vinos', () => {
-    INITIAL_WINES.forEach((vino) => {
-      expect(typeof vino.imageUrl).toBe('string')
-      expect(esUrlHttpValida(vino.imageUrl)).toBe(true)
+describe('PRODUCTOS_INICIALES: imageUrl', () => {
+  it('es una URL http/https parseable en todos los productos', () => {
+    PRODUCTOS_INICIALES.forEach((producto) => {
+      expect(typeof producto.imageUrl).toBe('string')
+      expect(esUrlHttpValida(producto.imageUrl)).toBe(true)
 
-      const url = new URL(vino.imageUrl)
+      const url = new URL(producto.imageUrl)
 
       expect(url.protocol === 'http:' || url.protocol === 'https:').toBe(true)
       expect(url.hostname).not.toBe('')
@@ -240,10 +240,10 @@ describe('INITIAL_WINES: imageUrl', () => {
     const invalidas = [
       '',
       '   ',
-      '/vinos/malbec.jpg',
+      '/productos/malbec.jpg',
       'malbec.jpg',
       'data:image/png;base64,iVBORw0KGgo=',
-      'ftp://ejemplo.com/vino.jpg',
+      'ftp://ejemplo.com/producto.jpg',
       'javascript:alert(1)',
       'https://',
       null,
@@ -257,14 +257,14 @@ describe('INITIAL_WINES: imageUrl', () => {
   })
 })
 
-describe('INITIAL_WINES: campos opcionales', () => {
+describe('PRODUCTOS_INICIALES: campos opcionales', () => {
   it('los de texto estan ausentes, en null, o son strings no vacios', () => {
     // `vintage` queda afuera del bucle a proposito: es el unico opcional que **no
     // es texto**, y mandarlo por `esCampoOpcionalValido` daria `false` siempre
     // (ni `undefined` ni `null` ni texto). Se verifica en su propio `describe`.
     const deTexto = CAMPOS_OPCIONALES.filter((campo) => campo !== 'vintage')
 
-    INITIAL_WINES.forEach((producto) => {
+    PRODUCTOS_INICIALES.forEach((producto) => {
       deTexto.forEach((campo) => {
         expect(esCampoOpcionalValido(producto[campo])).toBe(true)
       })
@@ -273,7 +273,7 @@ describe('INITIAL_WINES: campos opcionales', () => {
 
   it('rechaza opcionales presentes pero vacios, en blanco o de otro tipo', () => {
     // El `null` **ya no se rechaza**: paso a ser valido cuando la tienda dejo de
-    // vender solo vinos. Una API que serializa `String?` de Prisma manda `null`
+    // vender solo productos. Una API que serializa `String?` de Prisma manda `null`
     // para la bodega de una gaseosa, y seguir rechazandolo marcaba el producto
     // entero como invalido.
     //
@@ -287,7 +287,7 @@ describe('INITIAL_WINES: campos opcionales', () => {
   it('acepta null y undefined como "no tiene"', () => {
     // Los dos ausentes valen: `null` es lo que manda la API y `undefined` lo que
     // queda cuando el campo no se escribio. Confundirlos seria hacer que un
-    // producto valido se descarte segun de donde vino el objeto.
+    // producto valido se descarte segun de donde producto el objeto.
     expect(esCampoOpcionalValido(null)).toBe(true)
     expect(esCampoOpcionalValido(undefined)).toBe(true)
   })

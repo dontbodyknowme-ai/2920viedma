@@ -3,9 +3,9 @@ import {
   customerUpdateSchema,
   orderQuerySchema,
   orderUpdateSchema,
-  wineCreateSchema,
-  wineIdParamSchema,
-  wineQuerySchema
+  productoCreateSchema,
+  productoIdParamSchema,
+  productoQuerySchema
 } from '../../src/shared/schemas.js'
 
 /**
@@ -22,7 +22,7 @@ import {
  * escribio, sin ningun error visible.
  */
 
-/** Cuerpo minimo valido de un vino. */
+/** Cuerpo minimo valido de un producto. */
 const vinoValido = {
   name: 'Gran Reserva Malbec',
   winery: 'Bodega Escorihuela',
@@ -33,9 +33,9 @@ const vinoValido = {
   imageUrl: 'https://cdn.vinoteca.local/malbec.webp'
 }
 
-describe('wineCreateSchema', () => {
-  it('acepta un vino completo y completa los defaults de stock y activo', () => {
-    const resultado = wineCreateSchema.parse(vinoValido)
+describe('productoCreateSchema', () => {
+  it('acepta un producto completo y completa los defaults de stock y activo', () => {
+    const resultado = productoCreateSchema.parse(vinoValido)
 
     expect(resultado.stock).toBe(0)
     expect(resultado.activo).toBe(true)
@@ -44,37 +44,37 @@ describe('wineCreateSchema', () => {
 
   it('rechaza un precio con centavos', () => {
     // El caso del comentario de cabecera: 45000.5 llegaria a la base.
-    const resultado = wineCreateSchema.safeParse({ ...vinoValido, price: 45000.5 })
+    const resultado = productoCreateSchema.safeParse({ ...vinoValido, price: 45000.5 })
 
     expect(resultado.success).toBe(false)
   })
 
   it('rechaza precio cero o negativo', () => {
-    expect(wineCreateSchema.safeParse({ ...vinoValido, price: 0 }).success).toBe(false)
-    expect(wineCreateSchema.safeParse({ ...vinoValido, price: -1 }).success).toBe(false)
+    expect(productoCreateSchema.safeParse({ ...vinoValido, price: 0 }).success).toBe(false)
+    expect(productoCreateSchema.safeParse({ ...vinoValido, price: -1 }).success).toBe(false)
   })
 
   it('acepta cualquier categoria y rechaza la vacia', () => {
     // **Este test invertio su asercion cuando la tienda paso a ser un kiosco.**
     //
     // Antes decia "rechaza una categoria fuera de la lista cerrada" y probaba que
-    // `category: 'Orange'` fuera rechazado, porque el enum era de tipo de vino.
+    // `category: 'Orange'` fuera rechazado, porque el enum era de tipo de producto.
     // Con una tienda que vende de todo, esa asercion era el bug: una cerveza, una
     // gaseosa o una galletita daban **400** y no habia forma de venderlas.
     //
     // Ahora `category` es la hoja de la taxonomia y es texto libre. Lo que si
     // tiene que seguir siendo un error es la categoria **vacia**: un producto sin
     // categoria no aparece en ningun filtro y el admin no lo va a encontrar.
-    expect(wineCreateSchema.safeParse({ ...vinoValido, category: 'Cerveza' }).success).toBe(true)
-    expect(wineCreateSchema.safeParse({ ...vinoValido, category: 'Gaseosas' }).success).toBe(true)
-    expect(wineCreateSchema.safeParse({ ...vinoValido, category: '' }).success).toBe(false)
+    expect(productoCreateSchema.safeParse({ ...vinoValido, category: 'Cerveza' }).success).toBe(true)
+    expect(productoCreateSchema.safeParse({ ...vinoValido, category: 'Gaseosas' }).success).toBe(true)
+    expect(productoCreateSchema.safeParse({ ...vinoValido, category: '' }).success).toBe(false)
   })
 
-  it('acepta un producto que no es vino y por lo tanto no tiene bodega, anada ni cepa', () => {
+  it('acepta un producto que no es producto y por lo tanto no tiene bodega, anada ni cepa', () => {
     // Una gaseosa no tiene de donde sacarle una añada. Antes `vintage`, `winery` y
     // `varietal` eran obligatorios, asi que un producto sin ellos no se podia
     // cargar ni por CSV. Exigirles un valor seria escribir informacion falsa.
-    const resultado = wineCreateSchema.safeParse({
+    const resultado = productoCreateSchema.safeParse({
       name: 'Gaseosa de cola 2L',
       price: 3500,
       category: 'Gaseosas',
@@ -93,20 +93,20 @@ describe('wineCreateSchema', () => {
   it('rechaza una anada fuera de rango cuando viene', () => {
     // Opcional no es "cualquier cosa": si el admin la manda, tiene que ser una
     // anada de verdad.
-    expect(wineCreateSchema.safeParse({ ...vinoValido, vintage: 1800 }).success).toBe(false)
-    expect(wineCreateSchema.safeParse({ ...vinoValido, vintage: 2200 }).success).toBe(false)
+    expect(productoCreateSchema.safeParse({ ...vinoValido, vintage: 1800 }).success).toBe(false)
+    expect(productoCreateSchema.safeParse({ ...vinoValido, vintage: 2200 }).success).toBe(false)
   })
 
   it('rechaza una imageUrl que no es URL', () => {
-    const resultado = wineCreateSchema.safeParse({ ...vinoValido, imageUrl: 'malbec.webp' })
+    const resultado = productoCreateSchema.safeParse({ ...vinoValido, imageUrl: 'malbec.webp' })
 
     expect(resultado.success).toBe(false)
   })
 
   it('no deja que el cliente asigne el id al crear', () => {
     // El id lo pone la base. Aceptarlo en el POST habilita sobreescribir otro
-    // vino: dos filas con el mismo id rompen editar y borrar en silencio.
-    const resultado = wineCreateSchema.safeParse({ ...vinoValido, id: 'clx1234567890' })
+    // producto: dos filas con el mismo id rompen editar y borrar en silencio.
+    const resultado = productoCreateSchema.safeParse({ ...vinoValido, id: 'clx1234567890' })
 
     // Zod ignora la clave desconocida (no `.strict()`), asi que el punto a
     // fijar es que el valor **no** termine en la salida.
@@ -117,30 +117,30 @@ describe('wineCreateSchema', () => {
   })
 })
 
-describe('wineIdParamSchema', () => {
+describe('productoIdParamSchema', () => {
   it('acepta un cuid', () => {
-    expect(wineIdParamSchema.safeParse({ id: 'clx1234567890' }).success).toBe(true)
+    expect(productoIdParamSchema.safeParse({ id: 'clx1234567890' }).success).toBe(true)
   })
 
   it('rechaza un id numerico', () => {
     // El id numerico es el bug mas caro de un backend con Prisma: la ruta
     // matchea y Prisma revienta con un error 500 en vez de un 400.
-    expect(wineIdParamSchema.safeParse({ id: '42' }).success).toBe(false)
+    expect(productoIdParamSchema.safeParse({ id: '42' }).success).toBe(false)
   })
 })
 
-describe('wineQuerySchema', () => {
+describe('productoQuerySchema', () => {
   it('coacciona los query params de texto a numero', () => {
     // En HTTP `?page=2` llega como string. Sin `coerce` el default (1) gana
     // siempre y la paginacion del panel nunca avanza de la primera pagina.
-    const resultado = wineQuerySchema.parse({ page: '2', limit: '25' })
+    const resultado = productoQuerySchema.parse({ page: '2', limit: '25' })
 
     expect(resultado.page).toBe(2)
     expect(resultado.limit).toBe(25)
   })
 
   it('aplica los defaults de pagina y limite', () => {
-    const resultado = wineQuerySchema.parse({})
+    const resultado = productoQuerySchema.parse({})
 
     expect(resultado.page).toBe(1)
     expect(resultado.limit).toBe(10)
@@ -148,12 +148,12 @@ describe('wineQuerySchema', () => {
 
   it('rechaza un limite mayor al maximo', () => {
     // Sin tope, un `?limit=100000` baja la tabla entera al navegador.
-    expect(wineQuerySchema.safeParse({ limit: '100000' }).success).toBe(false)
+    expect(productoQuerySchema.safeParse({ limit: '100000' }).success).toBe(false)
   })
 
   it('rechaza una pagina cero o negativa', () => {
-    expect(wineQuerySchema.safeParse({ page: '0' }).success).toBe(false)
-    expect(wineQuerySchema.safeParse({ page: '-3' }).success).toBe(false)
+    expect(productoQuerySchema.safeParse({ page: '0' }).success).toBe(false)
+    expect(productoQuerySchema.safeParse({ page: '-3' }).success).toBe(false)
   })
 })
 

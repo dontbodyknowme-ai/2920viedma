@@ -208,7 +208,7 @@ real revienta con `relation does not exist`.
 
 ### Seed (una vez)
 
-Crea los tres usuarios admin y **los 12 vinos** del catálogo de demostración.
+Crea los tres usuarios admin y **los 12 productos** del catálogo de demostración.
 **No corre en cada arranque**: es un paso manual.
 
 ```bash
@@ -217,7 +217,7 @@ cd backend
 npm run seed
 ```
 
-Es **idempotente** (los usuarios usan `upsert` con `update: {}` y los vinos un
+Es **idempotente** (los usuarios usan `upsert` con `update: {}` y los productos un
 `id` con slug estable), así que correrlo de nuevo actualiza en vez de duplicar.
 
 > **El seed imprime las contraseñas en la salida.** Es inocuo en tu terminal, y
@@ -332,5 +332,5 @@ Sin `SameSite=None` la sesión se pierde en cada recarga.
 | `relation does not exist` | Las migraciones no corrieron | Son automáticas en el arranque. Si pasan, el `start` está mal |
 | El frontend no llama a la API | `VITE_API_URL` no horneada | Vite la compila dentro del bundle: cambiar la variable exige **redeployar** |
 | `AccessDenied` al subir imagen | Token de R2 sin escritura | Recrear el token con *Object Read & Write* |
-| La imagen se rompe al día siguiente | URLs firmadas guardadas en el vino | Ya no pasa: el backend devuelve la URL pública del bucket |
+| La imagen se rompe al día siguiente | URLs firmadas guardadas en el producto | Ya no pasa: el backend devuelve la URL pública del bucket |
 | El primer request tarda un minuto | El plan Free durmió el servicio | Es el cold start del free tier, no un error |

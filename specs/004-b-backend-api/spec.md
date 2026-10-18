@@ -16,7 +16,7 @@ Construir el **backend real** que reemplace a MSW Mock API de la spec 004-a. El 
 ### 1.1 Definiciones
 
 - **Contrato API:** Interfaz definida en 004-a (RF-35 a RF-43) que el backend cumple al 100 %
-- **Unidad monetaria:** **Pesos argentinos (ARS) enteros.** El campo `price` es `number` en pesos enteros, igual que en el `Wine` del frontend. **No** se usa centavos.
+- **Unidad monetaria:** **Pesos argentinos (ARS) enteros.** El campo `price` es `number` en pesos enteros, igual que en el `Producto` del frontend. **No** se usa centavos.
 - **Refresh token:** Token opaco (no JWT) de 7 días, guardado hasheado en DB, enviado en cookie `httpOnly`.
 - **Roles:** `admin` (todo), `gestor` (catálogo + pedidos + clientes), `vendedor` (solo lectura y cambio de estado de pedidos).
 
@@ -34,7 +34,7 @@ Construir el **backend real** que reemplace a MSW Mock API de la spec 004-a. El 
 | `tsconfig.json` | `moduleResolution: "bundler"`, `noEmit: true`, `strict: true`, `include: ["src"]` |
 | Tests | **4 archivos existen** en `test/`. **`vitest` NO está instalado** en `node_modules`, así que `npm test` falla con "vitest no se reconoce" |
 | Contrato API | Definido en 004-a, consumido por MSW |
-| Datos mock | 12 vinos, 25 pedidos, 15 clientes, métricas 30 días |
+| Datos mock | 12 productos, 25 pedidos, 15 clientes, métricas 30 días |
 
 ### 2.2 Contradicciones detectadas en la versión anterior de esta spec
 
@@ -89,19 +89,19 @@ Estas se corrigen en esta versión y quedan registradas para que no se pierdan:
 ### 4.1 API Vinos — administración (`/api/wines`)
 
 - **RF-01** — CUANDO se pide `GET /api/wines` con `page`, `limit`, `search`, `category`, `varietal`, `status`, EL SISTEMA devuelve `{ data, total, page, limit, totalPages }` con los filtros aplicados y `price` **en pesos enteros**
-- **RF-02** — CUANDO se hace `POST /api/wines` con un body válido y rol `admin` o `gestor`, EL SISTEMA crea el vino, devuelve `201` y el vino con `id`, `createdAt`, `stock` y `activo`
-- **RF-03** — CUANDO se hace `PATCH /api/wines/:id`, EL SISTEMA actualiza **solo** los campos enviados, cambia `updatedAt` y devuelve el vino completo
-- **RF-04** — CUANDO se hace `DELETE /api/wines/:id` sobre un vino con pedidos asociados, EL SISTEMA devuelve `409` con `{ code: 'HAS_ORDERS', count }`. SI no tiene pedidos, devuelve `204`
+- **RF-02** — CUANDO se hace `POST /api/wines` con un body válido y rol `admin` o `gestor`, EL SISTEMA crea el producto, devuelve `201` y el producto con `id`, `createdAt`, `stock` y `activo`
+- **RF-03** — CUANDO se hace `PATCH /api/wines/:id`, EL SISTEMA actualiza **solo** los campos enviados, cambia `updatedAt` y devuelve el producto completo
+- **RF-04** — CUANDO se hace `DELETE /api/wines/:id` sobre un producto con pedidos asociados, EL SISTEMA devuelve `409` con `{ code: 'HAS_ORDERS', count }`. SI no tiene pedidos, devuelve `204`
 - **RF-05** — CUANDO se hace `POST /api/wines/import` con un CSV, EL SISTEMA valida cada fila con el schema, hace upsert por `id`, y devuelve `{ created, updated, errors: [{ row, field, message }] }`. Con errores de validación devuelve `207`
 
 ### 4.2 API Vinos — pública (`/api/wines/public`)
 
-- **RF-06** — CUANDO se pide `GET /api/wines/public`, EL SISTEMA devuelve **solo** los vinos con `activo = true`, en el shape del `Wine` del frontend, **sin** los campos `stock` ni `activo`, y **sin** paginación (el catálogo público es completo)
+- **RF-06** — CUANDO se pide `GET /api/wines/public`, EL SISTEMA devuelve **solo** los productos con `activo = true`, en el shape del `Producto` del frontend, **sin** los campos `stock` ni `activo`, y **sin** paginación (el catálogo público es completo)
 
 ### 4.3 API Pedidos (`/api/orders`)
 
 - **RF-07** — CUANDO se pide `GET /api/orders` con filtros `status`, `dateFrom`, `dateTo`, `search`, EL SISTEMA devuelve la lista paginada
-- **RF-08** — CUANDO se pide `GET /api/orders/:id`, EL SISTEMA devuelve el pedido con `items` (**cada item con `imageUrl` resuelto por join a `Wine`**), `customer` y `timeline` ordenado por fecha
+- **RF-08** — CUANDO se pide `GET /api/orders/:id`, EL SISTEMA devuelve el pedido con `items` (**cada item con `imageUrl` resuelto por join a `Producto`**), `customer` y `timeline` ordenado por fecha
 - **RF-09** — CUANDO se hace `PATCH /api/orders/:id` y el estado cambia, EL SISTEMA actualiza el estado, **crea una entrada en `timeline`** con `author`, y devuelve el pedido actualizado. SI el estado no cambia, **no** crea entrada. SI el rol es `vendedor`, **solo** acepta un body con la clave `status`
 
 ### 4.4 API Clientes (`/api/customers`)
@@ -153,7 +153,7 @@ Estas se corrigen en esta versión y quedan registradas para que no se pierdan:
 
 | ID | Situación | Comportamiento esperado | RF |
 |---|---|---|---|
-| CE-01 | Eliminar vino con pedidos | `409` + `{ code: 'HAS_ORDERS', count }` | RF-04 |
+| CE-01 | Eliminar producto con pedidos | `409` + `{ code: 'HAS_ORDERS', count }` | RF-04 |
 | CE-02 | Access token expirado | `401` + `{ code: 'TOKEN_EXPIRED' }`; el frontend usa `/refresh` | RF-17 |
 | CE-03 | Refresh token expirado o revocado | `401` + cookie limpiada | RF-15 |
 | CE-04 | Cliente sin email | Se crea igual; `email` es `null`. El email sigue siendo único cuando está presente | RF-10 |
@@ -162,7 +162,7 @@ Estas se corrigen en esta versión y quedan registradas para que no se pierdan:
 | CE-07 | `PATCH /api/orders/:id` con `vendedor` y body que no es `{ status }` | `403` + `{ code: 'INSUFFICIENT_ROLE' }` | RF-09 |
 | CE-08 | Archivo de upload sin content-type de imagen | `415` | RF-20 |
 | CE-09 | La DB cae durante un request | El error handler devuelve `503`; `/health` reporta `db: 'disconnected'` | RF-22 |
-| CE-10 | Dos requests simultáneos sobre el mismo vino | La última escritura gana; no hay bloqueo optimista (fuera de alcance) | RF-03 |
+| CE-10 | Dos requests simultáneos sobre el mismo producto | La última escritura gana; no hay bloqueo optimista (fuera de alcance) | RF-03 |
 
 ---
 
@@ -198,9 +198,9 @@ Estas se corrigen en esta versión y quedan registradas para que no se pierdan:
 | # | Criterio | Verificación |
 |---|---|---|
 | CA-01 | GET paginado con filtros | `?page=1&limit=10&search=Malbec&category=Tinto` → `200` + `{ data, total, page, limit, totalPages }` |
-| CA-02 | POST crea vino válido | `201` + vino con `id`, `createdAt`, `stock`, `activo`, `price` **en pesos** |
+| CA-02 | POST crea producto válido | `201` + producto con `id`, `createdAt`, `stock`, `activo`, `price` **en pesos** |
 | CA-03 | PATCH actualiza parcial | Se mandan 2 campos → solo esos 2 cambian, `updatedAt` cambió |
-| CA-04 | DELETE sin pedidos | → `204`; el vino ya no aparece en `GET /api/wines` |
+| CA-04 | DELETE sin pedidos | → `204`; el producto ya no aparece en `GET /api/wines` |
 | CA-05 | DELETE con pedidos | → `409` + `{ code: 'HAS_ORDERS', count: N }` con N > 0 |
 | CA-06 | Import CSV válido | → `201` + `{ created, updated, errors: [] }` |
 | CA-07 | Import CSV con errores | → `207` + `errors` con `row`, `field`, `message` |
@@ -209,7 +209,7 @@ Estas se corrigen en esta versión y quedan registradas para que no se pierdan:
 
 | # | Criterio | Verificación |
 |---|---|---|
-| CA-21 | Endpoint público filtra inactivos | Con un vino `activo: false` en DB, `GET /api/wines/public` no lo devuelve |
+| CA-21 | Endpoint público filtra inactivos | Con un producto `activo: false` en DB, `GET /api/wines/public` no lo devuelve |
 | CA-22 | Endpoint público no expone stock | El body no tiene las claves `stock` ni `activo` |
 
 ### 8.4 Pedidos
@@ -279,7 +279,7 @@ Estas se corrigen en esta versión y quedan registradas para que no se pierdan:
 | D-12 | Migración: script idempotente con `--dry-run` | Planner | RNF-07. Re-ejecutable sin duplicar, y revisable antes de tocar datos |
 | **D-13** | **El frontend no se mueve.** El backend va en `backend/` como subcarpeta, con su propio `package.json` | Planner | **Corrige la contradicción #1.** Mover el frontend a `frontend/` reescribiría `index.html`, `vite.config.ts`, `tsconfig.json`, los paths de `test/` y `package.json`, sin ganar nada |
 | **D-14** | **`module: "NodeNext"`, `moduleResolution: "NodeNext"`, imports relativos con extensión `.js`** | Planner | **Corrige la contradicción #2.** `bundler` no emite las extensiones, así que `node dist/main.js` falla con `ERR_MODULE_NOT_FOUND` |
-| **D-15** | **`price` se guarda y se devuelve en pesos enteros** | Planner | **Corrige la contradicción #3.** El `Wine` del frontend ya usa pesos (`45000`). Centavos obligaría a un cambio de contrato en 004-a y una conversión en ambos lados |
+| **D-15** | **`price` se guarda y se devuelve en pesos enteros** | Planner | **Corrige la contradicción #3.** El `Producto` del frontend ya usa pesos (`45000`). Centavos obligaría a un cambio de contrato en 004-a y una conversión en ambos lados |
 | **D-16** | **`abandonedCarts` y `conversion` se devuelven siempre en `0`** | Usuario | **Corrige la contradicción #6.** Se mantienen las claves porque el frontend las lee y quitarlas rompería el shape. El valor real llega cuando exista tracking |
 | **D-17** | **Sin modelo `AuditLog`** | Planner | **Corrige la contradicción #7.** `OrderTimeline` y `Note` ya son el registro de auditoría que pide 004-a D-17. Un tercer modelo sería código muerto |
 | **D-18** | **El seed del admin inicial va en T1** | Planner | **Corrige la contradicción #8.** Sin usuario, T2 no puede probar login |

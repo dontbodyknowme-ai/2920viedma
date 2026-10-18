@@ -20,11 +20,11 @@ const s3 = new S3Client({
  * URL publica y estable de un objeto del bucket.
  *
  * No se firma, a proposito. Antes se devolvia una URL firmada con
- * `expiresIn: 3600` y `admin_wine_form.tsx` la guardaba como `imageUrl` del
- * vino: la imagen se veía una hora y despues quedaba rota **para siempre** en
+ * `expiresIn: 3600` y `admin_producto_form.tsx` la guardaba como `imageUrl` del
+ * producto: la imagen se veía una hora y despues quedaba rota **para siempre** en
  * la base, porque la URL ya estaba vencida.
  *
- * Con la URL publica, el vino guarda una direccion que no vence. El precio es
+ * Con la URL publica, el producto guarda una direccion que no vence. El precio es
  * que las fotos quedan accesibles para quien tenga el link, que para un
  * catalogo de productos es lo esperable.
  *

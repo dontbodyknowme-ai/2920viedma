@@ -115,9 +115,9 @@ T1 (Infra + seed) ──► T2 (Auth + core) ──┬──► T3 (Vinos admin)
 | `backend/src/app.ts` | Factory de Fastify + error handler | T2 |
 | `backend/src/main.ts` | Entry: build + listen | T2 |
 | `backend/src/routes.ts` | Registro por módulo | T2, T3-T8 |
-| `backend/src/modules/wines/service.ts` | CRUD + importCsv + delete con validación | T3 |
-| `backend/src/modules/wines/routes.ts` | 5 endpoints admin | T3 |
-| `backend/src/modules/wines/public-routes.ts` | 1 endpoint público | T4 |
+| `backend/src/modules/products/service.ts` | CRUD + importCsv + delete con validación | T3 |
+| `backend/src/modules/products/routes.ts` | 5 endpoints admin | T3 |
+| `backend/src/modules/products/public-routes.ts` | 1 endpoint público | T4 |
 | `backend/src/modules/orders/service.ts` | findMany, findById, updateStatus | T5 |
 | `backend/src/modules/orders/routes.ts` | 3 endpoints | T5 |
 | `backend/src/modules/customers/service.ts` | findMany, findById, updateNotes, updateTags | T6 |
@@ -193,7 +193,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum WineCategory {
+enum CategoriaProducto {
   Tinto
   Blanco
   Rosado
@@ -237,12 +237,12 @@ model RefreshToken {
   @@index([userId])
 }
 
-model Wine {
+model Producto {
   id           String       @id @default(cuid())
   name         String
   winery       String
   varietal     String
-  category     WineCategory
+  category     CategoriaProducto
   vintage      Int
   /// Pesos argentinos enteros. NO centavos (D-15).
   price        Int
@@ -315,7 +315,7 @@ model OrderItem {
   orderId  String
   order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   wineId   String
-  wine     Wine   @relation(fields: [wineId], references: [id])
+  wine     Producto   @relation(fields: [wineId], references: [id])
   quantity Int
   /// Precio unitario en el momento de la compra (pesos).
   price    Int
@@ -608,9 +608,9 @@ async delete(id: string): Promise<void> {
   if (count > 0) {
     throw new ConflictError('HAS_ORDERS', { count })
   }
-  const wine = await prisma.wine.findUnique({ where: { id } })
+  const wine = await prisma.product.findUnique({ where: { id } })
   if (!wine) throw new NotFoundError('Vino')
-  await prisma.wine.delete({ where: { id } })
+  await prisma.product.delete({ where: { id } })
 }
 ```
 
@@ -622,7 +622,7 @@ async importCsv(stream: Readable): Promise<ImportResult> {
   const result: ImportResult = { created: 0, updated: 0, errors: [] }
 
   for (const [index, row] of rows.entries()) {
-    const parsed = wineCreateSchema.safeParse(normalizeRow(row))
+    const parsed = productoCreateSchema.safeParse(normalizeRow(row))
 
     if (!parsed.success) {
       result.errors.push({
@@ -633,12 +633,12 @@ async importCsv(stream: Readable): Promise<ImportResult> {
       continue
     }
 
-    const existing = await prisma.wine.findUnique({ where: { id: parsed.data.id } })
+    const existing = await prisma.product.findUnique({ where: { id: parsed.data.id } })
     if (existing) {
-      await prisma.wine.update({ where: { id: parsed.data.id }, data: parsed.data })
+      await prisma.product.update({ where: { id: parsed.data.id }, data: parsed.data })
       result.updated++
     } else {
-      await prisma.wine.create({ data: parsed.data })
+      await prisma.product.create({ data: parsed.data })
       result.created++
     }
   }
@@ -796,7 +796,7 @@ npm run migrate -- --input ./data/wines.json             # escribe
 
 Escribe `vinoteca_cart` como `Customer` + `Order` con estado `pendiente`, porque un carrito es un pedido no confirmado.
 
-Idempotencia: `upsert` por `Wine.id`, `Customer.email`, y `Order.id`. Correrlo dos veces no duplica nada.
+Idempotencia: `upsert` por `Producto.id`, `Customer.email`, y `Order.id`. Correrlo dos veces no duplica nada.
 
 ### D-N — `docker-compose.yml` (en la raíz)
 

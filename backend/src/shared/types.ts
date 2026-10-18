@@ -1,7 +1,7 @@
 import type {
-  WineCreateInput,
-  WineUpdateInput,
-  WineQuery,
+  ProductoCreateInput,
+  ProductoUpdateInput,
+  ProductoQuery,
   ImportResult,
   OrderQuery,
   OrderUpdateInput,
@@ -14,9 +14,9 @@ import type {
  *  ============================================================ */
 
 export type {
-  WineCreateInput,
-  WineUpdateInput,
-  WineQuery,
+  ProductoCreateInput,
+  ProductoUpdateInput,
+  ProductoQuery,
   ImportResult,
   OrderQuery,
   OrderUpdateInput,
@@ -36,14 +36,14 @@ export interface Paginated<T> {
   totalPages: number
 }
 
-export interface Wine {
+export interface Producto {
   id: string
   name: string
   /** Bodega. `null` para lo que no viene de una. */
   winery: string | null
   /** Cepa. `null` para lo que no la tiene. */
   varietal: string | null
-  /** Anada. `null` para lo que no es vino. */
+  /** Anada. `null` para lo que no es producto. */
   vintage: number | null
   /** La hoja de la taxonomia: Vinos, Cerveza, Gaseosas, Jugos. */
   category: string
@@ -51,7 +51,7 @@ export interface Wine {
   departamento: string
   /** Nivel medio: "Con alcohol", "Sin alcohol". `null` si cuelga suelto. */
   grupo: string | null
-  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  /** Color del producto. `null` fuera de la categoria "Vinos". */
   tipoVino: string | null
   price: number
   description: string | null
@@ -64,7 +64,7 @@ export interface Wine {
   updatedAt: string
 }
 
-export interface PublicWine {
+export interface ProductoPublico {
   id: string
   name: string
   winery: string | null
@@ -75,7 +75,7 @@ export interface PublicWine {
   departamento: string
   /** Nivel medio de la taxonomia. `null` si cuelga suelto. */
   grupo: string | null
-  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  /** Color del producto. `null` fuera de la categoria "Vinos". */
   tipoVino: string | null
   price: number
   description: string | null
@@ -85,8 +85,8 @@ export interface PublicWine {
 }
 
 export interface OrderItem {
-  wineId: string
-  wineName: string
+  productoId: string
+  productoNombre: string
   imageUrl: string
   quantity: number
   price: number
@@ -144,7 +144,7 @@ export interface Metrics {
   avgTicket: number
   conversion: number
   salesLast30Days: Array<{ date: string; total: number }>
-  topProducts: Array<{ wineId: string; name: string; revenue: number; count: number }>
+  topProducts: Array<{ productoId: string; name: string; revenue: number; count: number }>
   recentActivity: Array<{
     id: string
     type: 'order' | 'customer'

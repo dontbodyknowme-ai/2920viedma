@@ -218,13 +218,13 @@ done
 
 ### Qué hacer
 
-**1. `src/modules/wines/service.ts`** — `findMany`, `findById`, `create`, `update`, `delete`, `importCsv`.
+**1. `src/modules/products/service.ts`** — `findMany`, `findById`, `create`, `update`, `delete`, `importCsv`.
 
 - `findMany`: `search` con OR sobre `name`, `winery`, `varietal`, case-insensitive. `status=activo|inactivo` mapea a `activo: true|false`. Skip/take para paginación. Responde `{ data, total, page, limit, totalPages }`.
 - `delete`: cuenta `orderItem` antes de borrar. Si hay, `ConflictError('HAS_ORDERS', { count })` (plan D-H, CE-01).
 - `importCsv`: `papa-parse` en modo stream, valida fila por fila, upsert por `id`. Devuelve `{ created, updated, errors: [{ row, field, message }] }`. La fila reportada es `index + 2` porque el header ocupa la fila 1.
 
-**2. `src/modules/wines/routes.ts`** — 5 endpoints con `requireRole`:
+**2. `src/modules/products/routes.ts`** — 5 endpoints con `requireRole`:
 - `GET /api/wines` → `requireRole('admin', 'gestor')`
 - `POST /api/wines` → `requireRole('admin', 'gestor')` → `201`
 - `PATCH /api/wines/:id` → `requireRole('admin', 'gestor')`
@@ -249,29 +249,29 @@ TOKEN=<accessToken admin>
 AUTH="Authorization: Bearer $TOKEN"
 
 # GET con filtros combinados
-curl -s "http://localhost:3000/api/wines?page=1&limit=10&search=malbec&category=Tinto" \
+curl -s "http://localhost:3000/api/products?page=1&limit=10&search=malbec&category=Tinto" \
   -H "$AUTH"
 # → 200 con { data, total, page, limit, totalPages }
 
 # Sin token → 401
-curl -s http://localhost:3000/api/wines
+curl -s http://localhost:3000/api/products
 
 # Con vendedor → 403
-curl -s -X POST http://localhost:3000/api/wines -H "$AUTH_VENDEDOR" \
+curl -s -X POST http://localhost:3000/api/products -H "$AUTH_VENDEDOR" \
   -H 'Content-Type: application/json' -d '{"name":"X"}'
 
 # DELETE sin pedidos → 204
-curl -s -o /dev/null -w "%{http_code}\n" -X DELETE http://localhost:3000/api/wines/<id> -H "$AUTH"
+curl -s -o /dev/null -w "%{http_code}\n" -X DELETE http://localhost:3000/api/products/<id> -H "$AUTH"
 
 # DELETE con pedidos → 409 con code
-curl -s -X DELETE http://localhost:3000/api/wines/<id-con-pedidos> -H "$AUTH"
+curl -s -X DELETE http://localhost:3000/api/products/<id-con-pedidos> -H "$AUTH"
 # → {"code":"HAS_ORDERS","details":{"count":N}}
 
 # Import CSV válido → 201, con errores → 207
-curl -s -X POST http://localhost:3000/api/wines/import -H "$AUTH" \
+curl -s -X POST http://localhost:3000/api/products/import -H "$AUTH" \
   -F "file=@./testdata/valido.csv"
 # → 201 {"created":N,"updated":M,"errors":[]}
-curl -s -X POST http://localhost:3000/api/wines/import -H "$AUTH" \
+curl -s -X POST http://localhost:3000/api/products/import -H "$AUTH" \
   -F "file=@./testdata/con-errores.csv"
 # → 207 {"created":N,"updated":M,"errors":[{"row":3,"field":"price","message":"..."}]}
 ```
@@ -297,7 +297,7 @@ curl -s -X POST http://localhost:3000/api/wines/import -H "$AUTH" \
 
 ### Qué hacer
 
-**1. `src/modules/wines/public-routes.ts`** — un solo endpoint:
+**1. `src/modules/products/public-routes.ts`** — un solo endpoint:
 
 ```
 GET /api/wines/public
@@ -305,10 +305,10 @@ GET /api/wines/public
 
 Sin autenticación. Query: `activo: true` solamente.
 
-El shape de la respuesta es el `Wine` del frontend (`src/types/vino.ts`), **sin** `stock` ni `activo`. La proyección de Prisma lo hace explícito:
+El shape de la respuesta es el `Producto` del frontend (`src/types/producto.ts`), **sin** `stock` ni `activo`. La proyección de Prisma lo hace explícito:
 
 ```ts
-const publicWines = await prisma.wine.findMany({
+const publicWines = await prisma.product.findMany({
   where: { activo: true },
   select: {
     id: true,
@@ -331,23 +331,23 @@ const publicWines = await prisma.wine.findMany({
 
 **Sin paginación** (RF-06): el catálogo público se entrega completo, como en el frontend actual.
 
-**2. Tests:** `tests/integration/wines.public.test.ts` — un vino `activo: false` en DB no aparece; el body no tiene las claves `stock` ni `activo`; funciona sin token.
+**2. Tests:** `tests/integration/wines.public.test.ts` — un producto `activo: false` en DB no aparece; el body no tiene las claves `stock` ni `activo`; funciona sin token.
 
 ### Verificación
 
 ```bash
 # Sin token
-curl -s http://localhost:3000/api/wines/public | jq '.[0] | keys'
+curl -s http://localhost:3000/api/products/public | jq '.[0] | keys'
 # → no debe aparecer "stock" ni "activo"
 
-# Con un vino inactivo en DB, no debe aparecer
-curl -s http://localhost:3000/api/wines/public | jq 'length'
+# Con un producto inactivo en DB, no debe aparecer
+curl -s http://localhost:3000/api/products/public | jq 'length'
 ```
 
 ### Hecho cuando
 
 - [ ] `GET /api/wines/public` responde sin autenticación
-- [ ] Solo devuelve vinos con `activo: true`
+- [ ] Solo devuelve productos con `activo: true`
 - [ ] El body **no** tiene `stock` ni `activo`
 - [ ] Usa `select` explícito, no `omit`
 - [ ] Sin paginación
@@ -569,12 +569,12 @@ curl -s http://localhost:3000/api/metrics -H "$AUTH" | jq '.abandonedCarts, .con
 ```bash
 # Upload válido
 curl -s -X POST http://localhost:3000/api/upload -H "$AUTH" \
-  -F "file=@./testdata/vino.jpg" | jq '{id, url}'
+  -F "file=@./testdata/producto.jpg" | jq '{id, url}'
 # → 201 con url firmada
 
 # La URL firmada sirve la imagen ya convertida
 URL=$(curl -s -X POST http://localhost:3000/api/upload -H "$AUTH" \
-  -F "file=@./testdata/vino.jpg" | jq -r '.url')
+  -F "file=@./testdata/producto.jpg" | jq -r '.url')
 curl -s "$URL" -o /tmp/salida.webp && xxd -l 12 /tmp/salida.webp
 # → 52 49 46 46 ... 57 45 42 50  = "RIFF....WEBP"
 
@@ -591,7 +591,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:3000/api/uploa
 
 # vendedor → 403
 curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:3000/api/upload \
-  -H "$AUTH_VENDEDOR" -F "file=@./testdata/vino.jpg"
+  -H "$AUTH_VENDEDOR" -F "file=@./testdata/producto.jpg"
 ```
 
 ### Hecho cuando
@@ -622,7 +622,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:3000/api/uploa
 **3. `scripts/migrate-from-localstorage.ts`** — migración idempotente de plan D-M:
 - `--input <path>` a un JSON exportado del navegador (`vinoteca_wines` y `vinoteca_cart`)
 - `--dry-run` loguea qué haría sin escribir (**obligatorio correrlo antes de la corrida real**)
-- Upsert por `Wine.id`, `Customer.email`, `Order.id`
+- Upsert por `Producto.id`, `Customer.email`, `Order.id`
 - El carrito se importa como `Customer` + `Order` en estado `pendiente`
 - Log de progreso cada 10 registros
 
@@ -660,7 +660,7 @@ npm run migrate:data -- --input ./data/wines.json
 
 # Idempotencia: correr 2 veces no duplica
 npm run migrate:data -- --input ./data/wines.json
-psql $DATABASE_URL -c 'SELECT COUNT(*) FROM "Wine";'      # mismo número que antes
+psql $DATABASE_URL -c 'SELECT COUNT(*) FROM "Producto";'      # mismo número que antes
 psql $DATABASE_URL -c 'SELECT COUNT(*) FROM "Customer";'  # mismo número
 psql $DATABASE_URL -c 'SELECT COUNT(*) FROM "Order";'     # mismo número
 

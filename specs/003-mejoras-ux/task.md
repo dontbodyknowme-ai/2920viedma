@@ -45,13 +45,13 @@ npm run dev                   # servidor de desarrollo
 
 ### Qué hacer
 
-**1. `src/types/vino.ts` — Extender `WineFilterState`**
+**1. `src/types/producto.ts` — Extender `ProductoFilterState`**
 
 Agregar los campos de filtros nuevos:
 
 ```ts
-export interface WineFilterState {
-  category: WineCategory | 'Todos'
+export interface ProductoFilterState {
+  category: CategoriaProducto | 'Todos'
   maxPrice: number | ''
   searchQuery: string
   minPrice: number | ''
@@ -64,22 +64,22 @@ export interface WineFilterState {
 Crear un archivo nuevo con la lógica de filtrado, para que sea testeable sin montar React:
 
 ```ts
-import type { Wine } from '../types/vino'
+import type { Producto } from '../types/producto'
 
 interface Filtros {
-  categoria: Wine['category'] | 'Todos'
+  categoria: Producto['category'] | 'Todos'
   minPrice: number | ''
   maxPrice: number | ''
   selectedVarietals: string[]
   searchQuery: string
 }
 
-export const filtrarVinos = (vinos: Wine[], filtros: Filtros): Wine[] => {
+export const filtrarVinos = (productos: Producto[], filtros: Filtros): Producto[] => {
   const consulta = filtros.searchQuery.trim().toLowerCase()
   const min = filtros.minPrice === '' ? null : Number(filtros.minPrice)
   const max = filtros.maxPrice === '' ? null : Number(filtros.maxPrice)
 
-  return vinos.filter((wine) => {
+  return productos.filter((wine) => {
     const matchesCategory =
       filtros.categoria === 'Todos' || wine.category === filtros.categoria
     const matchesPrice =
@@ -136,13 +136,13 @@ En navegador:
 
 | Qué | CA |
 |---|---|
-| Establecer precio mínimo 40000: solo vinos con precio >= 40000 | CA-04 |
-| Establecer precio máximo 40000: solo vinos con precio <= 40000 | CA-05 |
-| Establecer mínimo 30000 y máximo 50000: solo vinos en ese rango | CA-06 |
-| Seleccionar cepa "Malbec": solo vinos con varietal Malbec | CA-07 |
+| Establecer precio mínimo 40000: solo productos con precio >= 40000 | CA-04 |
+| Establecer precio máximo 40000: solo productos con precio <= 40000 | CA-05 |
+| Establecer mínimo 30000 y máximo 50000: solo productos en ese rango | CA-06 |
+| Seleccionar cepa "Malbec": solo productos con varietal Malbec | CA-07 |
 | Combinar categoría "Tinto" + cepa "Malbec" + precio máximo 50000 | CA-08 |
 | Pulsar "Limpiar" en filtro de precio: se restablece sin afectar otros filtros | CA-09 |
-| Combinar filtros que no dejan ningún vino: mensaje de estado vacío | CA-10 |
+| Combinar filtros que no dejan ningún producto: mensaje de estado vacío | CA-10 |
 | Ingresar "abc" en filtro de precio: mensaje de error | CA-30 |
 
 ### Hecho cuando
@@ -172,14 +172,14 @@ Extender las props:
 interface ProductFormProps {
   isOpen: boolean
   onClose: () => void
-  onAddWine: (wine: Wine) => void
-  onUpdateWine: (wine: Wine) => void  // Nuevo
-  wineToEdit: Wine | null              // Nuevo
+  onAddWine: (wine: Producto) => void
+  onUpdateWine: (wine: Producto) => void  // Nuevo
+  wineToEdit: Producto | null              // Nuevo
 }
 ```
 
 Cuando `wineToEdit` no es `null`:
-- Cargar los datos del vino en el estado (usar `useEffect` sobre `wineToEdit`)
+- Cargar los datos del producto en el estado (usar `useEffect` sobre `wineToEdit`)
 - Cambiar el título a "Editar Vino"
 - El botón de guardar dice "Guardar Cambios"
 - Al guardar, llamar a `onUpdateWine` en vez de `onAddWine`
@@ -189,9 +189,9 @@ Cuando `wineToEdit` no es `null`:
 Agregar estado `vinoAEditar` y función `actualizarWine`:
 
 ```tsx
-const [vinoAEditar, setVinoAEditar] = useState<Wine | null>(null)
+const [vinoAEditar, setVinoAEditar] = useState<Producto | null>(null)
 
-const actualizarWine = useCallback((wine: Wine) => {
+const actualizarWine = useCallback((wine: Producto) => {
   setWines((previo) =>
     previo.map((w) => (w.id === wine.id ? wine : w))
   )
@@ -228,11 +228,11 @@ En navegador:
 
 | Qué | CA |
 |---|---|
-| Pulsar "Editar" sobre un vino: formulario con datos cargados y título "Editar Vino" | CA-16 |
-| Modificar precio y guardar: vino actualizado con mismo id | CA-17 |
-| Pulsar "Cancelar": vino no modificado, formulario cerrado | CA-18 |
+| Pulsar "Editar" sobre un producto: formulario con datos cargados y título "Editar Vino" | CA-16 |
+| Modificar precio y guardar: producto actualizado con mismo id | CA-17 |
+| Pulsar "Cancelar": producto no modificado, formulario cerrado | CA-18 |
 | Editar y poner precio 0: rechazado con mensaje | CA-19 |
-| Cerrar con X o clic fuera: vino no modificado | CA-32 |
+| Cerrar con X o clic fuera: producto no modificado | CA-32 |
 
 ### Hecho cuando
 
@@ -338,7 +338,7 @@ En navegador:
 | Seleccionar JPG desde el sistema: vista previa visible | CA-12 |
 | Arrastrar PDF: mensaje de error | CA-13 |
 | Arrastrar imagen de 6 MB: mensaje de error | CA-14 |
-| Guardar vino con imagen por archivo: vino guardado con Data URL | CA-15 |
+| Guardar producto con imagen por archivo: producto guardado con Data URL | CA-15 |
 | Cargar imagen por archivo y luego escribir URL: URL ignorada | CA-31 |
 
 ### Hecho cuando
@@ -605,7 +605,7 @@ En navegador:
 
 | Qué | CA |
 |---|---|
-| En el hero se muestra una sección con los 3 vinos más caros | CA-27 |
+| En el hero se muestra una sección con los 3 productos más caros | CA-27 |
 | Pulsar una botella destacada: se abre la vista rápida | CA-28 |
 | Con catálogo vacío: la sección no se muestra | CA-29 |
 

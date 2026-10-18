@@ -7,7 +7,7 @@
  *
  * El parser es propio y no usa `split(',')`. Eso rompia con los valores que
  * llevan una coma dentro de comillas, que es exactamente el caso de una
- * descripcion de vino: `Vino tinto, con notas de frutos rojos` son dos columnas
+ * descripcion de producto: `Vino tinto, con notas de frutos rojos` son dos columnas
  * para `split` y una para el parser.
  */
 

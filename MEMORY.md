@@ -23,7 +23,7 @@
 
 ### Decisiones de la spec 004-a que conviene no olvidar
 
-1. **`AdminWine extends Wine`, no al revés.** `stock` y `activo` viven en el tipo del panel porque el catalogo publico no los necesita (RF-06 de la 004-b). No se pueden agregar a `Wine`: los tests preexistentes cierran `CAMPOS_REQUERIDOS` y `CAMPOS_OPCIONALES` por los dos lados.
+1. **`ProductoAdmin extends Producto`, no al revés.** `stock` y `activo` viven en el tipo del panel porque el catalogo publico no los necesita (RF-06 de la 004-b). No se pueden agregar a `Producto`: los tests preexistentes cierran `CAMPOS_REQUERIDOS` y `CAMPOS_OPCIONALES` por los dos lados.
 2. **No hay boton de acceso al panel en la tienda.** Decision del usuario (2026-10-09), en contra de RF-01. Se entra escribiendo `/admin`.
 3. **Sin sesion no hay redirect: hay pantalla de clave.** El enunciado pedia rebotar a `/`; se muestra el prompt en la misma URL, porque quien la escribio a proposito esta pidiendo entrar.
 4. **La contrasena no es autenticacion.** Se compara en el navegador contra un valor del bundle. Se documento asi a proposito: un mock que aparente proteger algo es peor que uno que no.
@@ -46,7 +46,7 @@
 ## Componentes y Estructura
 - [x] `Navbar` - Navegacion fija con efecto de vidrio/opacidad al hacer scroll y contador de carrito en vivo. **Enlaces de navegación (Inicio, Catálogo, Contacto) con panel lateral en móvil implementado.**
 - [x] `Hero` - Seccion principal en **disposicion partida**: texto a la izquierda (parallax), botella 3D a la derecha. Titular, copy y boton 'Explorar Cava'. Sin props.
-- [x] `BotellasDestacadas` - Los 3 vinos mas caros, en **su propia seccion debajo del hero**, en flujo normal. Grid responsive, precio sobre la foto, entrada en cascada al hacer scroll.
+- [x] `BotellasDestacadas` - Los 3 productos mas caros, en **su propia seccion debajo del hero**, en flujo normal. Grid responsive, precio sobre la foto, entrada en cascada al hacer scroll.
 - [x] `ProductCatalog` - Grilla e-commerce responsiva con filtros por tipo (Tinto, Blanco, Rosado, Espumante), cepa y rango de precio.
 - [x] `ProductCard` - Tarjeta interactiva con zoom sutil en hover, detalles de bodega/cosecha, boton 'Agregar al Carrito' y boton 'Editar' (solo admin).
 - [x] `ProductForm` - Modal/Formulario de carga/edicion de productos con soporte para URLs e subida de archivos de imagen (drag & drop). Modo edicion con carga de datos, titulo dinamico y validacion de precio > 0.
@@ -72,7 +72,7 @@
 - [x] `OrderTimeline` - Historial de estados de un pedido. **Dibuja el registro, no lo recalcula** (ver CE-03).
 - [x] `ConfirmDialog` - Confirmacion modal.
 - [x] `DateRangePicker` - Rango de fechas sobre react-day-picker v9, tema oscuro, dos meses.
-- [x] `AdminWineForm` - Alta/edicion de vino del panel. **Separado de `ProductForm` a proposito**: produce `AdminWine` (con `stock` y `activo`), no `Wine`.
+- [x] `AdminProductoForm` - Alta/edicion de producto del panel. **Separado de `ProductForm` a proposito**: produce `ProductoAdmin` (con `stock` y `activo`), no `Producto`.
 - [x] `OrderDrawer` - Detalle de pedido: items, cliente, direccion, estado, timeline, etiqueta y devolucion.
 - [x] `CustomerDrawer` - Detalle de cliente en 3 pestanas (pedidos/notas/datos) mas `ChipTag`.
 - [x] Paginas: `dashboard.tsx`, `catalogo.tsx`, `pedidos.tsx`, `clientes.tsx`, `configuracion.tsx`.
@@ -91,13 +91,13 @@ backend/
 │   ├── utils/logger.ts         # Pino structured logs
 │   ├── modules/
 │   │   ├── auth/               # JWT + refresh rotativo, roles
-│   │   ├── wines/              # CRUD + import CSV + público
+│   │   ├── products/           # CRUD + import CSV + público
 │   │   ├── orders/             # Timeline + roles
 │   │   ├── customers/          # Search + tags + notas
 │   │   ├── metrics/            # Agregaciones paralelas
 │   │   ├── upload/             # Sharp → WebP → S3 signed URL
 │   │   └── health/             # /health endpoint
-├── prisma/schema.prisma        # 8 modelos (User, Wine, Order, etc.)
+├── prisma/schema.prisma        # 8 modelos (User, Producto, Order, etc.)
 ├── scripts/seed.ts             # Admin/gestor/vendedor
 ├── scripts/migrate-from-localstorage.ts
 ├── tests/setup.ts              # Defaults de process.env + Prisma (solo con DATABASE_URL_TEST)
@@ -122,7 +122,7 @@ backend/
 - [x] `src/utils/tienda.ts` - Identidad de la tienda, fuente unica (la usa el footer y Configuracion).
 - [x] `src/utils/offline.ts` - Respaldo en `localStorage` indexado por URL, estado global y suscriptores. `exigirConexion()` hace fallar las escrituras sin servidor.
 - [x] `src/utils/admin_acceso.ts` - Contrasena y sesion del panel.
-- [x] `src/types/admin.ts` - `AdminWine`, `Order`, `Customer`, `Metrics`, `Paginated`, `ImportResult`, `OrderStatus`.
+- [x] `src/types/admin.ts` - `ProductoAdmin`, `Order`, `Customer`, `Metrics`, `Paginated`, `ImportResult`, `OrderStatus`.
 
 ## Convenciones y Preferencias
 - Estilo de codigo configurado en `AGENTS.md`:
@@ -143,7 +143,7 @@ backend/
 - *2026-10-11:* **Spec 004-d: verificacion end-to-end. El backend arranco en Windows y aparecio el bug mas caro del proyecto.** Rama `spec-004-d-verificacion-e2e`.
   - **El puerto 3000 nunca fue el problema.** Mi hipotesis de que Hyper-V/WSL2 reservaban el rango era falsa: `netsh interface ipv4 show excludedportrange` no lista el 3000. El servidor arranca y escucha bien (`0.0.0.0:3000`, `GET /api/docs` → 200).
   - **La causa real era `localhost` en la `DATABASE_URL`.** En Windows `localhost` resuelve a `::1` (IPv6) y el motor de Prisma no conecta por ahi, aunque el puerto este publicado: `Can't reach database server at localhost:5432` tras ~5 s, con `netstat` y `Test-NetConnection` en verde. Con `127.0.0.1` funciona al instante. En Linux/CI `localhost` anda, asi que nunca se manifesto alla.
-  - **`response.schema` de Fastify CORTA los datos — y todo respondia 200.** Fastify no serializa con `JSON.stringify`: compila el schema con `fast-json-stringify`, que descarta lo no declarado, y los schemas de `json-schemas.ts` eran placeholders `{ type: 'object' }` (que no declara ninguna propiedad). Resultado: `login` → `"user":{}`, `metrics` → `{}`, `wines.create` → `{}`, y tambien `orders.get/update` y `customers.get/update`. **Sin un solo error ni en el log.** El efecto en el panel: `hasRole('admin')` daba `false`, asi que el boton "Panel Admin" no aparecia al loguearse y **si aparecia al recargar** (cuando entra por `/auth/me`, que si tenia schema completo). El dashboard leia todas las tarjetas en cero. Fix: helper `objetoLibre()` (`additionalProperties: true`) en todos los responses.
+  - **`response.schema` de Fastify CORTA los datos — y todo respondia 200.** Fastify no serializa con `JSON.stringify`: compila el schema con `fast-json-stringify`, que descarta lo no declarado, y los schemas de `json-schemas.ts` eran placeholders `{ type: 'object' }` (que no declara ninguna propiedad). Resultado: `login` → `"user":{}`, `metrics` → `{}`, `products.create` → `{}`, y tambien `orders.get/update` y `customers.get/update`. **Sin un solo error ni en el log.** El efecto en el panel: `hasRole('admin')` daba `false`, asi que el boton "Panel Admin" no aparecia al loguearse y **si aparecia al recargar** (cuando entra por `/auth/me`, que si tenia schema completo). El dashboard leia todas las tarjetas en cero. Fix: helper `objetoLibre()` (`additionalProperties: true`) en todos los responses.
   - **Test de regresion** `tests/unit/json_schemas.test.ts`: arma una app de Fastify real con cada `response.schema` y verifica que la respuesta conserve los datos. Probado en contra: sacando `additionalProperties` fallan 7 de 11, exactamente los endpoints rotos.
   - **Leccion:** 147 tests unitarios, 0 errores de typecheck, lint limpio, build OK, CI verde — y la app seguia rota. Un test que verifica el codigo de respuesta HTTP es distinto de uno que verifica el status.
   - **Bug del login (lo reporto el usuario como "no me deja entrar con admin123").** La password era correcta: el backend contestaba 200 con token y cookie. El problema es que `AdminGate` llamaba a `api.auth.login()` **crudo** en vez de `useAuth().login()`. La llamada cruda devuelve los tokens pero no toca estado: el `accessToken` vive en el modulo `api` y el `user` en el `AuthProvider`, y los dos los setea el hook. Con la llamada directa, `isAuthenticated` queda en `false`, `AdminLayout` (linea 73: `if (!autorizado) return <AdminGate />`) vuelve a renderizar el gate y el formulario se limpia -> **bucle infinito con la password correcta**. Era el unico lugar del proyecto que llamaba a la API de auth por fuera del hook.
@@ -167,7 +167,7 @@ backend/
   - T1: Infra (Prisma 8 modelos, Docker, seed, migraciones)
   - T2: Auth JWT + refresh rotativo, roles admin/gestor/vendedor, rate-limit, Swagger
   - T3: Vinos admin CRUD + import CSV streaming (papaparse, upsert por id)
-  - T4: Vinos públicos `GET /api/wines/public` (solo activos)
+  - T4: Productos públicos `GET /api/products/public` (solo activos)
   - T5: Pedidos CRUD + timeline atómico, roles vendedor restringido
   - T6: Clientes search+tags, notas append-only, tags replace
   - T7: Métricas agregaciones paralelas, shape `Metrics` exacto frontend
@@ -177,13 +177,13 @@ backend/
 
 - *2026-10-09 (noche):* **Fondo y superficies de vuelta al negro carbon.** Al usuario no le gusto el fondo rojo del primer pase (`#35030F`) y pidio "volver al negro carbon en vez de rojo". Los 9 rojos siguen como acento; solo cambia la superficie:
   - `charcoal` deja de ser los 5 rojos mas oscuros y vuelve al gris neutro: `#2E2E2E`/`#262626`/`#1E1E1E`/`#121212`/`#0A0A0A`. `charcoal-800/900/950` recuperan los valores previos a la paleta (`#1e1e1e`/`#121212`/`#0a0a0a`); `600/700` (que codigo usa para hovers y no existian antes) se definen como grises.
-  - `neutral` pierde el tinte vino y pasa a grises puros (`400` `#a3a3a3`, `500` `#8f8f8f` = 5.15:1 sobre `#1e1e1e`), manteniendo WCAG AA sobre las superficies carbon.
+  - `neutral` pierde el tinte producto y pasa a grises puros (`400` `#a3a3a3`, `500` `#8f8f8f` = 5.15:1 sobre `#1e1e1e`), manteniendo WCAG AA sobre las superficies carbon.
   - `src/index.css`: `:root` y `body` vuelven a `#121212` (el valor previo a la paleta; habian quedado en `#35030F`).
-  - No cambian `wine` (9 rojos), `gold`, `white` ni `cream`. La 3D no toca el fondo (el canvas es alfa, la botella sigue siendo roja/vino como marca).
+  - No cambian `wine` (9 rojos), `gold`, `white` ni `cream`. La 3D no toca el fondo (el canvas es alfa, la botella sigue siendo roja/producto como marca).
   - Reauditado en navegador: 0 fallas de contraste en `/` y las 5 rutas de `/admin`. 224/224 tests, `tsc` 0, `lint` 0, `build` OK.
 - *2026-10-09 (noche):* **Paleta de la marca aplicada** (los 9 rojos de la imagen + blanco y dorado, a pedido del usuario).
   - **`tailwind.config.js` quedo como fuente unica de la paleta.** Se elimino el bloque `@layer utilities` de `src/index.css` que pisaba las utilidades de Tailwind con hex hardcodeados y ya divergentes (`wine-900` era `#3d0a16` en CSS contra `#3a0a1a` en el config; `gold-500`, `#c9a02e` contra `#d4af37`). Ese bloque, agregado sin avisar en un commit de la spec 003, es la razon de que hasta ahora "cambiar la paleta" no cambiara nada.
-  - Rampas nuevas: `wine` con los 9 rojos (400→950); `charcoal` = los 5 rojos mas oscuros, para que las superficies tengan temperatura de vino en vez de gris; `white` (`#ffffff` + 100-300) agregada a pedido del usuario; `gold-300` (el codigo ya la usaba sin estar definida); `neutral` sobreescrito con grises calidos **mas claros**, porque el fondo nuevo (`#35030F`) es mas claro que el viejo (`#0a0a0a`) y con el gris de Tailwind el texto secundario caia por debajo de AA.
+  - Rampas nuevas: `wine` con los 9 rojos (400→950); `charcoal` = los 5 rojos mas oscuros, para que las superficies tengan temperatura de producto en vez de gris; `white` (`#ffffff` + 100-300) agregada a pedido del usuario; `gold-300` (el codigo ya la usaba sin estar definida); `neutral` sobreescrito con grises calidos **mas claros**, porque el fondo nuevo (`#35030F`) es mas claro que el viejo (`#0a0a0a`) y con el gris de Tailwind el texto secundario caia por debajo de AA.
   - `PALETA` en `herocanvas3d.tsx` duplica los hex: Three.js no puede leer el config. Documentado ahi y en `AGENTS.md`.
   - **Auditoria de contraste en navegador (medicion de estilos computados, no capturas):** 0 fallas en `/` y en las 5 rutas de `/admin` despues de tres arreglos, ninguno introducido por la paleta sino expuesto por ella:
     1. Aviso +18 del footer: `text-wine-500/80` daba **1.73:1**, ilegible (ya estaba roto con la paleta anterior: era `#800020` sobre `#0a0a0a`, 1.8:1) → `text-gold-400` (10.3:1).
@@ -192,7 +192,7 @@ backend/
   - La paleta en si quedo commiteada por el usuario (`c3cf120`, "botella"); los tres arreglos y esta documentacion estan en el working tree.
   - 224/224 tests, `tsc` 0, `lint` 0, `build` OK.
 - *2026-10-09:* **Spec 004-a (Back-Office) completa.** 10 tareas, 200 tests, `tsc` 0, `lint` 0, `build` 0. Rama `spec-004-a`.
-  - **T1** Infra: `react-router-dom` v7, MSW v2, tipos `AdminWine`/`Order`/`Customer`/`Metrics`, mocks generados por `scripts/generar-mocks.mjs` con PRNG sembrado. Arregladas 3 regresiones de la spec 003 que nunca seHabian detectado (`loadWines`/`loadCart` sin guardas RF-34, mensaje de checkout, `VistaRapidaProducto` caido de `App.tsx`).
+  - **T1** Infra: `react-router-dom` v7, MSW v2, tipos `ProductoAdmin`/`Order`/`Customer`/`Metrics`, mocks generados por `scripts/generar-mocks.mjs` con PRNG sembrado. Arregladas 3 regresiones de la spec 003 que nunca seHabian detectado (`loadWines`/`loadCart` sin guardas RF-34, mensaje de checkout, `VistaRapidaProducto` caido de `App.tsx`).
   - **T2** Layout: `AdminLayout`, `AdminSidebar`, `AdminHeader`, `useMediaQuery`. La proteccion vive en el layout y no en el router: es el unico ancestro comun de las cinco rutas hijas.
   - **T3** Componentes compartidos: `DataTable`, `MetricCard`, `StatusBadge`, `OrderTimeline`, `ConfirmDialog`, `utils/csv.ts`.
   - **T4** Dashboard: metricas, grafico Recharts en chunk aparte, top 5 y actividad. `tendenciaDe` devuelve `undefined` cuando no hay dato, nunca `0%` falso.
@@ -217,11 +217,11 @@ backend/
   - La flecha de scroll estaba en `absolute bottom-12` centrada, encima de las botellas; ahora cuelga del boton.
   - Se saco el hero de su `AnimatedSection`: es la primera pantalla y el reveal por scroll lo dejaba fuera de vista al cargar.
   - Verificado en navegador: titulo `left 80→640`, canvas `left 712→1296`, sin interseccion. En movil se apila sin scroll horizontal.
-  - Se muestran 2 botellas y no 3 porque `INITIAL_WINES` tiene 2 vinos. Los 12 del panel son mock de MSW.
+  - Se muestran 2 botellas y no 3 porque `PRODUCTOS_INICIALES` tiene 2 productos. Los 12 del panel son mock de MSW.
 - *2026-10-08:* Implementada Tarea 8 (T8) - Verificación integral y documentación. Todas las tareas de la spec 003 completadas: T1 (Filtros por precio y cepa), T2 (Edición de productos), T3 (Carga de imagen por archivo drag & drop), T4 (Enlaces de navegación), T5 (AnimatedSection scroll-reveal), T6 (Parallax en Hero), T7 (Botellas destacadas). Verificación: `npx tsc --noEmit` y `npm run build` pasan. No se instalaron dependencias nuevas. Se actualizó `MEMORY.md` y `AGENTS.md`.
 - *2026-10-08:* Implementada Tarea 4 (T4) - Enlaces de navegación. Se agregaron enlaces a la barra de navegación (Inicio, Catálogo, Contacto) con scroll suave y offset para no tapar el encabezado por la barra fija. En móvil se implementó panel lateral (drawer) con Framer Motion (`AnimatePresence` + `motion.aside`) que anima desde la derecha, se cierra al hacer click en enlace, en la X o en el fondo. Se creó componente `Footer` (`pie_de_pagina.tsx`) con `id="contacto"` como destino de navegación. Se actualizó `App.tsx` para incluir el Footer.
-- *2026-10-08:* Implementada Tarea 2 (T2) - Edicion de productos (solo admin). Se extendio `ProductForm` con props `onUpdateWine` y `wineToEdit`, agregado `useEffect` para cargar datos del vino a editar, titulo dinamico ('Editar Vino' / 'Cargar Nuevo Vino'), boton 'Guardar Cambios' en modo edicion, validacion de precio > 0. En `App.tsx` agregado estado `vinoAEditar` y funcion `actualizarWine`. En `ProductCard` agregado boton 'Editar' visible cuando se pasa `onEditWine`. Conectado flujo completo: click en 'Editar' en tarjeta -> abre formulario en modo edicion -> guarda con `actualizarWine` manteniendo mismo ID.
-- *2026-10-08:* Implementada Tarea 1 (T1) - Filtros por precio y cepa. Se agregaron: `src/utils/filtros.ts` con funcion `filtrarVinos`, extendido `WineFilterState` en `src/types/vino.ts` con `minPrice`, `maxPrice` y `selectedVarietals`, actualizado `carta_de_catalogo.tsx` con inputs numericos para precio minimo/maximo, chips toggle para cepas disponibles, botones "Limpiar" para restablecer filtros, y conectado todo en `App.tsx` con nuevos props y estado.
+- *2026-10-08:* Implementada Tarea 2 (T2) - Edicion de productos (solo admin). Se extendio `ProductForm` con props `onUpdateWine` y `wineToEdit`, agregado `useEffect` para cargar datos del producto a editar, titulo dinamico ('Editar Vino' / 'Cargar Nuevo Vino'), boton 'Guardar Cambios' en modo edicion, validacion de precio > 0. En `App.tsx` agregado estado `vinoAEditar` y funcion `actualizarWine`. En `ProductCard` agregado boton 'Editar' visible cuando se pasa `onEditWine`. Conectado flujo completo: click en 'Editar' en tarjeta -> abre formulario en modo edicion -> guarda con `actualizarWine` manteniendo mismo ID.
+- *2026-10-08:* Implementada Tarea 1 (T1) - Filtros por precio y cepa. Se agregaron: `src/utils/filtros.ts` con funcion `filtrarVinos`, extendido `ProductoFilterState` en `src/types/producto.ts` con `minPrice`, `maxPrice` y `selectedVarietals`, actualizado `carta_de_catalogo.tsx` con inputs numericos para precio minimo/maximo, chips toggle para cepas disponibles, botones "Limpiar" para restablecer filtros, y conectado todo en `App.tsx` con nuevos props y estado.
 - *2026-10-05:* Creado el archivo AGENTS.md en espanol con la especificacion completa del proyecto y los comandos `pnpm`.
 - *2026-10-05:* Configurado MEMORY.md sincronizado con el stack tecnico (Vite + React + TS, Tailwind CSS, Framer Motion y Zustand/Context).
 - *2026-10-05:* Creado y ubicado el documento de gobernanza en `docs/constitution.md`.
@@ -268,7 +268,7 @@ backend/
   - **`NODE_ENV` faltaba en Render** y apagaba dos cosas en silencio: la cookie salia `Lax` sin `Secure` (por eso el fix del `sameSite` no tomaba efecto aunque estuviera el codigo bien) y `CORS_ORIGIN` dejaba de ser obligatoria. La senal de que algo pasaba era que la cookie no traia `Secure`.
   - **`CORS_ORIGIN` vacia** hacia fallar cada request con 500 (`Invalid CORS origin option`): `z.string()` acepta `''`, el arranque pasaba, `/health` daba 200. Ahora se valida de verdad y es obligatoria en produccion.
   - **`Render NO redeploya al guardar una variable de entorno.** El valor queda guardado y el contenedor sigue con el anterior. Sintoma: la tienda carga entera, el catalogo vacio, cero errores, `/health` en 200. Hay que apretar **Save Changes** y confirmar con el `uptime` de `/health` que el contenedor reinicio de verdad.
-  - **Catalogo de demostracion cargado**: 12 vinos (10 activos) en Neon, idempotente por `id` con slug estable. Venian de `scripts/generar-mocks.mjs`, muerto desde 004-c.
+  - **Catalogo de demostracion cargado**: 12 productos (10 activos) en Neon, idempotente por `id` con slug estable. Venian de `scripts/generar-mocks.mjs`, muerto desde 004-c.
   - **Verificado en navegador real, no con curl:** login -> panel -> F5 -> sigue adentro. `POST /api/auth/refresh` devuelve 200 donde antes daba 401.
   - **Tests: 116 backend, 105 frontend.** Los nuevos que mas pesan: los de la cookie (`refresh_cookie.test.ts`, que fuerza `NODE_ENV=production` porque con el default se verificaria la rama de desarrollo, que es justo la que no tiene el bug) y el aviso de `NODE_ENV` mal puesto.
   - **Leccion del dia:** *arreglar el codigo no deshace el estado que dejo el bug anterior*, y *una variable con el valor equivocado no rompe nada, apaga cosas*. Las dos serologistaron horas de deploy porque el sintoma era invisible desde el servidor.

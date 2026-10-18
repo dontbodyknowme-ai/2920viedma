@@ -72,8 +72,8 @@ const esquema = z.object({
   // URL **pública** del bucket, distinta de `STORAGE_ENDPOINT` (que es el
   // endpoint de la API S3 y no se puede abrir en un navegador).
   // Cloudflare R2: https://pub-<cuenta>.r2.dev  (o un dominio propio)
-  // La devuelve `POST /api/upload` y es la que queda guardada en el vino.
-  // No se firma: una URL firmada caduca en una hora y el vino la tiene guardada
+  // La devuelve `POST /api/upload` y es la que queda guardada en el producto.
+  // No se firma: una URL firmada caduca en una hora y el producto la tiene guardada
   // para siempre, o sea que la imagen se rompia al dia siguiente.
   STORAGE_PUBLIC_URL: z.string().url(),
   PUBLIC_API_URL: z.string().url()
@@ -127,27 +127,6 @@ if (!resultado.success) {
 }
 
 export const env = resultado.data
-
-/**
- * Aviso por `NODE_ENV` mal puesto.
- *
- * `NODE_ENV` decide el comportamiento de varias cosas **sin fallar** cuando no
- * es el esperado:
- *
- *   - la cookie de refresh sale `SameSite=Lax` sin `Secure`, y la sesion muere
- *     en cada recarga de pagina
- *   - `CORS_ORIGIN` deja de ser obligatoria y cae al default de localhost
- *   - `CORS_ORIGIN` vacia no rompe el arranque (la schema la rechaza, pero solo
- *     si la variable existe)
- *
- * Los tres son fallos silenciosos: la app levanta, el healthcheck da 200 y el
- * unico sintoma esta del lado del navegador. Paso de verdad: `NODE_ENV` sin
- * poner en Render dejo la sesion del panel rota y no habia forma de saberlo
- * desde los logs del servidor.
- *
- * `PUBLIC_API_URL` con `https://` es la senal de que esto **no** es desarrollo
- * local: siTL;DR: pasame lo que sigue del proyecto y seguimos<tool_call>
-<invoke name="edit"><path>C:\Vinoteca\Vinoteca-1\backend\src\config\env.ts</path><newString>export const env = resultado.data
 
 /**
  * Aviso por `NODE_ENV` mal puesto.

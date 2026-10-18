@@ -67,7 +67,7 @@ if (hasTestDb) {
     await prisma.order.deleteMany()
     await prisma.note.deleteMany()
     await prisma.customer.deleteMany()
-    await prisma.wine.deleteMany()
+    await prisma.product.deleteMany()
     await prisma.refreshToken.deleteMany()
     await prisma.user.deleteMany()
   })

@@ -95,8 +95,8 @@ capa 9  cierre       Verificación integral + documentación
 | `src/main.tsx` | Wrapeo con `<RouterProvider>` y `<MSWProvider>` (dev only) | T1 |
 | `src/App.tsx` | Rutas admin, flag `isAdmin`, toggle en navbar | T1, T9 |
 | `src/components/barra_de_navegacion.tsx` | Botón "Modo Admin" + enlace `/admin` cuando activo | T9 |
-| `src/types/vino.ts` | Agregar campo `stock: number` y `activo: boolean` a `Wine` | T1 |
-| `src/datos/vino.ts` | Agregar `stock` y `activo` a vinos iniciales | T1 |
+| `src/types/producto.ts` | Agregar campo `stock: number` y `activo: boolean` a `Producto` | T1 |
+| `src/datos/productos.ts` | Agregar `stock` y `activo` a productos iniciales | T1 |
 | `src/components/editor_formador_productos.tsx` | Campos `stock` y `activo` en formulario | T5 |
 
 ### 2.3 Archivos que NO se tocan
@@ -312,7 +312,7 @@ export const AdminLayout = () => {
 ### D-E — Tipos extendidos (`src/types/admin.ts`)
 
 ```tsx
-import type { Wine } from '../types/vino'
+import type { Producto } from '../types/producto'
 
 export interface AdminUser {
   isAdmin: boolean
@@ -371,7 +371,7 @@ export interface AdminFilters {
 
 ### D-F — Datos Mock (`src/mocks/data.ts`)
 
-- **mockWines:** 12 vinos (extendidos de `INITIAL_WINES` + 10 nuevos) con `stock: 0-100`, `activo: true/false`
+- **mockWines:** 12 productos (extendidos de `PRODUCTOS_INICIALES` + 10 nuevos) con `stock: 0-100`, `activo: true/false`
 - **mockOrders:** 25 pedidos con distribución realista de estados, fechas últimos 60 días, items 1-4 por pedido
 - **mockCustomers:** 15 clientes con historial (1-8 pedidos), tags (VIP, Frecuente, Nuevo), notas
 - **mockMetrics:** 30 días ventas con tendencia realista, top 5 productos calculados de mockOrders

@@ -1,7 +1,7 @@
 ﻿import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search } from 'lucide-react'
-import { Wine, PublicWine } from '../types/vino'
+import { Producto, ProductoPublico } from '../types/producto'
 import { ProductCard } from './carta_de_productos'
 import { filtrarVinos } from '../utils/filtros'
 import {
@@ -30,7 +30,7 @@ import { useAuth } from '../hooks/useAuth'
  *
  * ## El filtro es local
  *
- * `/api/wines/public` devuelve todos los activos sin paginar ni filtrar, asi que
+ * `/api/products/public` devuelve todos los activos sin paginar ni filtrar, asi que
  * `filtrarVinos` corre aca. Ver la nota de `utils/filtros.ts`.
  *
  * ## La taxonomia viene de `utils/departamentos.ts`
@@ -43,9 +43,9 @@ import { useAuth } from '../hooks/useAuth'
 interface ProductCatalogProps {
   searchQuery: string
   onSearchChange: (query: string) => void
-  onAddToCart: (wine: Wine) => void
-  onSelectWine: (wine: Wine) => void
-  onEditWine: (wine: Wine) => void
+  onAddToCart: (producto: Producto) => void
+  onSelectProducto: (producto: Producto) => void
+  onEditProducto: (producto: Producto) => void
   minPrice: number | ''
   maxPrice: number | ''
   onMinPriceChange: (value: number | '') => void
@@ -87,17 +87,17 @@ export const ProductCatalog = ({
   searchQuery,
   onSearchChange,
   onAddToCart,
-  onSelectWine,
-  onEditWine,
+  onSelectProducto,
+  onEditProducto,
   minPrice,
   maxPrice,
   onMinPriceChange,
   onMaxPriceChange
 }: ProductCatalogProps): React.ReactElement => {
-  const [wines, setWines] = useState<Wine[]>([])
+  const [productos, setWines] = useState<Producto[]>([])
 
-  // Type helper para convertir PublicWine[] a Wine[]
-  const toWine = (pw: PublicWine): Wine => ({
+  // Type helper para convertir ProductoPublico[] a Producto[]
+  const toWine = (pw: ProductoPublico): Producto => ({
     ...pw,
     description: pw.description ?? '',
     tastingNotes: pw.tastingNotes ?? '',
@@ -107,7 +107,7 @@ export const ProductCatalog = ({
   const [error, setError] = useState<string | null>(null)
   const [departamento, setDepartamento] = useState('')
   const [grupo, setGrupo] = useState('')
-  const [categoria, setCategoria] = useState<Wine['category'] | ''>('')
+  const [categoria, setCategoria] = useState<Producto['category'] | ''>('')
   const { hasRole } = useAuth()
 
   /**
@@ -130,16 +130,16 @@ export const ProductCatalog = ({
     setCategoria('')
   }
 
-  // Cargar vinos desde la API pública
+  // Cargar productos desde la API pública
   useEffect(() => {
     const cargarVinos = async () => {
       try {
         setLoading(true)
-        const data = await api.wines.public()
+        const data = await api.products.public()
         setWines(data.map(toWine))
         setError(null)
       } catch {
-        setError('Error al cargar los vinos. Intente nuevamente.')
+        setError('Error al cargar los productos. Intente nuevamente.')
       } finally {
         setLoading(false)
       }
@@ -157,8 +157,8 @@ export const ProductCatalog = ({
   }
 
   const filteredWines = useMemo(
-    () => filtrarVinos(wines, filtros),
-    [wines, departamento, grupo, categoria, minPrice, maxPrice, searchQuery]
+    () => filtrarVinos(productos, filtros),
+    [productos, departamento, grupo, categoria, minPrice, maxPrice, searchQuery]
   )
 
   const isAdminOrGestor = hasRole('admin') || hasRole('gestor')
@@ -336,13 +336,13 @@ export const ProductCatalog = ({
               layout
               className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
             >
-              {filteredWines.map((wine) => (
+              {filteredWines.map((producto) => (
                 <ProductCard
-                  key={wine.id}
-                  wine={wine}
+                  key={producto.id}
+                  producto={producto}
                   onAddToCart={onAddToCart}
-                  onSelectWine={onSelectWine}
-                  onEditWine={isAdminOrGestor ? onEditWine : undefined}
+                  onSelectProducto={onSelectProducto}
+                  onEditProducto={isAdminOrGestor ? onEditProducto : undefined}
                 />
               ))}
             </motion.div>

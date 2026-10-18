@@ -1,10 +1,10 @@
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import {
   loginSchema,
-  wineCreateSchema,
-  wineUpdateSchema,
-  wineIdParamSchema,
-  wineQuerySchema,
+  productoCreateSchema,
+  productoUpdateSchema,
+  productoIdParamSchema,
+  productoQuerySchema,
   importResultSchema,
   orderQuerySchema,
   orderIdParamSchema,
@@ -33,7 +33,7 @@ const toJsonSchema = (schema: any) => zodToJsonSchema(schema, { $refStrategy: 'n
  * respondia 200 con `user: {}`, `hasRole('admin')` daba `false` y el boton de
  * "Panel Admin" no aparecia hasta recargar la pagina (recien ahi entra por
  * `/auth/me`, que si tiene schema completo). Las metricas del dashboard
- * volvian `{}` y el alta de vinos contestaba 201 con cuerpo vacio.
+ * volvian `{}` y el alta de productos contestaba 201 con cuerpo vacio.
  *
  * `additionalProperties: true` le dice al serializador que conserve lo que no
  * este declarado. Las `properties` que si aparecen siguen documentando en
@@ -100,9 +100,9 @@ export const jsonSchemas = {
       401: errorLibre
     }
   },
-  wines: {
+  products: {
     list: {
-      querystring: toJsonSchema(wineQuerySchema),
+      querystring: toJsonSchema(productoQuerySchema),
       response: {
         200: {
           type: 'object',
@@ -118,16 +118,16 @@ export const jsonSchemas = {
       }
     },
     create: {
-      body: toJsonSchema(wineCreateSchema),
+      body: toJsonSchema(productoCreateSchema),
       response: { 201: objetoLibre(), 400: errorLibre }
     },
     update: {
-      params: toJsonSchema(wineIdParamSchema),
-      body: toJsonSchema(wineUpdateSchema),
+      params: toJsonSchema(productoIdParamSchema),
+      body: toJsonSchema(productoUpdateSchema),
       response: { 200: objetoLibre(), 404: errorLibre }
     },
     delete: {
-      params: toJsonSchema(wineIdParamSchema),
+      params: toJsonSchema(productoIdParamSchema),
       response: { 204: { type: 'null' }, 404: errorLibre, 409: errorLibre }
     },
     import: {

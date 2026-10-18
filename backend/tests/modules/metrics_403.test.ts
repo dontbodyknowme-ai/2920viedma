@@ -25,7 +25,11 @@ const prismaFalso = vi.hoisted(() => ({
   },
   orderItem: { groupBy: vi.fn() },
   customer: { findMany: vi.fn(), count: vi.fn() },
-  wine: { findMany: vi.fn(), count: vi.fn(), groupBy: vi.fn(), aggregate: vi.fn() },
+  // La clave es el **nombre del modelo de Prisma**, no el de la variable: el
+  // cliente expone un delegate por modelo y `metrics/routes.ts` pide
+  // `prisma.product`. Renombrar solo los usos dejaba la mock con `wine` y el
+  // codigo con `product`, que es un `undefined.findMany` en runtime.
+  product: { findMany: vi.fn(), count: vi.fn(), groupBy: vi.fn(), aggregate: vi.fn() },
   $queryRaw: vi.fn(),
   $on: vi.fn(),
   $disconnect: vi.fn()
@@ -83,10 +87,10 @@ beforeEach(() => {
   prismaFalso.orderItem.groupBy.mockResolvedValue([])
   prismaFalso.customer.findMany.mockResolvedValue([])
   prismaFalso.customer.count.mockResolvedValue(0)
-  prismaFalso.wine.findMany.mockResolvedValue([])
-  prismaFalso.wine.count.mockResolvedValue(0)
-  prismaFalso.wine.groupBy.mockResolvedValue([])
-  prismaFalso.wine.aggregate.mockResolvedValue({ _sum: { total: 0 }, _count: 0 })
+  prismaFalso.product.findMany.mockResolvedValue([])
+  prismaFalso.product.count.mockResolvedValue(0)
+  prismaFalso.product.groupBy.mockResolvedValue([])
+  prismaFalso.product.aggregate.mockResolvedValue({ _sum: { total: 0 }, _count: 0 })
 })
 
 const pedir = (url: string, rol: Rol) =>
@@ -164,8 +168,8 @@ describe('lo que la spec NO toca', () => {
    * otro y se hizo sin avisar.
    */
   const SIN_403: Record<Rol, string[]> = {
-    admin: ['/api/metrics', '/api/wines', '/api/orders', '/api/customers'],
-    gestor: ['/api/wines', '/api/orders', '/api/customers'],
+    admin: ['/api/metrics', '/api/products', '/api/orders', '/api/customers'],
+    gestor: ['/api/products', '/api/orders', '/api/customers'],
     vendedor: ['/api/orders']
   }
 
@@ -181,7 +185,7 @@ describe('lo que la spec NO toca', () => {
     // La parte que le da sentido a "ver menos modulos": el vendedor ve los
     // pedidos —que traen `customer` adentro— pero no puede listar la base de
     // clientes entera.
-    expect((await pedir('/api/wines', 'vendedor')).statusCode).toBe(403)
+    expect((await pedir('/api/products', 'vendedor')).statusCode).toBe(403)
     expect((await pedir('/api/customers', 'vendedor')).statusCode).toBe(403)
   })
 })

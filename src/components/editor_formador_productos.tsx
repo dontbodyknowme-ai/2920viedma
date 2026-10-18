@@ -1,34 +1,34 @@
 ﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Wine, WineCategory } from '../types/vino'
+import { Producto, CategoriaProducto } from '../types/producto'
 
 interface ProductFormProps {
   isOpen: boolean
   onClose: () => void
-  onAddWine: (wine: Wine) => void
-  onUpdateWine: (wine: Wine) => void
-  wineToEdit: Wine | null
+  onAddWine: (producto: Producto) => void
+  onUpdateWine: (producto: Producto) => void
+  productoToEdit: Producto | null
 }
 
 /**
  * Este es el formulario legacy de la tienda publica. El del panel es
- * `AdminWineForm`, que ya quedo migrado a input libre (spec 011); este seguia con
+ * `AdminProductoForm`, que ya quedo migrado a input libre (spec 011); este seguia con
  * el `<select>` de cuatro categorias, asi que era el segundo lugar donde cargar
  * un queso era imposible.
  */
-const CATEGORIAS_ARRANCAMIENTO: WineCategory = 'Tinto'
+const CATEGORIAS_ARRANCAMIENTO: CategoriaProducto = 'Tinto'
 
 export const ProductForm = ({
   isOpen,
   onClose,
   onAddWine,
   onUpdateWine,
-  wineToEdit
+  productoToEdit
 }: ProductFormProps) => {
   const [name, setName] = useState('')
   const [winery, setWinery] = useState('')
   const [varietal, setVarietal] = useState('')
-  const [category, setCategory] = useState<WineCategory>(CATEGORIAS_ARRANCAMIENTO)
+  const [category, setCategory] = useState<CategoriaProducto>(CATEGORIAS_ARRANCAMIENTO)
   const [vintage, setVintage] = useState<number>(new Date().getFullYear())
   const [price, setPrice] = useState<number | ''>('')
   const [description, setDescription] = useState('')
@@ -37,23 +37,23 @@ export const ProductForm = ({
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState('')
 
-  const isEditing = wineToEdit !== null
+  const isEditing = productoToEdit !== null
 
   useEffect(() => {
-    if (wineToEdit) {
-      setName(wineToEdit.name)
+    if (productoToEdit) {
+      setName(productoToEdit.name)
       // Bodega, cepa y anada pueden ser `null` desde que la tienda vendio cosas
       // que no las tienen. El `?? ''` es lo que evita que un `<input type="text">`
       // reciba `null` —que en React lo deja sin controlar— y que un `<input
       // type="number">` reciba algo que no puede mostrar.
-      setWinery(wineToEdit.winery ?? '')
-      setVarietal(wineToEdit.varietal ?? '')
-      setCategory(wineToEdit.category)
-      setVintage(wineToEdit.vintage ?? 0)
-      setPrice(wineToEdit.price)
-      setDescription(wineToEdit.description)
-      setImageUrl(wineToEdit.imageUrl)
-      setImagePreview(wineToEdit.imageUrl)
+      setWinery(productoToEdit.winery ?? '')
+      setVarietal(productoToEdit.varietal ?? '')
+      setCategory(productoToEdit.category)
+      setVintage(productoToEdit.vintage ?? 0)
+      setPrice(productoToEdit.price)
+      setDescription(productoToEdit.description)
+      setImageUrl(productoToEdit.imageUrl)
+      setImagePreview(productoToEdit.imageUrl)
       setError('')
     } else {
       setName('')
@@ -67,26 +67,26 @@ export const ProductForm = ({
       setImagePreview('')
       setError('')
     }
-  }, [wineToEdit])
+  }, [productoToEdit])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!name || !winery || price === '' || price === 0) return
 
-    const wineData: Wine = {
-      id: isEditing ? wineToEdit!.id : crypto.randomUUID(),
+    const productoData: Producto = {
+      id: isEditing ? productoToEdit!.id : crypto.randomUUID(),
       name,
       winery,
       varietal: varietal || 'Blend',
       category: 'Vinos',
       departamento: 'Bebidas',
       // Este es el formulario **publico** (`ProductForm`), el que produce un
-      // `Wine` y no un `AdminWine`: lo usa el que carga productos sin panel. No
+      // `Producto` y no un `ProductoAdmin`: lo usa el que carga productos sin panel. No
       // tiene campo de departamento ni de grupo, asi que lo que carga va a
       // Bebidas / Con alcohol, que es lo unico que un formulario de la tienda
       // publica puede afirmar sin inventar. Cargar una gaseosa desde aca la deja
-      // en la rama del vino; el panel es donde se elige la rama correcta.
+      // en la rama del producto; el panel es donde se elige la rama correcta.
       grupo: 'Con alcohol',
       tipoVino: null,
       vintage: Number(vintage),
@@ -98,9 +98,9 @@ export const ProductForm = ({
     }
 
     if (isEditing) {
-      onUpdateWine(wineData)
+      onUpdateWine(productoData)
     } else {
-      onAddWine(wineData)
+      onAddWine(productoData)
     }
 
     handleReset()
@@ -173,7 +173,7 @@ export const ProductForm = ({
             >
               <div className='flex justify-between items-center mb-6 border-b border-neutral-200 pb-4'>
                 <h2 className='text-2xl font-serif font-bold text-carbon'>
-                  {isEditing ? 'Editar Vino' : 'Cargar Nuevo Vino'}
+                  {isEditing ? 'Editar Producto' : 'Cargar Nuevo Producto'}
                 </h2>
                 <button
                   onClick={onClose}
@@ -266,7 +266,7 @@ export const ProductForm = ({
 
                 <div>
                   <label className='block text-xs uppercase tracking-wider text-neutral-600 mb-1'>
-                    Imagen del Vino
+                    Imagen del Producto
                   </label>
                   <div
                     onDragOver={handleDragOver}
@@ -349,7 +349,7 @@ export const ProductForm = ({
                     type='submit'
                     className='flex-1 bg-verde-600 hover:bg-verde-600 text-blanco py-3 rounded-xl text-xs uppercase font-semibold tracking-wider transition-colors shadow-lg shadow-verde-900/50 border border-verde-500/30'
                   >
-                    {isEditing ? 'Guardar Cambios' : 'Guardar Vino'}
+                    {isEditing ? 'Guardar Cambios' : 'Guardar Producto'}
                   </button>
                 </div>
               </form>

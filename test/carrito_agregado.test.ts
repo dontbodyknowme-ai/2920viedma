@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
-import type { PublicWine } from '../src/types/vino'
+import type { ProductoPublico } from '../src/types/producto'
 import {
   CLAVE_CARRITO,
-  CLAVE_VINOS,
+  CLAVE_PRODUCTOS,
   contador,
   desmontar,
   montarApp,
@@ -28,7 +28,7 @@ import {
  * HTTP reales corren, y solo la red se responde con lo que el test quiere. Un
  * `vi.mock` del modulo `api` dejaria en verde un `useAuth` roto.
  *
- * Lo que no sea `/api/auth/*` o `/api/wines/public` responde **404 a proposito**:
+ * Lo que no sea `/api/auth/*` o `/api/products/public` responde **404 a proposito**:
  * si la pagina pide algo mas, el test falla con el error de la API en vez de
  * mostrar una pantalla vacia que el test tomaria por una pantalla correcta.
  */
@@ -58,7 +58,7 @@ const respuesta = (status: number, cuerpo: unknown): RespuestaStub => ({
  * llegara a filtrar, las tarjetas no se verian y `pulsarPorTexto` fallaria con
  * un error de "no se encontro el boton" que parece un problema de selector.
  */
-const VINOS: PublicWine[] = [
+const VINOS: ProductoPublico[] = [
   {
     id: 'v1',
     name: 'Malbec Reserva',
@@ -73,7 +73,7 @@ const VINOS: PublicWine[] = [
     description: 'Un tinto de cuerpo medio.',
     tastingNotes: null,
     foodPairing: null,
-    imageUrl: '/vino-1.jpg'
+    imageUrl: '/producto-1.jpg'
   },
   {
     id: 'v2',
@@ -89,7 +89,7 @@ const VINOS: PublicWine[] = [
     description: 'Blanco fresco.',
     tastingNotes: null,
     foodPairing: null,
-    imageUrl: '/vino-2.jpg'
+    imageUrl: '/producto-2.jpg'
   }
 ]
 
@@ -103,7 +103,7 @@ const fetchConCatalogo = (): typeof fetch =>
     if (url.endsWith('/api/auth/refresh')) {
       return respuesta(401, { message: 'Sin refresh' })
     }
-    if (url.endsWith('/api/wines/public')) {
+    if (url.endsWith('/api/products/public')) {
       return respuesta(200, VINOS)
     }
 
@@ -156,7 +156,7 @@ const esperar = async (milisegundos: number): Promise<void> => {
 
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchConCatalogo())
-  localStorage.removeItem(CLAVE_VINOS)
+  localStorage.removeItem(CLAVE_PRODUCTOS)
   localStorage.removeItem(CLAVE_CARRITO)
 })
 

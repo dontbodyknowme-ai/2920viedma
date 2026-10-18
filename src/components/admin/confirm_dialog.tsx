@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 /**
  * Dialogo de confirmacion reutilizable (D-09).
  *
- * Es el unico modal de confirmacion del panel: eliminar un vino, cambiar el
+ * Es el unico modal de confirmacion del panel: eliminar un producto, cambiar el
  * estado de un pedido y las demas acciones destructivas lo usan. Un componente
  * por accion seria N copias del mismo overlay y del mismo manejo de Escape.
  *

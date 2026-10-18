@@ -1,4 +1,4 @@
-import type { Wine } from '../types/vino'
+import type { Producto } from '../types/producto'
 
 /**
  * El filtro del catalogo publico.
@@ -16,7 +16,7 @@ import type { Wine } from '../types/vino'
  *
  * ## Por que el filtro es local y no del servidor
  *
- * El catalogo publico pide `/api/wines/public`, que **no** pagina y no acepta
+ * El catalogo publico pide `/api/products/public`, que **no** pagina y no acepta
  * filtros: devuelve todos los productos activos. Asi que el filtrado ocurre aca
  * sobre esa lista. Es lo que allowe que al tocar un nivel se ajusten los
  * desplegables de abajo sin volver a pedir nada.
@@ -38,18 +38,18 @@ export interface Filtros {
   /** El grupo elegido. `''` es "todos". `null` en el producto = cuelga suelto. */
   grupo: string
   /** La hoja elegida: Vinos, Cerveza, Gaseosas. `''` es "todas". */
-  category: Wine['category'] | ''
+  category: Producto['category'] | ''
   minPrice: number | ''
   maxPrice: number | ''
   searchQuery: string
 }
 
-export const filtrarVinos = (vinos: Wine[], filtros: Filtros): Wine[] => {
+export const filtrarVinos = (productos: Producto[], filtros: Filtros): Producto[] => {
   const consulta = filtros.searchQuery.trim().toLowerCase()
   const min = filtros.minPrice === '' ? null : Number(filtros.minPrice)
   const max = filtros.maxPrice === '' ? null : Number(filtros.maxPrice)
 
-  return vinos.filter((wine) => {
+  return productos.filter((wine) => {
     // Los tres niveles. Cada uno acota al anterior en vez de reemplazarlo.
     const matchesDepartamento =
       filtros.departamento === '' || wine.departamento === filtros.departamento

@@ -32,7 +32,7 @@ Fase 3: Mejoras (opcional)
 
 1. Sanitizar datos de localStorage al leer
 
-- Validar que los datos leídos de localStorage cumplan el contrato Wine antes de usarlos
+- Validar que los datos leídos de localStorage cumplan el contrato Producto antes de usarlos
 - Esfuerzo: 30 min
 
 1. Considerar encriptación de localStorage

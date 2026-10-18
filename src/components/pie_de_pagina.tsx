@@ -11,7 +11,7 @@ export const Footer = () => {
               2920
             </p>
             <p className='text-neutral-600 text-sm leading-relaxed mb-6'>
-              Seleccion exclusiva de vinos de alta gama para los paladares mas exigentes.
+              Seleccion exclusiva de productos de alta gama para los paladares mas exigentes.
               Curamos cada etiqueta con pasion y dedicacion.
             </p>
             <div className='flex items-center gap-4'>

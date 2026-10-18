@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify'
  * La URL de una imagen no puede caducar.
  *
  * El backend antes devolvia una URL **firmada** con `expiresIn: 3600`, y
- * `admin_wine_form.tsx` la guardaba como `imageUrl` del vino. El resultado era
+ * `admin_producto_form.tsx` la guardaba como `imageUrl` del producto. El resultado era
  * que la imagen se veía una hora y despues quedaba rota para siempre en la
  * base: nadie se daba cuenta hasta que un cliente miraba el catalogo.
  *
@@ -75,7 +75,7 @@ const PNG_1x1 = Buffer.from(
   'base64'
 )
 
-const subir = (payload: Buffer, filename = 'vino.png', contentType = 'image/png') =>
+const subir = (payload: Buffer, filename = 'producto.png', contentType = 'image/png') =>
   app.inject({
     method: 'POST',
     url: '/api/upload',

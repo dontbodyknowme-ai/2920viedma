@@ -97,13 +97,13 @@ export const Dashboard = () => {
                   label: 'Ventas de hoy',
                   value: dinero(metricas.salesToday),
                   icon: CircleDollarSign,
-                  tone: 'gold' as const
+                  tone: 'salvia' as const
                 },
                 {
                   label: 'Ventas del mes',
                   value: dinero(metricas.salesMonth),
                   icon: TrendingUp,
-                  tone: 'wine' as const,
+                  tone: 'verde' as const,
                   trend:
                     tendencia === undefined ? undefined : { value: tendencia, label: 'vs. mitad del mes' }
                 },
@@ -111,7 +111,7 @@ export const Dashboard = () => {
                   label: 'Ticket promedio',
                   value: dinero(metricas.avgTicket),
                   icon: Receipt,
-                  tone: 'cream' as const
+                  tone: 'carbon' as const
                 },
                 {
                   label: 'Carritos abandonados',
@@ -210,7 +210,7 @@ export const Dashboard = () => {
           <ul className='mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5'>
             {metricas.topProducts.map((producto, indice) => (
               <li
-                key={producto.wineId}
+                key={producto.productoId}
                 className='flex items-center gap-3 rounded-xl border border-neutral-200 bg-blanco/40 p-3'
               >
                 <span

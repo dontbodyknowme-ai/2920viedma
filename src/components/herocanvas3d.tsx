@@ -10,7 +10,7 @@ import * as THREE from 'three'
  * strings. Estos son los mismos hex de `tailwind.config.js`, y por eso estan
  * duplicados. Si se cambia la paleta hay que cambiar los dos lugares.
  *
- * Mapeo: `vino*` sigue a `wine-*` y `charcoal-*` de la rampa, `oro*` a
+ * Mapeo: `producto*` sigue a `wine-*` y `charcoal-*` de la rampa, `oro*` a
  * `gold-*`, y `blanco` es el blanco puro de la paleta.
  */
 const PALETA = {

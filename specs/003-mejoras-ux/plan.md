@@ -63,7 +63,7 @@ capa 7  cierre        documentación + verificación
 
 | Archivo | Qué cambia | Tarea |
 |---|---|---|
-| `src/types/vino.ts` | Se extiende `WineFilterState` con `minPrice`, `maxPrice`, `selectedVarietals` | T1 |
+| `src/types/producto.ts` | Se extiende `ProductoFilterState` con `minPrice`, `maxPrice`, `selectedVarietals` | T1 |
 | `src/components/carta_de_catalogo.tsx` | Se agrega UI y lógica de filtros por precio y cepa | T1 |
 | `src/components/editor_formador_productos.tsx` | Se agrega modo edición (prop `wineToEdit`) y carga de imagen por archivo (drag & drop) | T2, T3 |
 | `src/components/barra_de_navegacion.tsx` | Se agregan enlaces de navegación a secciones y panel lateral en móvil | T4 |
@@ -74,7 +74,7 @@ capa 7  cierre        documentación + verificación
 
 | Archivo | Por qué |
 |---|---|
-| `src/datos/vino.ts` | Los datos iniciales no cambian |
+| `src/datos/productos.ts` | Los datos iniciales no cambian |
 | `tailwind.config.js` | La paleta ya es la de la constitución |
 | `vitest.config.ts` | La configuración de tests no cambia |
 | `package.json` / `package-lock.json` | RNF-04: ni una dependencia agregada ni quitada |
@@ -146,13 +146,13 @@ const handleFile = (file: File) => {
 interface ProductFormProps {
   isOpen: boolean
   onClose: () => void
-  onAddWine: (wine: Wine) => void
-  onUpdateWine: (wine: Wine) => void  // Nuevo
-  wineToEdit: Wine | null              // Nuevo
+  onAddWine: (wine: Producto) => void
+  onUpdateWine: (wine: Producto) => void  // Nuevo
+  wineToEdit: Producto | null              // Nuevo
 }
 ```
 
-Cuando `wineToEdit` no es `null`, el formulario carga los datos del vino y el botón dice "Guardar Cambios". Al guardar, llama a `onUpdateWine` en vez de `onAddWine`.
+Cuando `wineToEdit` no es `null`, el formulario carga los datos del producto y el botón dice "Guardar Cambios". Al guardar, llama a `onUpdateWine` en vez de `onAddWine`.
 
 **Alternativa descartada:** Un formulario separado para editar. Duplicaría la UI y la validación.
 
@@ -207,7 +207,7 @@ const opacity = useTransform(scrollY, [0, 300], [1, 0.3])
 
 **Alternativa descartada:** CSS `background-attachment: fixed`. No funciona en móvil y no permite transformaciones suaves.
 
-### D-H — Botellas destacadas: 3 vinos más caros
+### D-H — Botellas destacadas: 3 productos más caros
 
 ```tsx
 const destacados = [...wines].sort((a, b) => b.price - a.price).slice(0, 3)
@@ -215,7 +215,7 @@ const destacados = [...wines].sort((a, b) => b.price - a.price).slice(0, 3)
 
 Se muestran en una sección del hero con un diseño destacado. Al hacer clic, abren la vista rápida.
 
-**Alternativa descartada:** Un sistema de "destacados" en los datos (campo `featured: boolean`). Es más flexible pero requiere modificar los datos iniciales y el tipo `Wine`.
+**Alternativa descartada:** Un sistema de "destacados" en los datos (campo `featured: boolean`). Es más flexible pero requiere modificar los datos iniciales y el tipo `Producto`.
 
 ### D-I — Degradación de animaciones en móvil
 
@@ -247,10 +247,10 @@ Los tests de filtros prueban la función de filtrado directamente (sin montar Re
 import { filtrarVinos } from '../src/utils/filtros'
 
 describe('filtrarVinos', () => {
-  const vinos = [...]
+  const productos = [...]
 
   it('filtra por precio mínimo', () => {
-    const resultado = filtrarVinos(vinos, { minPrice: 40000 })
+    const resultado = filtrarVinos(productos, { minPrice: 40000 })
     expect(resultado).toHaveLength(1)
   })
 })
@@ -279,8 +279,8 @@ Los criterios de aceptación CA-04 a CA-33 se verifican en navegador, igual que 
 
 | # | Riesgo | Impacto | Mitigación |
 |---|---|---|---|
-| R1 | **El filtro por cepa con muchos vinos puede ser lento** | La UI se traba con cientos de vinos | El catálogo es pequeño (< 100 vinos). Si crece, se puede virtualizar la lista |
-| R2 | **La imagen Data URL puede exceder la cuota de `localStorage`** | El vino no se guarda | El límite de 5 MB por imagen y la cuota de `localStorage` son compatibles. Si se excede, el `try/catch` de `guardar` lo maneja |
+| R1 | **El filtro por cepa con muchos productos puede ser lento** | La UI se traba con cientos de productos | El catálogo es pequeño (< 100 productos). Si crece, se puede virtualizar la lista |
+| R2 | **La imagen Data URL puede exceder la cuota de `localStorage`** | El producto no se guarda | El límite de 5 MB por imagen y la cuota de `localStorage` son compatibles. Si se excede, el `try/catch` de `guardar` lo maneja |
 | R3 | **El parallax puede causar náuseas en algunos usuarios** | Mala experiencia de usuario | Se degrada a transiciones simples en móvil. `prefers-reduced-motion` no desactiva las animaciones (decisión del usuario) |
 | R4 | **El modo edición puede confundir al usuario** | El usuario edita sin querer | El formulario de edición tiene un título claro ("Editar Vino") y un botón "Cancelar" visible |
 | R5 | **Los enlaces de navegación pueden romper el scroll suave** | La navegación no funciona | Los anclas usan `scroll-behavior: smooth` que ya está en el CSS base |

@@ -5,7 +5,7 @@ import { api } from '../../api/client'
 import { csvCatalogo, csvClientes, csvPedidos, descargarComo } from '../../utils/csv_export'
 import { exigirConexion } from '../../utils/offline'
 import { TIENDA, zonaHorariaLocal } from '../../utils/tienda'
-import type { AdminWine, Customer, ImportResult, Order, Paginated } from '../../types/admin'
+import type { ProductoAdmin, Customer, ImportResult, Order, Paginated } from '../../types/admin'
 
 /**
  * Configuracion.
@@ -99,7 +99,7 @@ const BotonExportar = ({ etiqueta, total, onClick, ocupado }: BotonExportarProps
 export const ConfiguracionAdmin = () => {
   // Se piden con `limit=100` porque los tres generadores necesitan las filas
   // completas para armar el archivo, no solo un conteo.
-  const vinos = useApi<Paginated<AdminWine>>('/api/wines?page=1&limit=100', { respaldo: 'vinos' })
+  const productos = useApi<Paginated<ProductoAdmin>>('/api/products?page=1&limit=100', { respaldo: 'productos' })
   const clientes = useApi<Paginated<Customer>>('/api/customers?page=1&limit=100', { respaldo: 'clientes' })
   const pedidos = useApi<Paginated<Order>>('/api/orders?page=1&limit=100', { respaldo: 'pedidos' })
 
@@ -140,7 +140,7 @@ export const ConfiguracionAdmin = () => {
       // El archivo va crudo. Parsearlo en el navegador para re-armarlo tiraria
       // los encabezados y las comas escapadas de las descripciones.
       const resultado = await api.postText<ImportResult>(
-        '/api/wines/import',
+        '/api/products/import',
         await archivo.text()
       )
       const partes = [`${resultado.created} creados`, `${resultado.updated} actualizados`]
@@ -150,7 +150,7 @@ export const ConfiguracionAdmin = () => {
         texto: `Importacion: ${partes.join(', ')}.`,
         ok: resultado.errors.length === 0
       })
-      vinos.refetch()
+      productos.refetch()
     } catch (fallo) {
       setMensaje({
         texto: fallo instanceof Error ? fallo.message : 'No se pudo importar',
@@ -171,10 +171,10 @@ export const ConfiguracionAdmin = () => {
   // `new Set`, no despues.
   const cepas = [
     ...new Set(
-      (vinos.data?.data ?? []).map((vino) => vino.varietal).filter((v) => v !== null)
+      (productos.data?.data ?? []).map((producto) => producto.varietal).filter((v) => v !== null)
     )
   ].sort()
-  const categorias = [...new Set((vinos.data?.data ?? []).map((vino) => vino.category))].sort()
+  const categorias = [...new Set((productos.data?.data ?? []).map((producto) => producto.category))].sort()
 
   return (
     <div className='space-y-5'>
@@ -243,9 +243,9 @@ export const ConfiguracionAdmin = () => {
       <Seccion
         icono={FolderTree}
         titulo='Categorias y cepas'
-        descripcion='Se leen del catalogo actual. Agregar una es agregar un vino con esa cepa: no hay un catalogo maestro.'
+        descripcion='Se leen del catalogo actual. Agregar una es agregar un producto con esa cepa: no hay un catalogo maestro.'
       >
-        {vinos.isLoading ? (
+        {productos.isLoading ? (
           <p className='text-sm text-neutral-500'>Cargando...</p>
         ) : (
           <>
@@ -265,7 +265,7 @@ export const ConfiguracionAdmin = () => {
             </div>
 
             <dl className='mt-4 border-t border-neutral-200 pt-2'>
-              <Fila etiqueta='Vinos en el catalogo' valor={String(vinos.data?.total ?? 0)} />
+              <Fila etiqueta='Vinos en el catalogo' valor={String(productos.data?.total ?? 0)} />
               <Fila etiqueta='Clientes' valor={String(clientes.data?.total ?? 0)} />
               <Fila etiqueta='Pedidos' valor={String(pedidos.data?.total ?? 0)} />
             </dl>
@@ -282,9 +282,9 @@ export const ConfiguracionAdmin = () => {
         <div className='flex flex-wrap gap-2'>
           <BotonExportar
             etiqueta='Exportar catalogo'
-            total={vinos.data?.total}
+            total={productos.data?.total}
             onClick={() =>
-              void exportar('Exportar catalogo', () => csvCatalogo(vinos.data?.data ?? []))
+              void exportar('Exportar catalogo', () => csvCatalogo(productos.data?.data ?? []))
             }
             ocupado={ocupado === 'Exportar catalogo'}
           />
@@ -329,7 +329,7 @@ export const ConfiguracionAdmin = () => {
 
         <p className='mt-3 text-xs text-neutral-500'>
           El archivo que exporta &ldquo;Catalogo&rdquo; se puede volver a importar: lleva el{' '}
-          <code className='mx-1 rounded bg-blanco px-1'>Id</code> de cada vino. Sin esa
+          <code className='mx-1 rounded bg-blanco px-1'>Id</code> de cada producto. Sin esa
           columna, la importacion crearia una copia nueva de cada uno en vez de actualizarlo.
         </p>
       </Seccion>

@@ -18,7 +18,7 @@ import { join } from 'node:path'
  * tapa**: para eso haria falta invocar la API con cada rol, que es integracion.
  *
  * Lo que si tapa: la tabla mostrando **mas** de lo que el backend permite. Que es
- * justo el bug que la spec 006 vino a arreglar.
+ * justo el bug que la spec 006 producto a arreglar.
  */
 
 const RAIZ = join(__dirname, '..', '..', '..')
@@ -33,10 +33,10 @@ const METODOS = /fastify\.(get|post|patch|put|delete)\s*\(/g
  * Los roles de cada **declaracion de ruta**, por metodo.
  *
  * La clave es `METODO ruta` y no la ruta sola, porque no todos los metodos de
- * una misma ruta permiten lo mismo: `PATCH /api/wines/:id` es admin+gestor y
- * `DELETE /api/wines/:id` es **solo admin**. Aplanar a la ruta pierde esa
+ * una misma ruta permiten lo mismo: `PATCH /api/products/:id` es admin+gestor y
+ * `DELETE /api/products/:id` es **solo admin**. Aplanar a la ruta pierde esa
  * distincion —y es justo la que importa cuando se pregunta "quien puede
- * borrar un vino".
+ * borrar un producto".
  *
  * ## Por que no se usa un `[\s\S]{0,N}?` entre la ruta y el `requireRole`
  *
@@ -102,10 +102,10 @@ const leerTablaFrontend = (): Map<string, Set<Rol>> => {
 /** Que endpoint del backend sirve cada seccion del panel. */
 const RUTA_POR_SECCION: Record<string, string> = {
   '/admin': 'GET /api/metrics',
-  '/admin/catalogo': 'GET /api/wines',
+  '/admin/catalogo': 'GET /api/products',
   '/admin/pedidos': 'GET /api/orders',
   '/admin/clientes': 'GET /api/customers',
-  '/admin/configuracion': 'GET /api/wines'
+  '/admin/configuracion': 'GET /api/products'
 }
 
 describe('la tabla del frontend coincide con el requireRole del backend', () => {
@@ -147,7 +147,7 @@ describe('la tabla del frontend coincide con el requireRole del backend', () => 
  *
  * La razon de fijarlos: la spec 006 toco **una** linea de las siete. Un cambio
  * de rol en cualquiera de las otras seis no es un refactor, es una decision de
- * negocio —"dejar que el vendedor borre vinos" no es lo mismo que "arreglar un
+ * negocio —"dejar que el vendedor borre productos" no es lo mismo que "arreglar un
  * typo"— y tiene que fallar el build para que alguien la tome a proposito.
  *
  * Ojo con el formato: sale de `leerRequireRole()`, que ya se leia para el test
@@ -164,16 +164,16 @@ describe('los roles de cada endpoint son los declarados aca', () => {
    *
    * La razon de fijarlos: la spec 006 toco **una** linea de estas catorce. Un
    * cambio de rol en cualquiera de las otras trece no es un refactor, es una
-   * decision de negocio —"dejar que el vendedor borre vinos" no es lo mismo que
+   * decision de negocio —"dejar que el vendedor borre productos" no es lo mismo que
    * "arreglar un typo"— y tiene que romper el build para que alguien la tome a
    * proposito.
    *
    * Dos asimetrías que parecen olvidos y **no lo son**:
    *
-   * - `PATCH /api/wines/:id` es admin+gestor pero `DELETE` es **solo admin**.
-   *   Editar un vino es parte del trabajo del gestor; borrarlo no.
+   * - `PATCH /api/products/:id` es admin+gestor pero `DELETE` es **solo admin**.
+   *   Editar un producto es parte del trabajo del gestor; borrarlo no.
    * - `POST /api/upload` es admin+gestor pero `DELETE /api/upload/:id` es **solo
-   *   admin**. El gestor sube la foto de un vino nuevo; borrar imagenes es
+   *   admin**. El gestor sube la foto de un producto nuevo; borrar imagenes es
    *   limpieza.
    *
    * Si alguna de las dos se quiere cambiar, se cambia **aca** y en el
@@ -181,11 +181,11 @@ describe('los roles de cada endpoint son los declarados aca', () => {
    */
   const ESPERADO: Record<string, Rol[]> = {
     'GET /api/metrics': ['admin'],
-    'GET /api/wines': ['admin', 'gestor'],
-    'POST /api/wines': ['admin', 'gestor'],
-    'PATCH /api/wines/:id': ['admin', 'gestor'],
-    'DELETE /api/wines/:id': ['admin'],
-    'POST /api/wines/import': ['admin', 'gestor'],
+    'GET /api/products': ['admin', 'gestor'],
+    'POST /api/products': ['admin', 'gestor'],
+    'PATCH /api/products/:id': ['admin', 'gestor'],
+    'DELETE /api/products/:id': ['admin'],
+    'POST /api/products/import': ['admin', 'gestor'],
     'GET /api/orders': ['admin', 'gestor', 'vendedor'],
     'GET /api/orders/:id': ['admin', 'gestor', 'vendedor'],
     'PATCH /api/orders/:id': ['admin', 'gestor', 'vendedor'],

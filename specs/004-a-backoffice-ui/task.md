@@ -58,25 +58,25 @@ npm run dev                   # servidor de desarrollo
 
 Crear archivo con: `AdminUser`, `Order`, `Customer`, `Metrics`, `AdminFilters` (ver plan D-E).
 
-**2. `src/types/vino.ts` — Extender `Wine`**
+**2. `src/types/producto.ts` — Extender `Producto`**
 
 Agregar campos:
 ```ts
-export interface Wine {
+export interface Producto {
   // ... campos existentes
   stock: number
   activo: boolean
 }
 ```
 
-**3. `src/datos/vino.ts` — Actualizar vinos iniciales**
+**3. `src/datos/productos.ts` — Actualizar productos iniciales**
 
-Agregar `stock` (0-100) y `activo: true` a los 2 vinos existentes.
+Agregar `stock` (0-100) y `activo: true` a los 2 productos existentes.
 
 **4. `src/mocks/data.ts` — Datos mock (NUEVO)**
 
 Crear con:
-- `mockWines`: 12 vinos (2 existentes + 10 nuevos) con `stock`, `activo`, variedades diversas
+- `mockWines`: 12 productos (2 existentes + 10 nuevos) con `stock`, `activo`, variedades diversas
 - `mockOrders`: 25 pedidos con estados distribuidos, fechas últimos 60 días, 1-4 items c/u
 - `mockCustomers`: 15 clientes con historial, tags, notas
 - `mockMetrics`: 30 días ventas, top 5 productos, actividad reciente
@@ -148,8 +148,8 @@ En navegador:
 ### Hecho cuando
 
 - [x] `src/types/admin.ts` existe con tipos completos
-- [x] `AdminWine` define `stock` y `activo` (ver C-1, resuelto)
-- [x] `src/mocks/data.ts` con 12 vinos, 25 pedidos, 15 clientes, métricas 30 días
+- [x] `ProductoAdmin` define `stock` y `activo` (ver C-1, resuelto)
+- [x] `src/mocks/data.ts` con 12 productos, 25 pedidos, 15 clientes, métricas 30 días
 - [x] `src/mocks/handlers.ts` con todos los endpoints
 - [x] `src/router.tsx` con rutas públicas + admin children
 - [x] `src/main.tsx` integra RouterProvider + MSW worker
@@ -160,20 +160,20 @@ En navegador:
 
 ---
 
-## ✅ C-1 — Resuelto: `AdminWine extends Wine`
+## ✅ C-1 — Resuelto: `ProductoAdmin extends Producto`
 
 **El conflicto estaba mal planteado en un punto.** SeNALABA que había que elegir entre A (opcionales) y B (tocar tests). Las dos estan muertas, y no por la razon que se suponia:
 
 | Lista | Por que no sirve para `stock` / `activo` |
 |---|---|
-| `CAMPOS_REQUERIDOS` | Los fixtures de `test/validadores.test.ts` arman un `Wine` sin esos campos, asi que `camposRequeridosInvalidos` los reporta. Se midio: **18 de 26 tests fallan** |
-| `CAMPOS_OPCIONALES` | `test/integridad_datos_vino.test.ts:201` exige que `esCampoOpcionalValido` rechace `0` y `false`. Y `stock: 0` y `activo: false` son valores legitimos: no queda ningun campo libre |
+| `CAMPOS_REQUERIDOS` | Los fixtures de `test/validadores.test.ts` arman un `Producto` sin esos campos, asi que `camposRequeridosInvalidos` los reporta. Se midio: **18 de 26 tests fallan** |
+| `CAMPOS_OPCIONALES` | `test/integridad_datos_producto.test.ts:201` exige que `esCampoOpcionalValido` rechace `0` y `false`. Y `stock: 0` y `activo: false` son valores legitimos: no queda ningun campo libre |
 
-**Resolucion: opcion C.** `stock` y `activo` viven en `AdminWine extends Wine` (`src/types/admin.ts`), no en `Wine`. Los 46 tests pasan sin tocarse y el tipo de `Wine` queda intacto.
+**Resolucion: opcion C.** `stock` y `activo` viven en `ProductoAdmin extends Producto` (`src/types/admin.ts`), no en `Producto`. Los 46 tests pasan sin tocarse y el tipo de `Producto` queda intacto.
 
 **Por que esta bien y no es un parche.** `stock` es un dato interno de la operacion: un visitante no lo necesita, y **RF-06 de la spec 004-b ya define que `GET /api/wines/public` omite `stock` y `activo`**. Que el tipo lo imponga desde el lado del admin hace que mezclar los dos sea un error de compilacion y no una forgotten. El modelo de tipos quedo alineado con el contrato de API que ya estaba escrito.
 
-**EfectoPractico para el resto de la spec:** `mockWines` es `AdminWine[]` y los handlers de `/api/wines` trabajan con `AdminWine`. El catalogo publico sigue con `Wine[]`. T5 tiene que hacer la conversion al leer de `/api/wines`.
+**EfectoPractico para el resto de la spec:** `mockWines` es `ProductoAdmin[]` y los handlers de `/api/wines` trabajan con `ProductoAdmin`. El catalogo publico sigue con `Producto[]`. T5 tiene que hacer la conversion al leer de `/api/wines`.
 
 ---
 
@@ -220,7 +220,7 @@ Los dos stubs se agregaron en `test/andamiaje.ts`, que es el harness compartido 
 
 **8. `src/index.css` estaba sin punto y coma y rompia el build.** Venia de la rama `interfaz`, que no tiene el arreglo que se aplico en `main`. PostCSS falla con `Missed semicolon`. Se corrigio y se agrego un comentario al principio del archivo que explica por que ese archivo si lleva punto y coma aunque la convencion del proyecto diga que no: en CSS la declaracion no tiene sintaxis alternativa. **Es el mismo criterio que ya aplico la spec 002 en su §12.5.**
 
-**9. `editor_formador_productos.tsx` preserva `stock` y `activo` al editar.** Al agregar los campos a `Wine`, el formulario dejaba de compilar. En modo edicion ahora toma los valores del vino que se esta editando, no los reinicia a 0 y true: el formulario publico no muestra esos campos, asi que ponerlos en defaults perderia el dato al guardar. T5 los agrega a la UI del admin.
+**9. `editor_formador_productos.tsx` preserva `stock` y `activo` al editar.** Al agregar los campos a `Producto`, el formulario dejaba de compilar. En modo edicion ahora toma los valores del producto que se esta editando, no los reinicia a 0 y true: el formulario publico no muestra esos campos, asi que ponerlos en defaults perderia el dato al guardar. T5 los agrega a la UI del admin.
 
 **10. Las rutas hijas de `/admin` no renderizan todavia, y es lo esperado.** `AdminLayout` es un stub sin `<Outlet />`, que es lo que T2 agrega. El stub existe porque `router.tsx` (T1) necesita que las rutas apunten a componentes reales, o el build falla. Las cinco paginas admin tambien son stubs, reemplazados por T4 a T8.
 
@@ -230,7 +230,7 @@ Los dos stubs se agregaron en `test/andamiaje.ts`, que es el harness compartido 
 |---|---|
 | `GET /` | 200, `#root` con 4 hijos, `lang="es"`, enlaces Inicio/Catalogo/Contacto visibles |
 | `GET /admin` | 200, renderiza el stub del layout |
-| `GET /api/wines?limit=2` | 200, 12 vinos, 6 paginas, primero "Gran Reserva Malbec", incluye `stock` |
+| `GET /api/wines?limit=2` | 200, 12 productos, 6 paginas, primero "Gran Reserva Malbec", incluye `stock` |
 | `GET /api/wines?search=malbec` | 200, 2 resultados |
 | `GET /api/orders?limit=3` | 200, 25 pedidos |
 | `GET /api/customers?tags=VIP` | 200, paginado correcto |
@@ -500,7 +500,7 @@ compila.
 `@tanstack/react-table` ni recuerden la forma de `meta`.
 
 **6. El parser de CSV no usa `split(',')`.** Eso rompia justo con el dato del
-proyecto: una descripcion de vino con coma, `Vino tinto, con cuerpo`, son dos
+proyecto: una descripcion de producto con coma, `Vino tinto, con cuerpo`, son dos
 columnas para `split` y una para el parser. Hay test de ida y vuelta con valores
 que llevan coma y comillas dobles.
 
@@ -707,7 +707,7 @@ npm run build
 ```
 
 En navegador:
-- DataTable renderiza 12 vinos mock con todas las columnas
+- DataTable renderiza 12 productos mock con todas las columnas
 - Búsqueda "Malbec" filtra en todas columnas
 - Filtros: Categoría Tinto + Cepa Malbec + Activo → AND lógico
 - Ordenamiento por cada columna (click header)
@@ -715,15 +715,15 @@ En navegador:
 - "Nuevo Vino" → formulario → guardar → aparece en tabla
 - "Editar" → formulario precargado → guardar → actualiza fila
 - "Eliminar" → ConfirmDialog → confirmar → fila desaparece
-- "Duplicar" → nuevo vino "Copia de X" en tabla
+- "Duplicar" → nuevo producto "Copia de X" en tabla
 - Toggle activo/inactivo → badge actualiza sin recargar
 - Export CSV → descarga .csv con datos filtrados
-- Import CSV → modal → archivo válido → agrega vinos
+- Import CSV → modal → archivo válido → agrega productos
 
 ### Hecho cuando
 
 - [x] `catalogo.tsx` existe con DataTable completa
-- [x] `admin_wine_form.tsx` tiene `stock` y `activo`
+- [x] `admin_producto_form.tsx` tiene `stock` y `activo`
 - [x] `useCatalogo.ts` existe con el CRUD completo
 - [x] CRUD completo funciona vía MSW
 - [x] Export/Import CSV funcionan, y el archivo exportado se puede reimportar
@@ -735,19 +735,19 @@ En navegador:
 
 **El enunciado pedía actualizar `editor_formador_productos.tsx` para agregar
 `stock` y `activo`. No se hizo, y es deliberado.** Ese formulario produce un
-`Wine`, que es lo que ve un visitante del catalogo publico. El admin necesita un
-`AdminWine`, que son dos tipos distintos desde que C-1 resolvio el conflicto.
+`Producto`, que es lo que ve un visitante del catalogo publico. El admin necesita un
+`ProductoAdmin`, que son dos tipos distintos desde que C-1 resolvio el conflicto.
 Un solo formulario para los dos necesitaria un `mostrarInventario: boolean` y
 ensuciar las dos ramas de envio con casts: dos formularios, dos contratos
 limpos.
 
-Se creo `src/components/admin/admin_wine_form.tsx`. El campo `stock` y el
+Se creo `src/components/admin/admin_producto_form.tsx`. El campo `stock` y el
 interruptor `activo` viven ahi y **no aparecen en el formulario publico**, que
 es lo que pide RF-06 de la spec 004-b.
 
 El nombre del hook también cambió: el enunciado decia `useWines.ts` y quedó
 `useCatalogo.ts`, porque el hook tambien maneja los filtros, la paginacion, el
-CSV y las mutaciones, no solo las peticiones de vinos.
+CSV y las mutaciones, no solo las peticiones de productos.
 
 ### Bugs encontrados y corregidos (2026-10-09)
 
@@ -771,15 +771,15 @@ habia generado el propio panel. Ahora cada columna se busca por una lista de
 alias y acepta los dos idiomas.
 
 **4. Exportar y reimportar duplicaba el catalogo.** El CSV exportado no
-incluia la columna `id`, asi que al reimportarlo cada vino se creaba de nuevo en
+incluia la columna `id`, asi que al reimportarlo cada producto se creaba de nuevo en
 lugar de actualizarse. `id` ahora es la primera columna del export.
 
 **5. `Boolean("no")` daba `true`.** El export escribe `activo` como `si`/`no`.
 Sin convertir, todo lo exportado como inactivo volvia visible en la tienda al
 reimportar. Ahora se reconoce `si`, `sí`, `yes`, `true`, `1`.
 
-**6. `duplicar` mandaba el `id` del original.** Hacia `crear({ ...vino })`, y
-el `...vino` incluye el `id`. La copia nacia con el id del original, y a partir
+**6. `duplicar` mandaba el `id` del original.** Hacia `crear({ ...producto })`, y
+el `...producto` incluye el `id`. La copia nacia con el id del original, y a partir
 de ahi todo fallaba **en silencio**: editar uno modificaba el otro, y borrar la
 copia borraba el original. Esto lo encontro la verificacion en navegador, no un
 test: la API reportaba 1 resultado y la tabla mostraba 2 filas, porque las dos
@@ -787,7 +787,7 @@ compartian la misma key de React. Ahora `duplicar` descarta el `id`.
 
 **7. Logica de validacion duplicada.** `vinoCreateSchema` (en `handlers.ts`) y
 `vinoDesdeFila` (en el importador) eran el mismo codigo en dos archivos. Con la
-duplicacion, un vino podia ser valido por una puerta e invalido por la otra.
+duplicacion, un producto podia ser valido por una puerta e invalido por la otra.
 Se unifico en `src/mocks/vino_schema.ts`, que usan tanto los handlers como la
 importacion.
 
@@ -797,10 +797,10 @@ Puerto 5201, `npm run dev`, con `isAdmin` activo.
 
 | Qué | Resultado |
 |---|---|
-| DataTable | 12 vinos, 10 filas por pagina, columnas Nombre/Cepa/Categoria/Cosecha/Precio/Stock/Estado/Acciones |
+| DataTable | 12 productos, 10 filas por pagina, columnas Nombre/Cepa/Categoria/Cosecha/Precio/Stock/Estado/Acciones |
 | Crear | Modal lateral, campos precargados en blanco, 12 → 13, aviso `"Vino de Prueba QA" creado.` |
 | Editar | Formulario precargado (`52500`, stock `7`, activo `true`), guardo → `$ 61.000`, stock `3`, INACTIVO |
-| Buscar | `Vino de Prueba QA` → "1 vino en el catalogo", 1 fila |
+| Buscar | `Vino de Prueba QA` → "1 producto en el catalogo", 1 fila |
 | Duplicar | 13 → 14, aparece `Copia de QA Temporal`, id distinto al original |
 | Eliminar | `ConfirmDialog` con CANCELAR/ELIMINAR, borra la copia, **el original queda intacto** |
 | Filtro sin resultados | "Sin resultados / Proba con otros filtros. / LIMPIAR FILTROS" |
@@ -811,7 +811,7 @@ Puerto 5201, `npm run dev`, con `isAdmin` activo.
 | Archivo | Rol |
 |---|---|
 | `src/pages/admin/catalogo.tsx` | La pagina: toolbar, tabla, modal, dialogo |
-| `src/components/admin/admin_wine_form.tsx` | Formulario `AdminWine` con `stock` y `activo` |
+| `src/components/admin/admin_producto_form.tsx` | Formulario `ProductoAdmin` con `stock` y `activo` |
 | `src/hooks/useCatalogo.ts` | Filtros, paginacion, CRUD, import/export |
 | `src/mocks/importar_vinos.ts` | Logica de importacion (testeable sin HTTP) |
 | `src/mocks/vino_schema.ts` | Validacion y normalizacion, compartida por handlers e importacion |
@@ -1192,9 +1192,9 @@ Puerto 5211, `npm run dev`, con sesion abierta.
 | Export clientes | 16 lineas. `Id,Nombre,Email,Telefono,Pedidos,Total gastado,Ultimo pedido,Tags`. 15 filas |
 | Export pedidos | 26 lineas. `Id,Cliente,Email,Fecha,Total,Estado,Unidades,Ciudad`. 25 filas |
 | Aviso | "Exportar pedidos: listo." |
-| **Import con id** | Fila con `Id=1` **actualiza** el vino existente: 12 → 13, aviso "Importacion: 1 creados, 1 actualizados." |
+| **Import con id** | Fila con `Id=1` **actualiza** el producto existente: 12 → 13, aviso "Importacion: 1 creados, 1 actualizados." |
 | **Import sin id** | Fila sin id **crea** uno nuevo con UUID propio |
-| `Activo: no` | El vino importado quedo con `activo: false`, no con `true` |
+| `Activo: no` | El producto importado quedo con `activo: false`, no con `true` |
 | Consola | **0 errores, 0 avisos** |
 
 ### Archivos
@@ -1408,7 +1408,7 @@ paginas durante dias llenaria el `localStorage`.
 
 Offline, crear o editar **falla** con un mensaje explicito. Encolar para mandar
 cuando vuelva la red parece gratis, pero entre que se guarda y que se manda el
-servidor pudo cambiar: el vino se creo, otro lo elimino, y el `PATCH` lo pisa.
+servidor pudo cambiar: el producto se creo, otro lo elimino, y el `PATCH` lo pisa.
 Resolver ese conflicto no esta decidido en ninguna spec.
 
 Fallo con mensaje claro es preferible: el admin sabe que no se guardo y
@@ -1452,7 +1452,7 @@ Puerto 5213, `npm run dev`.
 | CA-05 | Grafico Recharts | `svg.recharts-surface` presente |
 | CA-06 | Top 5 productos | 5 con imagen |
 | CA-07 | Actividad reciente | 5 items |
-| CA-09 | Catalogo | 12 vinos, "Mostrando 1-10 de 12", 8 columnas |
+| CA-09 | Catalogo | 12 productos, "Mostrando 1-10 de 12", 8 columnas |
 | CA-21 | Pedidos | 25 pedidos, 6 columnas |
 | CA-29 | Clientes | 15 clientes, 8 columnas |
 | CA-36 | Sesion sobrevive recarga | `sessionStorage: 'abierta'` tras recargar |

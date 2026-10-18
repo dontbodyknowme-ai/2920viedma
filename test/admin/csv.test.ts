@@ -53,7 +53,7 @@ describe('aTextoCsv', () => {
   })
 
   it('antepone BOM para que Excel respete los acentos', () => {
-    expect(aTextoCsv([['vino']], ['a']).charAt(0)).toBe('﻿')
+    expect(aTextoCsv([['producto']], ['a']).charAt(0)).toBe('﻿')
   })
 })
 

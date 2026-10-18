@@ -3,7 +3,7 @@ import { ApiError, api } from '../api/client'
 import { useApi } from './useApi'
 import { csvCatalogo, descargarComo } from '../utils/csv_export'
 import { exigirConexion } from '../utils/offline'
-import type { AdminWine, ImportResult, Paginated } from '../types/admin'
+import type { ProductoAdmin, ImportResult, Paginated } from '../types/admin'
 
 /**
  * Estado y operaciones de la tabla de catalogo.
@@ -24,7 +24,7 @@ export interface FiltrosCatalogo {
    * El departamento de la pestaña de stock activa. `''` es "sin filtro", que es
    * lo que muestra la pestaña "Todos".
    *
-   * Va **junto** a `category`, no en su lugar: `category` es el tipo de vino
+   * Va **junto** a `category`, no en su lugar: `category` es el tipo de producto
    * (Tinto, Blanco) y `departamento` el grupo de la tienda (Bebidas, Regaleria).
    * Se pueden filtrar los dos a la vez.
    */
@@ -65,11 +65,11 @@ const construirUrl = (filtros: FiltrosCatalogo, page: number, limit: number): st
     params.set('sortDir', filtros.sortDirection)
   }
 
-  return `/api/wines?${params.toString()}`
+  return `/api/products?${params.toString()}`
 }
 
 export interface EstadoCatalogo {
-  vinos: AdminWine[]
+  productos: ProductoAdmin[]
   total: number
   totalPaginas: number
   isLoading: boolean
@@ -86,11 +86,11 @@ export interface EstadoCatalogo {
   setSearch: (valor: string) => void
   aplicarFiltros: (cambios: Partial<FiltrosCatalogo>) => void
   limpiarFiltros: () => void
-  crear: (vino: Omit<AdminWine, 'id'>) => Promise<AdminWine>
-  actualizar: (vino: AdminWine) => Promise<AdminWine>
+  crear: (producto: Omit<ProductoAdmin, 'id'>) => Promise<ProductoAdmin>
+  actualizar: (producto: ProductoAdmin) => Promise<ProductoAdmin>
   eliminar: (id: string) => Promise<void>
-  duplicar: (vino: AdminWine) => Promise<AdminWine>
-  alternarEstado: (vino: AdminWine) => Promise<AdminWine>
+  duplicar: (producto: ProductoAdmin) => Promise<ProductoAdmin>
+  alternarEstado: (producto: ProductoAdmin) => Promise<ProductoAdmin>
   importarCsv: (texto: string) => Promise<ImportResult>
   exportarCsv: () => Promise<void>
   recargar: () => void
@@ -102,7 +102,7 @@ export const useCatalogo = (): EstadoCatalogo => {
   const [filtros, setFiltros] = useState<FiltrosCatalogo>(FILTROS_VACIOS)
 
   const url = useMemo(() => construirUrl(filtros, page, limit), [filtros, page, limit])
-  const { data, isLoading, error, refetch } = useApi<Paginated<AdminWine>>(url, { respaldo: 'vinos' })
+  const { data, isLoading, error, refetch } = useApi<Paginated<ProductoAdmin>>(url, { respaldo: 'productos' })
 
   /**
    * Las cepas disponibles, para el desplegable de filtro.
@@ -114,7 +114,7 @@ export const useCatalogo = (): EstadoCatalogo => {
    */
   const cepas = useMemo(
     () =>
-      [...new Set((data?.data ?? []).map((vino) => vino.varietal).filter((v) => v !== null))].sort(),
+      [...new Set((data?.data ?? []).map((producto) => producto.varietal).filter((v) => v !== null))].sort(),
     [data]
   )
 
@@ -125,7 +125,7 @@ export const useCatalogo = (): EstadoCatalogo => {
    * existia y no aparecia en el desplegable.
    */
   const categorias = useMemo(
-    () => [...new Set((data?.data ?? []).map((vino) => vino.category))].sort(),
+    () => [...new Set((data?.data ?? []).map((producto) => producto.category))].sort(),
     [data]
   )
 
@@ -169,15 +169,15 @@ export const useCatalogo = (): EstadoCatalogo => {
   )
 
   const crear = useCallback(
-    (vino: Omit<AdminWine, 'id'>) =>
-      conError(async () => api.post<AdminWine>('/api/wines', vino)),
+    (producto: Omit<ProductoAdmin, 'id'>) =>
+      conError(async () => api.post<ProductoAdmin>('/api/products', producto)),
     [conError]
   )
 
   const actualizar = useCallback(
-    (vino: AdminWine) =>
+    (producto: ProductoAdmin) =>
       conError(async () =>
-        api.patch<AdminWine>(`/api/wines/${encodeURIComponent(vino.id)}`, vino)
+        api.patch<ProductoAdmin>(`/api/products/${encodeURIComponent(producto.id)}`, producto)
       ),
     [conError]
   )
@@ -186,9 +186,9 @@ export const useCatalogo = (): EstadoCatalogo => {
     (id: string) =>
       conError(async () => {
         try {
-          await api.delete<void>(`/api/wines/${encodeURIComponent(id)}`)
+          await api.delete<void>(`/api/products/${encodeURIComponent(id)}`)
         } catch (error: unknown) {
-          // 409 es el caso de CE-01: el vino tiene pedidos y no se puede borrar.
+          // 409 es el caso de CE-01: el producto tiene pedidos y no se puede borrar.
           // El `details.count` viaja en el error para que la pagina pueda
           // explicar por que, y no solo "algo fallo".
           if (error instanceof ApiError && error.status === 409) {
@@ -199,7 +199,7 @@ export const useCatalogo = (): EstadoCatalogo => {
             // explicada en vez de sube target de build por una sola linea.
             // eslint-disable-next-line preserve-caught-error
             throw new Error(
-              `No se puede eliminar: el vino aparece en ${cantidad} ${cantidad === 1 ? 'pedido' : 'pedidos'}.`
+              `No se puede eliminar: el producto aparece en ${cantidad} ${cantidad === 1 ? 'pedido' : 'pedidos'}.`
             )
           }
           throw error
@@ -210,19 +210,19 @@ export const useCatalogo = (): EstadoCatalogo => {
   )
 
   const duplicar = useCallback(
-    (vino: AdminWine) => {
-      // El `id` se descarta a proposito. Con `...vino` la copia naceria con el
-      // mismo id que el original: el backend lo respeta, los dos vinos quedan
+    (producto: ProductoAdmin) => {
+      // El `id` se descarta a proposito. Con `...producto` la copia naceria con el
+      // mismo id que el original: el backend lo respeta, los dos productos quedan
       // con id identico, y a partir de ahi todo falla en silencio. Editar uno
       // modificaba el otro, y borrar la copia borraba el original.
-      const { id, ...datos } = vino
+      const { id, ...datos } = producto
       void id
       return crear({
         ...datos,
         // El nombre lleva la marca de copia para que se distinga de una
         // entrada real y el admin pueda limpiar despues. El stock arranca en
         // cero porque una copia no trae unidades fisicas en bodega.
-        name: `Copia de ${vino.name}`,
+        name: `Copia de ${producto.name}`,
         stock: 0
       })
     },
@@ -230,13 +230,13 @@ export const useCatalogo = (): EstadoCatalogo => {
   )
 
   const alternarEstado = useCallback(
-    (vino: AdminWine) => actualizar({ ...vino, activo: !vino.activo }),
+    (producto: ProductoAdmin) => actualizar({ ...producto, activo: !producto.activo }),
     [actualizar]
   )
 
   const importarCsv = useCallback(
     (texto: string) =>
-      conError(async () => api.postText<ImportResult>('/api/wines/import', texto)),
+      conError(async () => api.postText<ImportResult>('/api/products/import', texto)),
     [conError]
   )
 
@@ -252,13 +252,13 @@ export const useCatalogo = (): EstadoCatalogo => {
     if (filtros.varietal !== '') params.set('varietal', filtros.varietal)
     if (filtros.status !== '') params.set('status', filtros.status)
 
-    const cuerpo = await api.get<Paginated<AdminWine>>(`/api/wines?${params.toString()}`)
+    const cuerpo = await api.get<Paginated<ProductoAdmin>>(`/api/products?${params.toString()}`)
 
     descargarComo('catalogo', csvCatalogo(cuerpo.data))
   }, [filtros])
 
   return {
-    vinos: data?.data ?? [],
+    productos: data?.data ?? [],
     total: data?.total ?? 0,
     totalPaginas: data?.totalPages ?? 1,
     isLoading,

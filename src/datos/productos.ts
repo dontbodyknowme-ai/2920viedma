@@ -1,9 +1,9 @@
-import { Wine } from '../types/vino'
+import { Producto } from '../types/producto'
 
-// Los dos vinos base del catalogo publico. No llevan `stock` ni `activo`: esos
-// campos son del panel de administracion y viven en `AdminWine`
+// Los dos productos base del catalogo publico. No llevan `stock` ni `activo`: esos
+// campos son del panel de administracion y viven en `ProductoAdmin`
 // (`src/types/admin.ts`). El catalogo que ve un visitante no los necesita.
-export const INITIAL_WINES: Wine[] = [
+export const PRODUCTOS_INICIALES: Producto[] = [
   {
     id: '1',
     name: 'Gran Reserva Malbec',

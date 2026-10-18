@@ -1,12 +1,12 @@
 ﻿import { motion, AnimatePresence } from 'framer-motion'
-import { CartItem } from '../types/vino'
+import { CartItem } from '../types/producto'
 
 interface CartDrawerProps {
   isOpen: boolean
   onClose: () => void
   items: CartItem[]
-  onUpdateQuantity: (wineId: string, delta: number) => void
-  onRemoveItem: (wineId: string) => void
+  onUpdateQuantity: (productoId: string, delta: number) => void
+  onRemoveItem: (productoId: string) => void
   onCheckout: () => void
 }
 
@@ -72,7 +72,7 @@ export const CartDrawer = ({
                   <p className='text-lg font-serif mb-2 text-neutral-600'>
                     El carrito está vacío
                   </p>
-                  <p className='text-sm'>Explora el catálogo para agregar tus vinos preferidos.</p>
+                  <p className='text-sm'>Explora el catálogo para agregar tus productos preferidos.</p>
                 </div>
               ) : (
                 items.map(({ product, quantity }) => (

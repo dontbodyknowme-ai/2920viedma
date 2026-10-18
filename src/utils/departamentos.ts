@@ -152,7 +152,7 @@ export const categoriasDe = (departamento: string): string[] => {
 }
 
 /**
- * El `tipoVino` de cada categoria de vino.
+ * El `tipoVino` de cada categoria de producto.
  *
  * Es la unica parte de la taxonomia que esta en codigo y **no** en la base: el
  * color es una propiedad de la *categoria*, no del producto. Si viviera en el

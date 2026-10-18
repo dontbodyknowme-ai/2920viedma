@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Check } from 'lucide-react'
-import { Wine, CartItem } from './types/vino'
-import { INITIAL_WINES } from './datos/vino'
+import { Producto, CartItem } from './types/producto'
+import { PRODUCTOS_INICIALES } from './datos/productos'
 import { Navbar } from './components/barra_de_navegacion'
 import { Hero } from './components/hero'
 import { Categorias } from './components/categorias'
@@ -14,7 +14,7 @@ import { VistaRapidaProducto } from './components/vista_rapida_producto'
 import { Footer } from './components/pie_de_pagina'
 import { AnimatedSection } from './components/animated_section'
 
-const STORAGE_KEY_WINES = 'vinoteca_wines'
+const STORAGE_KEY_PRODUCTOS = 'vinoteca_productos'
 const STORAGE_KEY_CART = 'vinoteca_cart'
 
 // El acceso al panel ya no vive aca. T1 dejo un flag `isAdmin` en
@@ -27,9 +27,9 @@ const STORAGE_KEY_CART = 'vinoteca_cart'
 // el catalogo inicial. Sin estas dos guardas, un `localStorage` con `"{}"` o con
 // `"[]"` deja el catalogo vacio y la pagina muestra un estado de "no hay
 // etiquetas" en lugar del catalogo de la tienda.
-function loadWines(): Wine[] {
+function loadWines(): Producto[] {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_WINES)
+    const stored = localStorage.getItem(STORAGE_KEY_PRODUCTOS)
     if (stored) {
       const parsed = JSON.parse(stored)
       if (Array.isArray(parsed) && parsed.length > 0) return parsed
@@ -37,11 +37,11 @@ function loadWines(): Wine[] {
   } catch {
     // ignore
   }
-  return INITIAL_WINES
+  return PRODUCTOS_INICIALES
 }
 
-function saveWines(wines: Wine[]) {
-  localStorage.setItem(STORAGE_KEY_WINES, JSON.stringify(wines))
+function saveWines(productos: Producto[]) {
+  localStorage.setItem(STORAGE_KEY_PRODUCTOS, JSON.stringify(productos))
 }
 
 // Misma guarda que `loadWines`, por el mismo motivo (RF-34, CE-02): lo guardado
@@ -64,13 +64,13 @@ function saveCart(cart: CartItem[]) {
 }
 
 export default function App() {
-  const [wines, setWines] = useState<Wine[]>(() => loadWines())
+  const [productos, setWines] = useState<Producto[]>(() => loadWines())
   const [cart, setCart] = useState<CartItem[]>(() => loadCart())
   const [searchQuery, setSearchQuery] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
-  const [vinoAEditar, setVinoAEditar] = useState<Wine | null>(null)
-  const [selectedWine, setSelectedWine] = useState<Wine | null>(null)
+  const [productoAEditar, setProductoAEditar] = useState<Producto | null>(null)
+  const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null)
   const [minPrice, setMinPrice] = useState<number | ''>('')
   const [maxPrice, setMaxPrice] = useState<number | ''>('')
   const [pedidoConfirmado, setPedidoConfirmado] = useState(false)
@@ -100,8 +100,8 @@ export default function App() {
   const [agregado, setAgregado] = useState<{ nombre: string } | null>(null)
 
   useEffect(() => {
-    saveWines(wines)
-  }, [wines])
+    saveWines(productos)
+  }, [productos])
 
   useEffect(() => {
     saveCart(cart)
@@ -113,31 +113,31 @@ export default function App() {
     return () => clearTimeout(t)
   }, [agregado])
 
-  const agregarAlCarrito = useCallback((wine: Wine) => {
-    setAgregado({ nombre: wine.name })
+  const agregarAlCarrito = useCallback((producto: Producto) => {
+    setAgregado({ nombre: producto.name })
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === wine.id)
+      const existing = prev.find((item) => item.product.id === producto.id)
       if (existing) {
         return prev.map((item) =>
-          item.product.id === wine.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.product.id === producto.id ? { ...item, quantity: item.quantity + 1 } : item
         )
       }
-      return [...prev, { product: wine, quantity: 1 }]
+      return [...prev, { product: producto, quantity: 1 }]
     })
   }, [])
 
-  const actualizarCantidad = useCallback((wineId: string, delta: number) => {
+  const actualizarCantidad = useCallback((productoId: string, delta: number) => {
     setCart((prev) =>
       prev
         .map((item) =>
-          item.product.id === wineId ? { ...item, quantity: item.quantity + delta } : item
+          item.product.id === productoId ? { ...item, quantity: item.quantity + delta } : item
         )
         .filter((item) => item.quantity > 0)
     )
   }, [])
 
-  const eliminarDelCarrito = useCallback((wineId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== wineId))
+  const eliminarDelCarrito = useCallback((productoId: string) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== productoId))
   }, [])
 
   // RF-27: mensaje de pedido confirmado y carrito vacio, sin recargar la
@@ -155,18 +155,18 @@ export default function App() {
     setPedidoConfirmado(true)
   }, [cart.length])
 
-  const agregarWine = useCallback((wine: Wine) => {
-    setWines((prev) => [...prev, wine])
+  const agregarWine = useCallback((producto: Producto) => {
+    setWines((prev) => [...prev, producto])
   }, [])
 
-  const actualizarWine = useCallback((wine: Wine) => {
+  const actualizarWine = useCallback((producto: Producto) => {
     setWines((previo) =>
-      previo.map((w) => (w.id === wine.id ? wine : w))
+      previo.map((w) => (w.id === producto.id ? producto : w))
     )
   }, [])
 
-  const editarWine = useCallback((wine: Wine) => {
-    setVinoAEditar(wine)
+  const editarWine = useCallback((producto: Producto) => {
+    setProductoAEditar(producto)
     setAdminOpen(true)
   }, [])
 
@@ -198,8 +198,8 @@ export default function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onAddToCart={agregarAlCarrito}
-          onSelectWine={setSelectedWine}
-          onEditWine={editarWine}
+          onSelectProducto={setProductoSeleccionado}
+          onEditProducto={editarWine}
           minPrice={minPrice}
           maxPrice={maxPrice}
           onMinPriceChange={setMinPrice}
@@ -218,22 +218,22 @@ export default function App() {
         isOpen={adminOpen}
         onClose={() => {
           setAdminOpen(false)
-          setVinoAEditar(null)
+          setProductoAEditar(null)
         }}
         onAddWine={agregarWine}
         onUpdateWine={actualizarWine}
-        wineToEdit={vinoAEditar}
+        productoToEdit={productoAEditar}
       />
       <AnimatedSection>
         <Footer />
       </AnimatedSection>
       {/* RF-35 a RF-37: la vista rapida se monta SIEMPRE y es su `AnimatePresence`
           interno el que decide si hay algo que mostrar. Montarla con
-          `selectedWine !== null` la desmontaria de golpe al cerrar y la animacion
+          `productoSeleccionado !== null` la desmontaria de golpe al cerrar y la animacion
           de salida no correria. */}
       <VistaRapidaProducto
-        wine={selectedWine}
-        onClose={() => setSelectedWine(null)}
+        producto={productoSeleccionado}
+        onClose={() => setProductoSeleccionado(null)}
       />
       {/* El aviso de "se agrego al carrito". Va con `role='status'` y no con
           `alert` por el mismo motivo que el de "Pedido confirmado" (ver RF-27):

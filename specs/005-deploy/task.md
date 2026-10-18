@@ -10,7 +10,7 @@
 **Cubre:** RF-09, RF-10, RF-11, RF-12 · **CE-03** — **✅ 2026-10-11**
 
 - [x] La URL que devuelve `POST /api/upload` es estable, sin firma
-- [x] `admin_wine_form.tsx` guarda esa URL (no hizo falta tocarlo: ya guardaba lo que devuelve la API)
+- [x] `admin_producto_form.tsx` guarda esa URL (no hizo falta tocarlo: ya guardaba lo que devuelve la API)
 - [x] El backend **rechaza arrancar** sin `STORAGE_PUBLIC_URL` (verificado con Zod: `"Required"`)
 - [x] `DELETE /api/upload/:id` sigue borrando el objeto
 - [x] 5 tests nuevos en `backend/tests/modules/upload.test.ts`
@@ -165,10 +165,10 @@ dashboard muestra las métricas.
 > Y el contrapruebo: un origen no permitido tiene que **no** devolver la cabecera.
 
 **Pendiente para T8:** el catálogo en producción está vacío (el seed solo crea
-usuarios, no vinos). No es un bug: la tienda muestra las botellas destacadas
+usuarios, no productos). No es un bug: la tienda muestra las botellas destacadas
 desde los datos locales del frontend, y el catálogo del panel mostraría 0.
 
-**Puerta:** abrir la URL de producción y ver el catálogo con vinos.
+**Puerta:** abrir la URL de producción y ver el catálogo con productos.
 
 ---
 
@@ -183,7 +183,7 @@ desde los datos locales del frontend, y el catálogo del panel mostraría 0.
 > que dice `manual`.**
 
 - [x] **CA-01** `/health` → `200` con `db: connected` — `status=200 db=connected`
-- [x] **CA-02** `/api/wines/public` → `200` con datos — `vinos=10` (de 12; 2 inactivos a propósito, que es lo esperado)
+- [x] **CA-02** `/api/wines/public` → `200` con datos — `productos=10` (de 12; 2 inactivos a propósito, que es lo esperado)
 - [x] **CA-03** El frontend muestra el catálogo — renderiza hero, filtros y las botellas
 - [x] **CA-04** Login real entra al panel con métricas — `login` 200 → panel abierto → `/api/metrics` 200 con datos. Verificado además que la sesión **sobrevive un F5**
 - [x] **CA-05** Recargar `/admin/catalogo` no da 404 — las 5 rutas devuelven `index.html`

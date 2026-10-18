@@ -54,7 +54,7 @@ capa 8  cierre            documentación + verificación integral
 - T2 → T4. `App.tsx` importa los componentes por rutas corregidas. Si T4 se escribiera antes de T2, el import apuntaría a un nombre inexistente y el error de tipo sería ruido, no información.
 - T4 → T5. `App.tsx` (capa 4) consume las props que definan los componentes. Escribir el orquestador antes que los componentes obliga a adivinar firmas.
 - T5 → T6. Los ajustes de componentes (capa 5) cambian comportamiento observable de lo que `App.tsx` ya conecta. `App.tsx` debe existir primero para poder verificar que el ajuste no rompe la integración.
-- T5 → T7, T8. La vista rápida consume el estado de vino seleccionado que `App.tsx` crea; el pie de página se monta en `App.tsx`.
+- T5 → T7, T8. La vista rápida consume el estado de producto seleccionado que `App.tsx` crea; el pie de página se monta en `App.tsx`.
 - **T8 → T9. Es la dependencia que define D-18.** La suite del orquestador importa `App.tsx`, que importa los dos componentes de T7 y T8. Antes de que existan, los tests fallarían por módulos inexistentes y no por lógica.
 - T9 → T10 → T11. Documentación y verificación integral van al final por definición.
 
@@ -64,7 +64,7 @@ capa 8  cierre            documentación + verificación integral
 
 **La suite tiene dos capas, con reglas distintas.**
 
-**Capa 1 — los 46 tests preexistentes, que son invariantes.** Viven en `test/validadores.test.ts` (26 casos, 15 parametrizados) y `test/integridad_datos_vino.test.ts` (20 casos). No se borran, no se modifican, no se omiten. La única modificación admitida es la **ruta** de un import, cuando `test/validadores.ts` se reubica en `src/utils/`. RNF-05 lo declara así de explícito desde el cambio de requisitos del 2026-10-06.
+**Capa 1 — los 46 tests preexistentes, que son invariantes.** Viven en `test/validadores.test.ts` (26 casos, 15 parametrizados) y `test/integridad_datos_producto.test.ts` (20 casos). No se borran, no se modifican, no se omiten. La única modificación admitida es la **ruta** de un import, cuando `test/validadores.ts` se reubica en `src/utils/`. RNF-05 lo declara así de explícito desde el cambio de requisitos del 2026-10-06.
 
 **Capa 2 — los tests nuevos de la lógica de estado del orquestador.** Cubren RF-41 a RF-49, con CA-40 a CA-49. Se escriben en **una sola tarea, la última**, y usan tres piezas que **ya están instaladas**: `createRoot` de `react-dom/client`, `act` de `react`, y el entorno `jsdom` que `vitest.config.ts` ya declara. **No se instala nada.** D-19.
 
@@ -120,7 +120,7 @@ capa 8  cierre            documentación + verificación integral
 | `src/components/editor_formador_productos.tsx` | 1 import corregido, valida precio y cosecha, genera id único. | T2, T5 |
 | `test/validadores.ts` → `src/utils/validadores.ts` | Se reubica para que `src/` lo consuma sin meter `test/` en el bundle. | T2 |
 | `test/validadores.test.ts` | El import pasa de `./validadores` a `../src/utils/validadores`. **Única modificación permitida** en un test preexistente. | T2 |
-| `test/integridad_datos_vino.test.ts` | El import pasa de `./validadores` a `../src/utils/validadores`. **Única modificación permitida** en un test preexistente. | T2 |
+| `test/integridad_datos_producto.test.ts` | El import pasa de `./validadores` a `../src/utils/validadores`. **Única modificación permitida** en un test preexistente. | T2 |
 
 **Sobre `test/` sí se toca.** Antes de este cambio, el plan trataba `test/` como intocable. Ahora hay dos tipos de cambio, y RNF-05 los distingue:
 
@@ -136,8 +136,8 @@ capa 8  cierre            documentación + verificación integral
 
 | Archivo | Por qué |
 |---|---|
-| `src/types/vino.ts` | Ningún RF pide cambiar el contrato de datos. Los tests lo importan. |
-| `src/datos/vino.ts` | El catálogo inicial de 2 vinos cumple RF-15. Los tests lo importan. |
+| `src/types/producto.ts` | Ningún RF pide cambiar el contrato de datos. Los tests lo importan. |
+| `src/datos/productos.ts` | El catálogo inicial de 2 productos cumple RF-15. Los tests lo importan. |
 | `tailwind.config.js` | La paleta ya es la de la constitución (RNF-03). Es configuración, no código de aplicación: puede seguir siendo `.js`. |
 | `vitest.config.ts` | D-7: la app y los tests están aislados a propósito. `vitest.config` gana sobre `vite.config`, así que agregar `vite.config.ts` no altera los tests. Y `jsdom` y `watch: false` ya están, así que T9 no necesita tocarlo. |
 | `package.json` / `package-lock.json` | RNF-04 y CA-39: ni una dependencia agregada ni quitada. Los tests de T9 usan `react`, `react-dom` y `jsdom`, que ya están. |
@@ -185,7 +185,7 @@ capa 8  cierre            documentación + verificación integral
 | `allowJs` | **No se usa** | RF-39 exige que no quede `.js` ni `.jsx` de código de aplicación. Con `allowJs: false` por defecto, un `.jsx` olvidado ni siquiera se chequea: se escondería en vez de fallar. Esto **obliga** a migrar los dos archivos de entrada (D-1) en vez de dejar que pasen. |
 | `types` | `["node", "vite/client"]` | `vite/client` aporta los tipos de `import.meta.env` y de assets. `node` lo necesitan los `*.config.ts`. Declarar `types` explícito evita que se auto-incluyan paquetes de `@types` que nadie pidió. |
 
-**Consecuencia de `isolatedModules: true`:** obliga a que los tipos se importen con `import type`. Los archivos existentes ya usan `import { Wine } from '../types/vino'` sin la palabra `type`. Con `isolatedModules` eso sigue siendo válido **siempre que el binding solo se use en posición de tipo**, que es el caso de los 6 componentes verificados. No requiere migración.
+**Consecuencia de `isolatedModules: true`:** obliga a que los tipos se importen con `import type`. Los archivos existentes ya usan `import { Producto } from '../types/producto'` sin la palabra `type`. Con `isolatedModules` eso sigue siendo válido **siempre que el binding solo se use en posición de tipo**, que es el caso de los 6 componentes verificados. No requiere migración.
 
 ### D-B — Contenido de `vite.config.ts`
 
@@ -299,10 +299,10 @@ import { CartDrawer } from './components/carrito_de_compras'
 import { ProductForm } from './components/editor_formador_productos'
 import { VistaRapidaProducto } from './components/vista_rapida_producto'
 import { PieDePagina } from './components/pie_de_pagina'
-import { INITIAL_WINES } from './datos/vino'
-import type { CartItem, Wine } from './types/vino'
+import { PRODUCTOS_INICIALES } from './datos/producto'
+import type { CartItem, Producto } from './types/producto'
 
-const CLAVE_VINOS = 'vinoteca_wines'
+const CLAVE_PRODUCTOS = 'vinoteca_wines'
 const CLAVE_CARRITO = 'vinoteca_cart'
 
 const leer = <T,>(clave: string): T | null => {
@@ -323,9 +323,9 @@ const guardar = <T,>(clave: string, valor: T): void => {
 }
 
 export default function App() {
-  const [wines, setWines] = useState<Wine[]>(() => {
-    const guardados = leer<Wine[]>(CLAVE_VINOS)
-    return Array.isArray(guardados) && guardados.length > 0 ? guardados : INITIAL_WINES
+  const [wines, setWines] = useState<Producto[]>(() => {
+    const guardados = leer<Producto[]>(CLAVE_PRODUCTOS)
+    return Array.isArray(guardados) && guardados.length > 0 ? guardados : PRODUCTOS_INICIALES
   })
   const [carrito, setCarrito] = useState<CartItem[]>(() => {
     const guardados = leer<CartItem[]>(CLAVE_CARRITO)
@@ -334,10 +334,10 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [carritoAbierto, setCarritoAbierto] = useState(false)
   const [adminAbierto, setAdminAbierto] = useState(false)
-  const [vinoSeleccionado, setVinoSeleccionado] = useState<Wine | null>(null)
+  const [vinoSeleccionado, setVinoSeleccionado] = useState<Producto | null>(null)
   const [pedidoConfirmado, setPedidoConfirmado] = useState(false)
 
-  useEffect(() => guardar(CLAVE_VINOS, wines), [wines])
+  useEffect(() => guardar(CLAVE_PRODUCTOS, wines), [wines])
   useEffect(() => guardar(CLAVE_CARRITO, carrito), [carrito])
 
   const unidades = useMemo(
@@ -345,7 +345,7 @@ export default function App() {
     [carrito]
   )
 
-  const agregarAlCarrito = useCallback((wine: Wine) => {
+  const agregarAlCarrito = useCallback((wine: Producto) => {
     setCarrito((previo) => {
       const existente = previo.find((item) => item.product.id === wine.id)
       if (existente) {
@@ -379,7 +379,7 @@ export default function App() {
     setCarritoAbierto(false)
   }, [carrito.length])
 
-  const agregarWine = useCallback((wine: Wine) => {
+  const agregarWine = useCallback((wine: Producto) => {
     setWinos((previo) => [...previo, wine])
   }, [])
 
@@ -433,7 +433,7 @@ export default function App() {
 
 **Estado inicial por función perezosa.** `useState(() => ...)` lee `localStorage` una sola vez, en el primer render. Leer en el cuerpo del `useState` se ejecutaría en cada render.
 
-**Guardas de tipo en la lectura, no validación profunda.** `Array.isArray(guardados) && guardados.length > 0` descarta basura. CE-02 pide arrancar con el catálogo inicial si lo guardado está corrupto, y eso es exactamente lo que hace: si lo guardado no es un array, se usa `INITIAL_WINES`. **No se valida cada vino uno por uno** contra `esPrecioValido` ni `esAnioRazonable`, porque RF-34 pide tolerancia a datos no interpretables, no saneamiento de datos válidos. Un array de objetos con la forma de `Wine` se usa tal cual.
+**Guardas de tipo en la lectura, no validación profunda.** `Array.isArray(guardados) && guardados.length > 0` descarta basura. CE-02 pide arrancar con el catálogo inicial si lo guardado está corrupto, y eso es exactamente lo que hace: si lo guardado no es un array, se usa `PRODUCTOS_INICIALES`. **No se valida cada producto uno por uno** contra `esPrecioValido` ni `esAnioRazonable`, porque RF-34 pide tolerancia a datos no interpretables, no saneamiento de datos válidos. Un array de objetos con la forma de `Producto` se usa tal cual.
 
 **`.filter((item) => item.quantity > 0)` en vez de una rama `if`.** Implementa RF-23 (decrementar en 1 elimina la línea) sin un condicional: si la cantidad llega a 0 o menos, la línea desaparece. Es el patrón funcional que pide la constitución, y con `strict: true` el tipo de `item` se preserva porque solo se cambia `quantity`, que sigue siendo `number`.
 
@@ -497,7 +497,7 @@ const matchesSearch =
   wine.varietal.toLowerCase().includes(consulta)
 ```
 
-`trim()` una sola vez fuera del predicado, no tres. Normalizar el lado de la consulta es lo que importa: no hay que recortar cada campo del vino, porque un vino con espacio interno sigue encontrándose igual.
+`trim()` una sola vez fuera del predicado, no tres. Normalizar el lado de la consulta es lo que importa: no hay que recortar cada campo del producto, porque un producto con espacio interno sigue encontrándose igual.
 
 ### D-K — Validadores: dónde viven
 
@@ -525,12 +525,12 @@ test/validadores.ts          →  src/utils/validadores.ts
 -import { ... } from './validadores'
 +import { ... } from '../src/utils/validadores'
 
-// test/integridad_datos_vino.test.ts
+// test/integridad_datos_producto.test.ts
 -import { ... } from './validadores'
 +import { ... } from '../src/utils/validadores'
 ```
 
-Los dos archivos siguen en `test/`, `vitest.config.ts` sigue recolectando `test/**/*.test.ts`, y el conteo sigue siendo **2 archivos y 46 tests**. CA-11 no se entera. `test/integridad_datos_vino.test.ts:2-3` ya importa `../src/datos/vino` y `../src/types/vino`, así que un import de `../src/...` desde `test/` ya es un patrón establecido en el repo.
+Los dos archivos siguen en `test/`, `vitest.config.ts` sigue recolectando `test/**/*.test.ts`, y el conteo sigue siendo **2 archivos y 46 tests**. CA-11 no se entera. `test/integridad_datos_producto.test.ts:2-3` ya importa `../src/datos/producto` y `../src/types/producto`, así que un import de `../src/...` desde `test/` ya es un patrón establecido en el repo.
 
 **El nombre del archivo de test queda desalineado con su contenido** (`validadores.test.ts` prueba algo que ya no está al lado). No lo renombro: renombrar `test/validadores.test.ts` es cambiar el nombre de un archivo de test, y el nombre es parte de la línea base que CA-11 verifica.
 
@@ -571,24 +571,24 @@ Cuatro puntos:
 
 ### D-M — Id único sin depender del contexto seguro
 
-`crypto.randomUUID()` (línea 29) solo existe en contexto seguro. `localhost` y `127.0.0.1` **sí** lo son; un host de red local no. CE-10 exige que el guardado no se rompa en ese segundo caso, y CE-15 que no haya dos vinos con el mismo id.
+`crypto.randomUUID()` (línea 29) solo existe en contexto seguro. `localhost` y `127.0.0.1` **sí** lo son; un host de red local no. CE-10 exige que el guardado no se rompa en ese segundo caso, y CE-15 que no haya dos productos con el mismo id.
 
 ```tsx
 const generarId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }
-  return `vino-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  return `producto-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
 ```
 
 El chequeo de `typeof` cubre los tres casos: `crypto` ausente, `crypto` presente sin `randomUUID`, y `randomUUID` que lanza por contexto no seguro. `Date.now()` en base 36 da la marca temporal; `Math.random()` agrega entropía. **No usa un contador a nivel de módulo**, porque `StrictMode` invoca los effects dos veces en desarrollo y un contador compartido se desalinearía.
 
-CE-15 dice que ante una colisión el catálogo conserva ambos vinos "porque el identificador solo se usa como clave de React". Con `Math.random()` la probabilidad de colisión es despreciable, y si ocurriera, React mostraría un aviso en consola y la app seguiría usable. **El plan no implementa detección de colisiones** porque ningún RF la exige: RF-28 dice "único", y el método de la rama principal (`crypto.randomUUID`) cumple eso por contrato. Anotado como riesgo en §7.
+CE-15 dice que ante una colisión el catálogo conserva ambos productos "porque el identificador solo se usa como clave de React". Con `Math.random()` la probabilidad de colisión es despreciable, y si ocurriera, React mostraría un aviso en consola y la app seguiría usable. **El plan no implementa detección de colisiones** porque ningún RF la exige: RF-28 dice "único", y el método de la rama principal (`crypto.randomUUID`) cumple eso por contrato. Anotado como riesgo en §7.
 
 ### D-N — `VistaRapidaProducto`: qué muestra y qué no
 
-RF-35 y RF-36 distinguen dos casos: el vino **tiene** notas y maridaje, o **no los tiene**.
+RF-35 y RF-36 distinguen dos casos: el producto **tiene** notas y maridaje, o **no los tiene**.
 
 ```tsx
 {wine.tastingNotes !== undefined && (
@@ -605,7 +605,7 @@ RF-35 y RF-36 distinguen dos casos: el vino **tiene** notas y maridaje, o **no l
 )}
 ```
 
-El chequeo es `!== undefined`, no un truthy check. `Wine.tastingNotes` es `string | undefined` opcional, y un string vacío es un dato presente, no ausente. Usar truthy haría que un `''` se ocultara, que es otra cosa.
+El chequeo es `!== undefined`, no un truthy check. `Producto.tastingNotes` es `string | undefined` opcional, y un string vacío es un dato presente, no ausente. Usar truthy haría que un `''` se ocultara, que es otra cosa.
 
 RF-37 exige control de cierre **y** fondo oscurecido que cierre, y que el filtro y la búsqueda se conserven. Como el modal no contiene el catálogo, el estado del filtro vive en `App.tsx` y sobrevive al cierre por construcción: cerrar solo hace `setVinoSeleccionado(null)`. **No hay que guardar ni restaurar nada.**
 
@@ -719,7 +719,7 @@ Los íconos de redes sociales salen de `lucide-react`, que ya está instalada y 
 | RF-12 | Hero visible sin scroll, 3D condicionado | T3 | CA-30 |
 | RF-13 | "Explorar Cava" no tapa el catálogo | T3, T6 | CA-31 |
 | RF-14 | Pie con 4 bloques | T8 | CA-32 |
-| RF-15 | Catálogo inicial con 2 vinos | T5 | CA-12 |
+| RF-15 | Catálogo inicial con 2 productos | T5 | CA-12 |
 | RF-16 | Filtro por categoría | T5 | CA-12 |
 | RF-17 | Búsqueda con `trim` | T6 | CA-13 |
 | RF-18 | Estado vacío del catálogo | T5 | CA-13 |
@@ -798,7 +798,7 @@ Los íconos de redes sociales salen de `lucide-react`, que ya está instalada y 
 | R8 | **`productos` se filtran pero `onSelectWine` no llega a la vista rápida** porque el estado mal cableado. | CA-33 y CA-35 fallan. | `App.tsx` pasa `onSelectWine={setVinoSeleccionado}` directamente, sin envoltorio, así que la firma coincide exactamente con `ProductCatalogProps.onSelectWine`. |
 | R9 | **La suite de tests queda fuera del build** porque `include` está mal escrito. | CA-10 falla; un error de tipos en tests pasa desapercibido. | `include: ["src", "test", "vite.config.ts", "vitest.config.ts"]` es explícito, y CA-10 lo verifica metiendo un error de tipo a propósito en un archivo de test. |
 | R10 | **El archivo `cava-and-co/` vacío o `dist/` viejo confunde la salida del build.** | Ruido al verificar CA-03. | `dist/` se regenera en cada build y está en `.gitignore`. `cava-and-co/` no lo referencia nadie. |
-| **R11** | **`App.tsx` queda sin cobertura automatizada durante T5 a T8.** Es el riesgo que aceptamos al elegir la opción (a) de D-18: la suite del orquestador va al final porque `App.tsx` importa la vista rápida y el pie de página, que no existen hasta T7 y T8. | Una regresión de **lógica** de estado introducida en T5 y no detectada hasta T9. Si T9 encuentra el bug, hay que volver a T5, corregir, y volver a correr T9. | **Es un riesgo aceptado, no un descuido.** La mitigación es de proceso: T5 verifica su lógica **en navegador** con CA-12 a CA-24, que cubren el carrito, la carga de vinos y la persistencia uno por uno, en el momento en que esa lógica se escribe. T9 no es la primera línea de defensa, es la segunda. La alternativa que lo evitaría —mockear con `vi.mock`— es peor: una suite verde con la vista rápida inexistente (D-18). |
+| **R11** | **`App.tsx` queda sin cobertura automatizada durante T5 a T8.** Es el riesgo que aceptamos al elegir la opción (a) de D-18: la suite del orquestador va al final porque `App.tsx` importa la vista rápida y el pie de página, que no existen hasta T7 y T8. | Una regresión de **lógica** de estado introducida en T5 y no detectada hasta T9. Si T9 encuentra el bug, hay que volver a T5, corregir, y volver a correr T9. | **Es un riesgo aceptado, no un descuido.** La mitigación es de proceso: T5 verifica su lógica **en navegador** con CA-12 a CA-24, que cubren el carrito, la carga de productos y la persistencia uno por uno, en el momento en que esa lógica se escribe. T9 no es la primera línea de defensa, es la segunda. La alternativa que lo evitaría —mockear con `vi.mock`— es peor: una suite verde con la vista rápida inexistente (D-18). |
 | **R12** | **Los tests del orquestador fallan por el entorno y no por la lógica.** `act` sin `IS_REACT_ACT_ENVIRONMENT`, o `act` importado del lugar deprecado. | T9 falla con un mensaje que no señala un bug real, y el implementador pierde tiempo persiguiendo un problema del andamiaje. | Las dos condiciones están **escritas en la spec** (§4.1b, D-19) y **verificadas por CA-40**, que exige que ninguno de los dos mensajes aparezca. El fallo aparece en el primer test, no al final. |
 | **R13** | **Los tests del orquestador se ensucian entre sí** por compartir `localStorage` y raíces de React sin desmontar. | Un test pasa por el estado que dejó el anterior. Es el modo de fallo más insidioso de una suite con estado global. | D-21 define el montaje, el desmontaje y la limpieza. La clave es que cada test monta **su propio** `<div>` y lo desmonta, y que `localStorage.clear()` va en un `beforeEach`, no en un `beforeAll`. |
 | **R14** | **`StrictMode` duplica los efectos** de sincronización a `localStorage` y el test ve dos escrituras. | Ruido, o un conteo de escrituras que no cuadra. | D-21. No hay que hacer nada en el código de la aplicación: los tests montan `App` **sin** `StrictMode`, que es el renderizado real en producción. El doble montaje es un comportamiento de desarrollo, no algo que haya que probar acá. |
@@ -818,16 +818,16 @@ Los íconos de redes sociales salen de `lucide-react`, que ya está instalada y 
 | Cualquier commit | §3.2. El coordinador lo maneja con el usuario. |
 | Filtro por precio y por cepa | §3.2. Funcionalidad nueva. |
 | Subida de imagen por arrastrar archivo | §3.2. |
-| Borrar `WineFilterState` | §3.2. Código muerto pero su eliminación es de otra spec. |
+| Borrar `ProductoFilterState` | §3.2. Código muerto pero su eliminación es de otra spec. |
 | Crear `AnimatedSection` | §3.2. No existe y ningún RF lo necesita. |
 | Animaciones de scroll y parallax | §3.2. |
 | Enlaces de navegación en la barra | §3.2. |
 | Edición de productos | §3.2. |
 | Capa de datos para API futura | §3.2. |
-| `src/types/vino.ts`, `src/datos/vino.ts` | Ningún RF los cambia; los tests los importan. |
+| `src/types/producto.ts`, `src/datos/productos.ts` | Ningún RF los cambia; los tests los importan. |
 | `tailwind.config.js` | La paleta ya es correcta (RNF-03). |
 | `vitest.config.ts` | D-7. `jsdom` y `watch: false` ya están, así que los tests del orquestador no necesitan tocar la configuración. |
-| `test/validadores.test.ts` y `test/integridad_datos_vino.test.ts` — su **contenido** | RNF-05. Solo se les cambia la ruta de un import, en T2. |
+| `test/validadores.test.ts` y `test/integridad_datos_producto.test.ts` — su **contenido** | RNF-05. Solo se les cambia la ruta de un import, en T2. |
 | `package.json` y `package-lock.json` | RNF-04 y CA-39. Los tests del orquestador usan `react`, `react-dom` y `jsdom`, que ya están. |
 | Extraer la lógica del orquestador a un reductor puro | El usuario descartó explícitamente esta variante al aprobar el cambio. `App.tsx` conserva su lógica de estado en el componente. Ver el registro de aprobación en la spec. |
 

@@ -21,7 +21,7 @@ export type LogoutInput = z.infer<typeof logoutSchema>
  *  Vinos — Admin
  *  ============================================================ */
 
-const wineBaseSchema = z.object({
+const productoBaseSchema = z.object({
   id: z.string().cuid().optional(),
   name: z.string().min(1).max(200),
   winery: z.string().min(1).max(200),
@@ -29,7 +29,7 @@ const wineBaseSchema = z.object({
   category: z.enum(['Tinto', 'Blanco', 'Rosado', 'Espumante']),
   // Eje distinto de `category`: el grupo de la tienda. Texto libre con default
   // para que un CSV viejo (sin la columna) entre en vez de ser rechazado. Es el
-  // espejo exacto de `wineBaseSchema` del backend — los dos validan el mismo
+  // espejo exacto de `productoBaseSchema` del backend — los dos validan el mismo
   // cuerpo, asi que si divergen el rechazo llega del lado que no se prueba.
   departamento: z.string().min(1).max(80).default('Bebidas'),
   vintage: z.number().int().min(1900).max(2100),
@@ -42,12 +42,12 @@ const wineBaseSchema = z.object({
   activo: z.boolean().default(true)
 })
 
-export const wineCreateSchema = wineBaseSchema.omit({ id: true })
-export const wineUpdateSchema = wineBaseSchema.partial().omit({ id: true })
-export const wineImportSchema = wineBaseSchema.required({ id: true })
-export const wineIdParamSchema = z.object({ id: z.string().cuid() })
+export const productoCreateSchema = productoBaseSchema.omit({ id: true })
+export const productoUpdateSchema = productoBaseSchema.partial().omit({ id: true })
+export const productoImportSchema = productoBaseSchema.required({ id: true })
+export const productoIdParamSchema = z.object({ id: z.string().cuid() })
 
-export const wineQuerySchema = z.object({
+export const productoQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
@@ -57,11 +57,11 @@ export const wineQuerySchema = z.object({
   status: z.enum(['activo', 'inactivo']).optional()
 })
 
-export type WineCreateInput = z.infer<typeof wineCreateSchema>
-export type WineUpdateInput = z.infer<typeof wineUpdateSchema>
-export type WineImportInput = z.infer<typeof wineImportSchema>
-export type WineIdParam = z.infer<typeof wineIdParamSchema>
-export type WineQuery = z.infer<typeof wineQuerySchema>
+export type ProductoCreateInput = z.infer<typeof productoCreateSchema>
+export type ProductoUpdateInput = z.infer<typeof productoUpdateSchema>
+export type ProductoImportInput = z.infer<typeof productoImportSchema>
+export type ProductoIdParam = z.infer<typeof productoIdParamSchema>
+export type ProductoQuery = z.infer<typeof productoQuerySchema>
 
 /** CSV Import */
 export const importResultSchema = z.object({
@@ -80,7 +80,7 @@ export type ImportResult = z.infer<typeof importResultSchema>
  *  Vinos — Público
  *  ============================================================ */
 
-export const publicWineQuerySchema = z.object({})
+export const publicoProductoQuerySchema = z.object({})
 
 /** ============================================================
  *  Pedidos
@@ -166,7 +166,7 @@ export interface Paginated<T> {
   totalPages: number
 }
 
-export interface Wine {
+export interface Producto {
   id: string
   name: string
   winery: string | null
@@ -176,7 +176,7 @@ export interface Wine {
   departamento: string
   /** Nivel medio de la taxonomia. `null` si cuelga suelto. */
   grupo: string | null
-  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  /** Color del producto. `null` fuera de la categoria "Vinos". */
   tipoVino: string | null
   vintage: number | null
   price: number
@@ -190,7 +190,7 @@ export interface Wine {
   updatedAt: string
 }
 
-export interface PublicWine {
+export interface ProductoPublico {
   id: string
   name: string
   winery: string | null
@@ -200,7 +200,7 @@ export interface PublicWine {
   departamento: string
   /** Nivel medio de la taxonomia. `null` si cuelga suelto. */
   grupo: string | null
-  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  /** Color del producto. `null` fuera de la categoria "Vinos". */
   tipoVino: string | null
   vintage: number | null
   price: number
@@ -211,8 +211,8 @@ export interface PublicWine {
 }
 
 export interface OrderItem {
-  wineId: string
-  wineName: string
+  productoId: string
+  productoNombre: string
   imageUrl: string
   quantity: number
   price: number
@@ -270,7 +270,7 @@ export interface Metrics {
   avgTicket: number
   conversion: number
   salesLast30Days: Array<{ date: string; total: number }>
-  topProducts: Array<{ wineId: string; name: string; revenue: number; count: number }>
+  topProducts: Array<{ productoId: string; name: string; revenue: number; count: number }>
   recentActivity: Array<{
     id: string
     type: 'order' | 'customer'

@@ -120,7 +120,7 @@ interface StatusBadgeProps {
  * `text-violet-300` y `text-teal-300` no estan en `tailwind.config.js`.
  *
  * Se usan igual, y a proposito: la paleta del tema cubre las superficies de la
- * tienda (vino, oro, carbon, crema) pero no tiene rampa para "estado del
+ * tienda (producto, oro, carbon, crema) pero no tiene rampa para "estado del
  * negocio". Extender `tailwind.config.js` con cinco rampas semanticas es una
  * tarea de diseno aparte, y esta spec no la pide. RNF-03 habla de no inventar
  * colores de marca, y estos no lo son.

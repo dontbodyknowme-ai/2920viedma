@@ -1,16 +1,16 @@
 import { FastifyInstance } from 'fastify'
 import { jsonSchemas } from '../../shared/json-schemas.js'
 
-export const publicWinesRoutes = async (fastify: FastifyInstance): Promise<void> => {
+export const publicProductsRoutes = async (fastify: FastifyInstance): Promise<void> => {
   const { prisma } = fastify
 
   fastify.get(
-    '/api/wines/public',
+    '/api/products/public',
     {
-      schema: jsonSchemas.wines.public
+      schema: jsonSchemas.products.public
     },
     async () => {
-      const wines = await prisma.wine.findMany({
+      const productos = await prisma.product.findMany({
         where: { activo: true },
         orderBy: { name: 'asc' },
         select: {
@@ -31,7 +31,7 @@ export const publicWinesRoutes = async (fastify: FastifyInstance): Promise<void>
         }
       })
 
-      return wines
+      return productos
     }
   )
 }

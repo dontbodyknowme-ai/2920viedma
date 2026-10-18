@@ -11,25 +11,25 @@
  * TypeScript. Lo cubre `esCategoriaValida` en `utils/validadores.ts`, que es el
  * unico lugar que puede mirarlo ahora que no hay una lista fija.
  */
-export type WineCategory = string
+export type CategoriaProducto = string
 
-export interface Wine {
+export interface Producto {
   id: string
   name: string
   /** Bodega. `null` para lo que no viene de una. */
   winery: string | null
   /** Cepa. `null` para lo que no la tiene. */
   varietal: string | null
-  /** Anada. `null` para lo que no es vino. */
+  /** Anada. `null` para lo que no es producto. */
   vintage: number | null
   /**
    * La **hoja** de la taxonomia: Vinos, Cerveza, Gaseosas, Jugos.
    *
-   * Antes era el tipo de vino —Tinto, Blanco, Rosado, Espumante— y el backend la
+   * Antes era el tipo de producto —Tinto, Blanco, Rosado, Espumante— y el backend la
    * validaba con un enum cerrado, que rechazaba una cerveza con un 400. Ahora es
-   * texto libre y el color del vino vive en `tipoVino`.
+   * texto libre y el color del producto vive en `tipoVino`.
    */
-  category: WineCategory
+  category: CategoriaProducto
   /**
    * El departamento de la tienda: el nivel mas alto.
    *
@@ -47,7 +47,7 @@ export interface Wine {
    * mentir sobre el producto.
    */
   grupo: string | null
-  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  /** Color del producto. `null` fuera de la categoria "Vinos". */
   tipoVino: string | null
   price: number
   description: string
@@ -56,13 +56,13 @@ export interface Wine {
   imageUrl: string
 }
 
-export interface PublicWine {
+export interface ProductoPublico {
   id: string
   name: string
   winery: string | null
   varietal: string | null
   vintage: number | null
-  category: WineCategory
+  category: CategoriaProducto
   departamento: string
   grupo: string | null
   tipoVino: string | null
@@ -74,12 +74,12 @@ export interface PublicWine {
 }
 
 export interface CartItem {
-  product: Wine
+  product: Producto
   quantity: number
 }
 
-export interface WineFilterState {
-  category: WineCategory | 'Todos los productos'
+export interface ProductoFilterState {
+  category: CategoriaProducto | 'Todos los productos'
   maxPrice: number | ''
   searchQuery: string
   minPrice: number | ''

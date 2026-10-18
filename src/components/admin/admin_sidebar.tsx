@@ -19,7 +19,7 @@ import { useAuth } from '../../hooks/useAuth'
  *
  * Antes la lista estaba entera aca, fija, y los tres roles veian las cinco
  * secciones. Escribiendo la URL a mano `/admin/catalogo` montaba la pagina
- * igual, la tabla pedia `/api/wines` y la respuesta era un `403`. El servidor
+ * igual, la tabla pedia `/api/products` y la respuesta era un `403`. El servidor
  * hacia bien su trabajo: **la interfaz prometeria una seccion que no se puede
  * usar**.
  *

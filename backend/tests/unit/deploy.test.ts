@@ -282,7 +282,7 @@ describe('comandos que se ejecutan dentro del contenedor', () => {
     // Compilado a `dist/scripts/*.js`, el Dockerfile lo copia sin tocar nada
     // mas: `COPY --from=builder /app/dist ./dist`.
     expect(packageJson.scripts.seed).toContain('node dist/scripts/seed.js')
-    expect(packageJson.scripts['seed:vinos']).toBe('node dist/scripts/seed-vinos.js')
+    expect(packageJson.scripts['seed:productos']).toBe('node dist/scripts/seed-productos.js')
     expect(packageJson.scripts.build).toContain('tsconfig.scripts.json')
   })
 

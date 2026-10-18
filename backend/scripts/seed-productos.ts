@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 /**
  * Catalogo de demonstracion.
  *
- * Sin esto la base de produccion arranca con cero vinos: el seed original solo
+ * Sin esto la base de produccion arranca con cero productos: el seed original solo
  * creaba usuarios, asi que el panel abria vacio y la tienda no tenia nada que
  * mostrar. Para una demo eso no sirve.
  *
@@ -13,7 +13,7 @@ import { PrismaClient } from '@prisma/client'
  *
  * **Idempotente.** El `id` es un slug estable, no un `cuid`, para poder hacer
  * `upsert` por el: correrlo de nuevo actualiza en vez de duplicar. Sin esto,
- * cargar el catalogo dos veces deja 24 vinos y el filtro por categoria muestra
+ * cargar el catalogo dos veces deja 24 productos y el filtro por categoria muestra
  * duplicados.
  *
  * `stock: 0` y `activo: false` a proposito: el filtro por estado del panel
@@ -30,14 +30,14 @@ interface VinoSeed {
   winery: string | null
   /** `null` para lo que no tiene cepa. */
   varietal: string | null
-  /** `null` para lo que no es vino: una gaseosa no tiene añada. */
+  /** `null` para lo que no es producto: una gaseosa no tiene añada. */
   vintage: number | null
   /** La hoja de la taxonomia: Vinos, Cerveza, Gaseosas, Jugos. */
   category: string
   departamento: string
   /** Nivel medio. `null` si cuelga directo del departamento ("Energizantes"). */
   grupo: string | null
-  /** Color del vino. `null` fuera de la categoria "Vinos". */
+  /** Color del producto. `null` fuera de la categoria "Vinos". */
   tipoVino: string | null
   price: number
   description: string
@@ -50,7 +50,7 @@ interface VinoSeed {
 
 const CATALOGO: VinoSeed[] = [
   {
-    id: 'vino-gran-reserva-malbec',
+    id: 'producto-gran-reserva-malbec',
     name: 'Gran Reserva Malbec',
     winery: 'Bodega Catena Zapata',
     varietal: 'Malbec',
@@ -68,7 +68,7 @@ const CATALOGO: VinoSeed[] = [
     activo: true
   },
   {
-    id: 'vino-chardonnay-white-bones',
+    id: 'producto-chardonnay-white-bones',
     name: 'Chardonnay White Bones',
     winery: 'El Enemigo',
     varietal: 'Chardonnay',
@@ -86,7 +86,7 @@ const CATALOGO: VinoSeed[] = [
     activo: true
   },
   {
-    id: 'vino-cabernet-sauvignon-reserva',
+    id: 'producto-cabernet-sauvignon-reserva',
     name: 'Cabernet Sauvignon Reserva',
     winery: 'Catena Chadwick',
     varietal: 'Cabernet Sauvignon',
@@ -98,13 +98,13 @@ const CATALOGO: VinoSeed[] = [
     price: 62000,
     description: 'Cabernet de guarda con estructura firme y final largo de cedro.',
     tastingNotes: 'Grosella negra, grafito, cedro y un final mineral persistente.',
-    foodPairing: 'Cordera al vino tinto, milanesas y semicurado de Parma.',
+    foodPairing: 'Cordera al producto tinto, milanesas y semicurado de Parma.',
     imageUrl: 'https://images.unsplash.com/photo-1584916201218-f4242ceb4809?auto=format&fit=crop&q=80&w=800',
     stock: 12,
     activo: true
   },
   {
-    id: 'vino-pinot-noir-seleccion',
+    id: 'producto-pinot-noir-seleccion',
     name: 'Pinot Noir Seleccion',
     winery: 'Luigi Bosca',
     varietal: 'Pinot Noir',
@@ -122,7 +122,7 @@ const CATALOGO: VinoSeed[] = [
     activo: true
   },
   {
-    id: 'vino-malbec-reserva-familia',
+    id: 'producto-malbec-reserva-familia',
     name: 'Malbec Reserva Familia',
     winery: 'Bodega Norton',
     varietal: 'Malbec',
@@ -140,7 +140,7 @@ const CATALOGO: VinoSeed[] = [
     activo: true
   },
   {
-    id: 'vino-cabernet-franc',
+    id: 'producto-cabernet-franc',
     name: 'Cabernet Franc',
     winery: 'Pulenta Estate',
     varietal: 'Cabernet Franc',
@@ -158,7 +158,7 @@ const CATALOGO: VinoSeed[] = [
     activo: true
   },
   {
-    id: 'vino-sauvignon-blanc',
+    id: 'producto-sauvignon-blanc',
     name: 'Sauvignon Blanc',
     winery: 'Trapiche',
     varietal: 'Sauvignon Blanc',
@@ -176,7 +176,7 @@ const CATALOGO: VinoSeed[] = [
     activo: true
   },
   {
-    id: 'vino-riesling-trocken',
+    id: 'producto-riesling-trocken',
     name: 'Riesling Trocken',
     winery: 'Los Cemillos',
     varietal: 'Riesling',
@@ -194,7 +194,7 @@ const CATALOGO: VinoSeed[] = [
     activo: true
   },
   {
-    id: 'vino-rose-provence',
+    id: 'producto-rose-provence',
     name: 'Rose Provence',
     winery: 'Chateau Peyrelongue',
     varietal: 'Grenache',
@@ -212,7 +212,7 @@ const CATALOGO: VinoSeed[] = [
     activo: true
   },
   {
-    id: 'vino-espumante-brut-nature',
+    id: 'producto-espumante-brut-nature',
     name: 'Espumante Brut Nature',
     winery: 'Bodega Cono Sur',
     varietal: 'Chardonnay',
@@ -230,7 +230,7 @@ const CATALOGO: VinoSeed[] = [
     activo: true
   },
   {
-    id: 'vino-espumante-rose',
+    id: 'producto-espumante-rose',
     name: 'Espumante Rose',
     winery: 'Chandon',
     varietal: 'Pinot Noir',
@@ -248,7 +248,7 @@ const CATALOGO: VinoSeed[] = [
     activo: false
   },
   {
-    id: 'vino-merlot-vintage',
+    id: 'producto-merlot-vintage',
     name: 'Merlot Vintage',
     winery: 'Valderramero',
     varietal: 'Merlot',
@@ -267,7 +267,7 @@ const CATALOGO: VinoSeed[] = [
   },
 
   /*
-   * Productos que NO son vino.
+   * Productos que NO son producto.
    *
    * Estan porque el catalogo dejo de ser una vinateria, y un seed de doce
    * Malbec no demuestra eso: con todos los productos en "Bebidas / Con alcohol /
@@ -403,28 +403,28 @@ const CATALOGO: VinoSeed[] = [
 ]
 
 async function main() {
-  for (const vino of CATALOGO) {
-    const { id, ...datos } = vino
+  for (const producto of CATALOGO) {
+    const { id, ...datos } = producto
 
-    await p.wine.upsert({
+    await p.product.upsert({
       where: { id },
       update: datos,
       create: { id, ...datos }
     })
 
-    const marca = vino.activo ? '' : ' (inactivo)'
-    console.log(`✓ ${vino.name} — ${vino.winery} ${vino.vintage}${marca}`)
+    const marca = producto.activo ? '' : ' (inactivo)'
+    console.log(`✓ ${producto.name} — ${producto.winery} ${producto.vintage}${marca}`)
   }
 
-  const total = await p.wine.count()
-  const activos = await p.wine.count({ where: { activo: true } })
+  const total = await p.product.count()
+  const activos = await p.product.count({ where: { activo: true } })
 
   console.log(`\nCatalogo listo: ${total} productos, ${activos} activos.`)
 }
 
 main()
   .catch((e) => {
-    console.error('Error en el seed de vinos:', e)
+    console.error('Error en el seed de productos:', e)
     process.exit(1)
   })
   .finally(async () => {

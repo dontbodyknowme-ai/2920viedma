@@ -94,11 +94,11 @@ describe('los response schemas conservan los datos', () => {
     expect(cuerpo).toEqual(USUARIO)
   })
 
-  it('el alta de vino devuelve el vino creado', async () => {
+  it('el alta de producto devuelve el producto creado', async () => {
     // Antes devolvia `201 {}`: el panel guardaba bien y despues refrescaba la
-    // lista para poder ver el vino que recien habia creado.
+    // lista para poder ver el producto que recien habia creado.
     const { statusCode, cuerpo } = await serializar(
-      jsonSchemas.wines.create.response[201],
+      jsonSchemas.products.create.response[201],
       VINO,
       201
     )
@@ -109,9 +109,9 @@ describe('los response schemas conservan los datos', () => {
     expect(cuerpo.stock).toBe(10)
   })
 
-  it('la edicion de vino devuelve el vino actualizado', async () => {
+  it('la edicion de producto devuelve el producto actualizado', async () => {
     const { cuerpo } = await serializar(
-      jsonSchemas.wines.update.response[200],
+      jsonSchemas.products.update.response[200],
       { ...VINO, name: 'Malbec 2021' },
       200
     )
@@ -119,9 +119,9 @@ describe('los response schemas conservan los datos', () => {
     expect(cuerpo.name).toBe('Malbec 2021')
   })
 
-  it('la lista de vinos conserva la pagina y sus filas', async () => {
+  it('la lista de productos conserva la pagina y sus filas', async () => {
     const { cuerpo } = await serializar(
-      jsonSchemas.wines.list.response[200],
+      jsonSchemas.products.list.response[200],
       { data: [VINO], total: 1, page: 1, limit: 10, totalPages: 1 },
       200
     )
@@ -130,8 +130,8 @@ describe('los response schemas conservan los datos', () => {
     expect((cuerpo.data as unknown[])[0]).toEqual(VINO)
   })
 
-  it('el catalogo publico conserva los vinos', async () => {
-    const { cuerpo } = await serializar(jsonSchemas.wines.public.response[200], [VINO], 200)
+  it('el catalogo publico conserva los productos', async () => {
+    const { cuerpo } = await serializar(jsonSchemas.products.public.response[200], [VINO], 200)
 
     expect(Array.isArray(cuerpo)).toBe(true)
     expect((cuerpo as unknown[])[0]).toEqual(VINO)
@@ -143,7 +143,7 @@ describe('los response schemas conservan los datos', () => {
       status: 'pendiente',
       customerName: 'Ana',
       total: 45000,
-      items: [{ wineId: 'vino_1', quantity: 1, price: 45000 }],
+      items: [{ productoId: 'vino_1', quantity: 1, price: 45000 }],
       timeline: [{ status: 'pendiente', createdAt: '2026-01-15T10:00:00Z' }]
     }
     const { cuerpo } = await serializar(jsonSchemas.orders.get.response[200], pedido, 200)
@@ -181,7 +181,7 @@ describe('los response schemas conservan los datos', () => {
 
   it('los errores conservan `code`, `message` y `details`', async () => {
     const { statusCode, cuerpo } = await serializar(
-      jsonSchemas.wines.create.response[400],
+      jsonSchemas.products.create.response[400],
       { code: 'VALIDATION_ERROR', message: 'Datos inválidos', details: { price: 'requerido' } },
       400
     )

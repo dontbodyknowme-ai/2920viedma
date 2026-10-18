@@ -8,7 +8,7 @@
 |---|---|
 | Tienda | https://vinoteca-cava.vercel.app |
 | API | https://vinoteca-cava.onrender.com · `db: connected` |
-| Base | Neon · São Paulo · 9 tablas · 12 vinos · 3 usuarios |
+| Base | Neon · São Paulo · 9 tablas · 12 productos · 3 usuarios |
 | Imágenes | Cloudflare R2 · URL pública estable (D-G) |
 | Costo | **$0/mes** |
 
@@ -79,7 +79,7 @@ uno lo encontró un test al empezar y el otro lo encontré revisando el workflow
 |---|---|---|---|
 | **D-A** | Railway | Neon + Render + Vercel | $15-25/mes contra $0. Y `railway.json` no puede declarar el contexto de build: la parte que hacía funcionar el deploy vivía en el panel y se reseteó sola tres veces |
 | **D-B** | Migraciones en predeploy | En el arranque | Render no tiene predeploy. Y hacerlas a mano es peligroso: `/health` hace `SELECT 1`, que no toca ninguna tabla, así que con el esquema sin crear el deploy pasa como sano |
-| **D-I** | Seed manual | Seed manual (igual) | Sin cambios, pero ahora carga también los 12 vinos |
+| **D-I** | Seed manual | Seed manual (igual) | Sin cambios, pero ahora carga también los 12 productos |
 
 ---
 
@@ -95,7 +95,7 @@ Anotado en la sección 8 de `spec.md`:
 
 ### Tres cosas pendientes que no entran en esas specs
 
-1. **`scripts/generar-mocks.mjs` está muerto.** Escribe a `src/mocks/data.ts`, que no existe desde 004-c. Su catálogo ya vive en `backend/scripts/seed-vinos.ts`. Conviene borrarlo.
+1. **`scripts/generar-mocks.mjs` está muerto.** Escribe a `src/mocks/data.ts`, que no existe desde 004-c. Su catálogo ya vive en `backend/scripts/seed-productos.ts`. Conviene borrarlo.
 2. **Los deploys de preview de Vercel van a fallar con CORS.** Su dominio es impredecible y no está en `CORS_ORIGIN`. O se los agrega, o se desactivan.
 3. ~~**`/admin` muestra las credenciales de prueba**~~ - **parcialmente resuelto por la 006.** El email ya **no** viene puesto (`useState('')`), que era lo que un usuario tiene que borrar a mano para entrar con su cuenta. **Quedan dos cosas:**
    - el `placeholder` sigue diciendo `admin@vinoteca.local`, que es deliberado de T6 (campo vacío no es campo sin pistas) pero **señala una cuenta real**;   - el pie sigue diciendo *"Acceso de prueba"*, y desde la 006 **ya no es verdad**: las tres cuentas son reales, de producción, con contraseñas distintas que están en `backend/.env`.

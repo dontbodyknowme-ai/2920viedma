@@ -21,7 +21,7 @@ export type LogoutInput = z.infer<typeof logoutSchema>
  *  Vinos — Admin
  *  ============================================================ */
 
-const wineBaseSchema = z.object({
+const productoBaseSchema = z.object({
   id: z.string().cuid().optional(),
   name: z.string().min(1).max(200),
   // Bodega, anada y cepa son **opcionales** desde que la tienda dejo de ser una
@@ -33,8 +33,8 @@ const wineBaseSchema = z.object({
   varietal: z.string().min(1).max(100).optional(),
   vintage: z.number().int().min(1900).max(2100).optional(),
   // La categoria es la **hoja** de la taxonomia: Vinos, Cerveza, Gaseosas,
-  // Jugos. Dejo de ser el enum de tipo de vino cuando la tienda paso a vender de
-  // todo; el color del vino vive en `tipoVino`.
+  // Jugos. Dejo de ser el enum de tipo de producto cuando la tienda paso a vender de
+  // todo; el color del producto vive en `tipoVino`.
   //
   // Texto libre y no enum por la misma razon de siempre: ampliar un enum de
   // Postgres es una migracion y el admin no puede correr migraciones desde el
@@ -47,7 +47,7 @@ const wineBaseSchema = z.object({
   /// es ni con alcohol ni sin alcohol, y hacerlo obligatorio lo obligaria a
   /// mentir con el grupo.
   grupo: z.string().min(1).max(80).optional(),
-  /// Color del vino, solo para la categoria "Vinos".
+  /// Color del producto, solo para la categoria "Vinos".
   tipoVino: z.string().min(1).max(40).optional(),
   price: z.number().int().positive(),
   description: z.string().max(5000).optional(),
@@ -58,12 +58,12 @@ const wineBaseSchema = z.object({
   activo: z.boolean().default(true)
 })
 
-export const wineCreateSchema = wineBaseSchema.omit({ id: true })
-export const wineUpdateSchema = wineBaseSchema.partial().omit({ id: true })
-export const wineImportSchema = wineBaseSchema.required({ id: true })
-export const wineIdParamSchema = z.object({ id: z.string().cuid() })
+export const productoCreateSchema = productoBaseSchema.omit({ id: true })
+export const productoUpdateSchema = productoBaseSchema.partial().omit({ id: true })
+export const productoImportSchema = productoBaseSchema.required({ id: true })
+export const productoIdParamSchema = z.object({ id: z.string().cuid() })
 
-export const wineQuerySchema = z.object({
+export const productoQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
@@ -81,11 +81,11 @@ export const wineQuerySchema = z.object({
   status: z.enum(['activo', 'inactivo']).optional()
 })
 
-export type WineCreateInput = z.infer<typeof wineCreateSchema>
-export type WineUpdateInput = z.infer<typeof wineUpdateSchema>
-export type WineImportInput = z.infer<typeof wineImportSchema>
-export type WineIdParam = z.infer<typeof wineIdParamSchema>
-export type WineQuery = z.infer<typeof wineQuerySchema>
+export type ProductoCreateInput = z.infer<typeof productoCreateSchema>
+export type ProductoUpdateInput = z.infer<typeof productoUpdateSchema>
+export type ProductoImportInput = z.infer<typeof productoImportSchema>
+export type ProductoIdParam = z.infer<typeof productoIdParamSchema>
+export type ProductoQuery = z.infer<typeof productoQuerySchema>
 
 /** CSV Import */
 export const importResultSchema = z.object({
@@ -104,7 +104,7 @@ export type ImportResult = z.infer<typeof importResultSchema>
  *  Vinos — Público
  *  ============================================================ */
 
-export const publicWineQuerySchema = z.object({})
+export const publicoProductoQuerySchema = z.object({})
 
 /** ============================================================
  *  Pedidos

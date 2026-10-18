@@ -12,8 +12,8 @@
  * ## Por que el respaldo se indexa por URL y no por recurso
  *
  * Las tablas piden URLs distintas segun el filtro y la pagina:
- * `/api/wines?page=1&limit=10&category=Tinto` no es lo mismo que
- * `/api/wines?page=3&limit=10`.
+ * `/api/products?page=1&limit=10&category=Tinto` no es lo mismo que
+ * `/api/products?page=3&limit=10`.
  *
  * **Con una sola clave por recurso, el fallback miente.** Si el admin filtra por
  * "Tinto" y se queda sin red, se le mostra la ultima respuesta guardada, que
@@ -51,7 +51,7 @@
  */
 
 /** Los recursos que tienen respaldo. */
-export const RESPALDOS = ['vinos', 'clientes', 'pedidos', 'metricas'] as const
+export const RESPALDOS = ['productos', 'clientes', 'pedidos', 'metricas'] as const
 
 export type NombreRespaldo = (typeof RESPALDOS)[number]
 
@@ -214,9 +214,9 @@ export const reiniciarAviso = (): void => {
 /**
  * Falla una escritura si el panel esta sin servidor.
  *
- * **Por que no se encolan las escrituras.** Offline, un `POST` de crear vino no
+ * **Por que no se encolan las escrituras.** Offline, un `POST` de crear producto no
  * llega a ningun lado. Guardarlo "para mandarlo despues" parece gratis, pero
- * entre que se guarda y que se manda el servidor pudo cambiar: el vino que
+ * entre que se guarda y que se manda el servidor pudo cambiar: el producto que
  *CREATE se creo, otro lo elimino, y el `PATCH` lo pisa. Resolver eso es un
  * problema de conflictos que no esta decidido en ninguna spec.
  *

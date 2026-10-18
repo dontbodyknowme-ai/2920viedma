@@ -20,7 +20,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import App from '../src/App'
 import { AuthProvider } from '../src/hooks/useAuth'
-import type { CartItem } from '../src/types/vino'
+import type { CartItem } from '../src/types/producto'
 
 /**
  * CA-40, primera mitad: sin esta bandera React avisa "The current testing
@@ -41,9 +41,15 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
  *
  * En vez de polifillar `ResizeObserver` (que despues fallaria al pedir un contexto
  * WebGL, y `Environment` de `drei` ademas iria a la red) se usa el camino que la
- * propia app ya tiene para este caso: `hero.tsx` no renderiza `<HeroCanvas3D />`
- * por debajo de 640 px (RNF-09, D-15). O sea que la app se monta por su rama real
- * de movil y el test no depende de ningun mock.
+ * propia app ya tiene para este caso.
+ *
+ * **Ojo: ese camino ya no existe.** Cuando el hero paso a ser texto se borro el
+ * `<Canvas>`, y con el `HeroCanvas3D` dejo de renderizarse **siempre**, no "por
+ * debajo de 640 px". El `innerWidth = 375` de abajo **ya no esta previniendo un
+ * choque de WebGL**: hoy previene otra cosa, y lo que evita el choque es que
+ * `herocanvas3d.tsx` es **codigo muerto** —no lo importa nadie.
+ * El `ResizeObserverStub` de mas abajo si sigue siendo necesario, pero por el
+ * motivo que dice su propio comentario: Framer Motion lo pide por su cuenta.
  *
  * `window.innerWidth` es de solo lectura en jsdom, asi que se redefine con
  * `defineProperty`. Vitest da un entorno nuevo por archivo, con lo cual el cambio
@@ -154,7 +160,7 @@ Object.defineProperty(window, 'matchMedia', {
   writable: true
 })
 
-export const CLAVE_VINOS = 'vinoteca_wines'
+export const CLAVE_PRODUCTOS = 'vinoteca_wines'
 export const CLAVE_CARRITO = 'vinoteca_cart'
 
 /** La clase con la que `carta_de_catalogo.tsx` marca el boton de categoria activo. */
@@ -266,7 +272,7 @@ export const pulsarPorTexto = (montaje: Montaje, wanted: string, indice = 0): vo
   pulsarNodo(elegido)
 }
 
-/** Nombre del vino de cada tarjeta del catalogo, en orden. */
+/** Nombre del producto de cada tarjeta del catalogo, en orden. */
 export const nombresDeLasTarjetas = (montaje: Montaje): string[] =>
   nodos(montaje, 'section#catalogo h3').map((tarjeta) => tarjeta.textContent ?? '')
 
@@ -280,7 +286,7 @@ export const categoriaActiva = (montaje: Montaje): string | null => {
   return activa?.textContent ?? null
 }
 
-/** Nombre del vino de cada linea del carrito. `aside h4` solo existe ahi. */
+/** Nombre del producto de cada linea del carrito. `aside h4` solo existe ahi. */
 export const nombresDeLasLineas = (montaje: Montaje): string[] =>
   nodos(montaje, 'aside h4').map((linea) => linea.textContent ?? '')
 

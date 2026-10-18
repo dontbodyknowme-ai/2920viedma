@@ -7,7 +7,7 @@ import {
 } from '../../components/admin/data_table'
 import { StatusBadge } from '../../components/admin/status_badge'
 import { ConfirmDialog } from '../../components/admin/confirm_dialog'
-import { AdminWineForm } from '../../components/admin/admin_wine_form'
+import { AdminProductoForm } from '../../components/admin/admin_producto_form'
 import { ESTADOS, useCatalogo } from '../../hooks/useCatalogo'
 import {
   DEPARTAMENTOS,
@@ -15,15 +15,15 @@ import {
   SIN_DEPARTAMENTO,
   etiquetaDeStock
 } from '../../utils/departamentos'
-import type { AdminWine } from '../../types/admin'
+import type { ProductoAdmin } from '../../types/admin'
 
 /**
  * Gestion de catalogo: la primera de las tres tablas del panel.
  *
  * Todo lo que hace la tabla va al servidor: los filtros, el orden y la
- * paginacion son query params de `/api/wines`, y cada mutacion es un verbo HTTP
+ * paginacion son query params de `/api/products`, y cada mutacion es un verbo HTTP
  * seguido de una recarga. El estado local de la pagina es solo lo que el
- * usuario esta haciendo ahora: que vino esta en el formulario, cual esta
+ * usuario esta haciendo ahora: que producto esta en el formulario, cual esta
  * confirmado para eliminar.
  *
  * ## El stock esta separado por departamento
@@ -39,7 +39,7 @@ import type { AdminWine } from '../../types/admin'
  * backend por un test que fija las 14 declaraciones a mano.
  *
  * **El departamento va en `departamento` y no en el filtro de "Categoria"**,
- * porque son dos ejes: `category` es el tipo de vino (Tinto, Blanco) y
+ * porque son dos ejes: `category` es el tipo de producto (Tinto, Blanco) y
  * `departamento` el grupo de la tienda (Bebidas, Regaleria). Un Malbec es las dos
  * a la vez. Meter el grupo en `category` habria hecho perder el tipo.
  */
@@ -58,7 +58,7 @@ const dinero = (valor: number): string =>
  * hasta que alguien editara el codigo.
  */
 const columnas = (categorias: readonly string[]) => [
-  columnaHelper<AdminWine>().accessor('name', {
+  columnaHelper<ProductoAdmin>().accessor('name', {
     header: 'Nombre',
     cell: (info) => (
       <div className='flex items-center gap-3'>
@@ -78,7 +78,7 @@ const columnas = (categorias: readonly string[]) => [
       </div>
     )
   }),
-  columnaHelper<AdminWine>().accessor('varietal', { header: 'Cepa' }),
+  columnaHelper<ProductoAdmin>().accessor('varietal', { header: 'Cepa' }),
   /**
    * "Departamento" va **antes** de "Categoria" y no al lado de "Cepa": es el
    * campo por el que esta filtrada la tabla (la pestana de stock), asi que si
@@ -92,20 +92,20 @@ const columnas = (categorias: readonly string[]) => [
    * valor viejo**. La pantalla dice una cosa y muestra otra. Un solo control
    * por estado: la pestana.
    */
-  columnaHelper<AdminWine>().accessor('departamento', { header: 'Departamento' }),
-  columnaConFiltro(columnaHelper<AdminWine>().accessor('category', { header: 'Categoria' }),
+  columnaHelper<ProductoAdmin>().accessor('departamento', { header: 'Departamento' }),
+  columnaConFiltro(columnaHelper<ProductoAdmin>().accessor('category', { header: 'Categoria' }),
     categorias.map((categoria) => ({ valor: categoria, etiqueta: categoria }))
   ),
-  columnaHelper<AdminWine>().accessor('vintage', { header: 'Cosecha' }),
-  columnaHelper<AdminWine>().accessor('price', {
+  columnaHelper<ProductoAdmin>().accessor('vintage', { header: 'Cosecha' }),
+  columnaHelper<ProductoAdmin>().accessor('price', {
     header: 'Precio',
     cell: (info) => <span className='font-semibold text-carbon'>{dinero(info.getValue())}</span>
   }),
-  columnaHelper<AdminWine>().accessor('stock', {
+  columnaHelper<ProductoAdmin>().accessor('stock', {
     header: 'Stock',
     cell: (info) => {
       const valor = info.getValue()
-      // El stock en cero se marca distinto: es el dato que hace que un vino
+      // El stock en cero se marca distinto: es el dato que hace que un producto
       //Needs reponer y no deberia pasar desapercibido en una columna de numeros.
       return (
         <span
@@ -120,7 +120,7 @@ const columnas = (categorias: readonly string[]) => [
     }
   }),
   columnaConFiltro(
-    columnaHelper<AdminWine>().accessor('activo', {
+    columnaHelper<ProductoAdmin>().accessor('activo', {
       header: 'Estado',
       cell: (info) => <StatusBadge estado={info.getValue() ? 'activo' : 'inactivo'} size='sm' />
     }),
@@ -141,8 +141,8 @@ export const CatalogoAdmin = () => {
   const [departamento, setDepartamento] = useState<string>(SIN_DEPARTAMENTO)
 
   const [formAbierto, setFormAbierto] = useState(false)
-  const [vinoEnEdicion, setVinoEnEdicion] = useState<AdminWine | null>(null)
-  const [porEliminar, setPorEliminar] = useState<AdminWine | null>(null)
+  const [vinoEnEdicion, setVinoEnEdicion] = useState<ProductoAdmin | null>(null)
+  const [porEliminar, setPorEliminar] = useState<ProductoAdmin | null>(null)
   const [eliminando, setEliminando] = useState(false)
   const [aviso, setAviso] = useState('')
   const inputCsv = useRef<HTMLInputElement>(null)
@@ -164,31 +164,31 @@ export const CatalogoAdmin = () => {
    *
    * **No manda `category: ''`**: la columna "Categoria" tiene su propio
    * desplegable, y esa eleccion se tiene que conservar al cambiar de pestana de
-   * stock. Filtrar por departamento y por tipo de vino son cosas distintas.
+   * stock. Filtrar por departamento y por tipo de producto son cosas distintas.
    */
   const cambiarDepartamento = (valor: string): void => {
     setDepartamento(valor)
     catalogo.aplicarFiltros({ departamento: valor })
   }
 
-  const abrirEdicion = (vino: AdminWine): void => {
-    setVinoEnEdicion(vino)
+  const abrirEdicion = (producto: ProductoAdmin): void => {
+    setVinoEnEdicion(producto)
     setFormAbierto(true)
   }
 
   const guardar = async (
-    vino: Omit<AdminWine, 'id'> & { id?: string }
+    producto: Omit<ProductoAdmin, 'id'> & { id?: string }
   ): Promise<void> => {
-    if (vino.id === undefined) {
+    if (producto.id === undefined) {
       // El id lo asigna el servidor. Mandarlo en el POST seria mandarlo o
       // `undefined`, que el backend podria tomar como un id explicito.
-      const { id, ...resto } = vino
+      const { id, ...resto } = producto
       void id
       await catalogo.crear(resto)
-      setAviso(`"${vino.name}" creado.`)
+      setAviso(`"${producto.name}" creado.`)
     } else {
-      await catalogo.actualizar({ ...vino, id: vino.id })
-      setAviso(`"${vino.name}" actualizado.`)
+      await catalogo.actualizar({ ...producto, id: producto.id })
+      setAviso(`"${producto.name}" actualizado.`)
     }
   }
 
@@ -200,7 +200,7 @@ export const CatalogoAdmin = () => {
       setAviso(`Se elimino "${porEliminar.name}".`)
       setPorEliminar(null)
     } catch (fallo) {
-      // CE-01: el backend responde 409 si el vino tiene pedidos. El mensaje
+      // CE-01: el backend responde 409 si el producto tiene pedidos. El mensaje
       // explica la causa en vez de mostrar un error generico.
       setAviso(fallo instanceof Error ? fallo.message : 'No se pudo eliminar')
     } finally {
@@ -234,19 +234,19 @@ export const CatalogoAdmin = () => {
     }
   }
 
-  const alternarEstado = async (vino: AdminWine): Promise<void> => {
+  const alternarEstado = async (producto: ProductoAdmin): Promise<void> => {
     try {
-      await catalogo.alternarEstado(vino)
-      setAviso(`"${vino.name}" ahora esta ${vino.activo ? 'oculto' : 'visible'}.`)
+      await catalogo.alternarEstado(producto)
+      setAviso(`"${producto.name}" ahora esta ${producto.activo ? 'oculto' : 'visible'}.`)
     } catch (fallo) {
       setAviso(fallo instanceof Error ? fallo.message : 'No se pudo cambiar el estado')
     }
   }
 
-  const duplicar = async (vino: AdminWine): Promise<void> => {
+  const duplicar = async (producto: ProductoAdmin): Promise<void> => {
     try {
-      await catalogo.duplicar(vino)
-      setAviso(`Se duplico "${vino.name}".`)
+      await catalogo.duplicar(producto)
+      setAviso(`Se duplico "${producto.name}".`)
     } catch (fallo) {
       setAviso(fallo instanceof Error ? fallo.message : 'No se pudo duplicar')
     }
@@ -256,7 +256,7 @@ export const CatalogoAdmin = () => {
 
   return (
     <div className='space-y-4'>
-      {/* El titulo cambia con la pestana. Decir "Catalogo de vinos" arriba de la
+      {/* El titulo cambia con la pestana. Decir "Catalogo de productos" arriba de la
           tabla de "Stock de regaleria" obliga a leer las dos lineas para saber
           que se esta viendo; el nombre de la pestana ya lo dice. */}
       <div className='flex flex-wrap items-start justify-between gap-3'>
@@ -297,7 +297,7 @@ export const CatalogoAdmin = () => {
             className='flex items-center gap-2 rounded-xl border border-verde-500/40 bg-verde-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-blanco transition-colors hover:bg-verde-600'
           >
             <Plus className='h-4 w-4' aria-hidden='true' />
-            Nuevo vino
+            Nuevo producto
           </button>
         </div>
       </div>
@@ -351,9 +351,9 @@ export const CatalogoAdmin = () => {
         </p>
       )}
 
-      <DataTable<AdminWine>
+      <DataTable<ProductoAdmin>
         columns={columnasCatalogo}
-        data={catalogo.vinos}
+        data={catalogo.productos}
         total={catalogo.total}
         page={catalogo.page}
         limit={catalogo.limit}
@@ -377,15 +377,15 @@ export const CatalogoAdmin = () => {
           void catalogo.exportarCsv()
         }}
         isLoading={catalogo.isLoading}
-        getRowId={(vino) => vino.id}
-        emptySingular='vino'
-        emptyPlural='vinos'
-        rowActions={(vino) => (
+        getRowId={(producto) => producto.id}
+        emptySingular='producto'
+        emptyPlural='productos'
+        rowActions={(producto) => (
           <div className='flex justify-end gap-1'>
             <button
               type='button'
-              onClick={() => abrirEdicion(vino)}
-              aria-label={`Editar ${vino.name}`}
+              onClick={() => abrirEdicion(producto)}
+              aria-label={`Editar ${producto.name}`}
               title='Editar'
               className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-verde-600'
             >
@@ -393,8 +393,8 @@ export const CatalogoAdmin = () => {
             </button>
             <button
               type='button'
-              onClick={() => void duplicar(vino)}
-              aria-label={`Duplicar ${vino.name}`}
+              onClick={() => void duplicar(producto)}
+              aria-label={`Duplicar ${producto.name}`}
               title='Duplicar'
               className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-verde-600'
             >
@@ -402,17 +402,17 @@ export const CatalogoAdmin = () => {
             </button>
             <button
               type='button'
-              onClick={() => void alternarEstado(vino)}
-              aria-label={`${vino.activo ? 'Ocultar' : 'Mostrar'} ${vino.name}`}
-              title={vino.activo ? 'Ocultar del catalogo' : 'Mostrar en el catalogo'}
+              onClick={() => void alternarEstado(producto)}
+              aria-label={`${producto.activo ? 'Ocultar' : 'Mostrar'} ${producto.name}`}
+              title={producto.activo ? 'Ocultar del catalogo' : 'Mostrar en el catalogo'}
               className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-verde-600'
             >
               <Power className='h-4 w-4' aria-hidden='true' />
             </button>
             <button
               type='button'
-              onClick={() => setPorEliminar(vino)}
-              aria-label={`Eliminar ${vino.name}`}
+              onClick={() => setPorEliminar(producto)}
+              aria-label={`Eliminar ${producto.name}`}
               title='Eliminar'
               className='rounded-lg p-2 text-neutral-600 transition-colors hover:bg-verde-800 hover:text-verde-600'
             >
@@ -422,9 +422,9 @@ export const CatalogoAdmin = () => {
         )}
       />
 
-      <AdminWineForm
+      <AdminProductoForm
         isOpen={formAbierto}
-        vino={vinoEnEdicion}
+        producto={vinoEnEdicion}
         categoriasExistentes={catalogo.categorias}
         onClose={() => setFormAbierto(false)}
         onGuardar={guardar}
@@ -434,7 +434,7 @@ export const CatalogoAdmin = () => {
         isOpen={porEliminar !== null}
         onClose={() => setPorEliminar(null)}
         onConfirm={() => void confirmarEliminar()}
-        title='Eliminar vino'
+        title='Eliminar producto'
         message={
           porEliminar === null
             ? ''

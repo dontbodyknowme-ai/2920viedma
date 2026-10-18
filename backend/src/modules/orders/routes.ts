@@ -36,7 +36,7 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
           orderBy: { createdAt: 'desc' },
           include: {
             customer: { select: { id: true, name: true, email: true } },
-            items: { include: { wine: { select: { name: true, imageUrl: true } } } }
+            items: { include: { producto: { select: { name: true, imageUrl: true } } } }
           }
         }),
         prisma.order.count({ where })
@@ -46,9 +46,9 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
         data: data.map(order => ({
           ...order,
           items: order.items.map(item => ({
-            wineId: item.wineId,
-            wineName: item.wine.name,
-            imageUrl: item.wine.imageUrl,
+            productoId: item.productoId,
+            productoNombre: item.producto.name,
+            imageUrl: item.producto.imageUrl,
             quantity: item.quantity,
             price: item.price
           }))
@@ -74,7 +74,7 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
         where: { id },
         include: {
           customer: true,
-          items: { include: { wine: { select: { name: true, imageUrl: true } } } },
+          items: { include: { producto: { select: { name: true, imageUrl: true } } } },
           timeline: { orderBy: { createdAt: 'asc' } }
         }
       })
@@ -86,9 +86,9 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
       return {
         ...order,
         items: order.items.map(item => ({
-          wineId: item.wineId,
-          wineName: item.wine.name,
-          imageUrl: item.wine.imageUrl,
+          productoId: item.productoId,
+          productoNombre: item.producto.name,
+          imageUrl: item.producto.imageUrl,
           quantity: item.quantity,
           price: item.price
         }))
@@ -121,7 +121,7 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
           where: { id },
           include: {
             customer: true,
-            items: { include: { wine: { select: { name: true, imageUrl: true } } } },
+            items: { include: { producto: { select: { name: true, imageUrl: true } } } },
             timeline: { orderBy: { createdAt: 'asc' } }
           }
         })
@@ -142,7 +142,7 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
         where: { id },
         include: {
           customer: true,
-          items: { include: { wine: { select: { name: true, imageUrl: true } } } },
+          items: { include: { producto: { select: { name: true, imageUrl: true } } } },
           timeline: { orderBy: { createdAt: 'asc' } }
         }
       })

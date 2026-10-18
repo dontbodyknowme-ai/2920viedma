@@ -1,7 +1,8 @@
-import { Wine, Gift, Candy, Utensils } from 'lucide-react'
+// `Wine` es el nombre del icono en lucide-react, no de lo que vende la tienda.
+import { Wine as IconoVino, Gift, Candy, Utensils } from 'lucide-react'
 
 const CATEGORIAS = [
-  { icon: Wine, titulo: 'Bebidas', detalle: 'Con y sin alcohol' },
+  { icon: IconoVino, titulo: 'Bebidas', detalle: 'Con y sin alcohol' },
   { icon: Gift, titulo: 'Regalería', detalle: 'Detalles para regalar' },
   { icon: Candy, titulo: 'Snacks y chocolates', detalle: 'Algo rico para disfrutar' },
   { icon: Utensils, titulo: 'Comidas', detalle: 'Opciones preparadas' }

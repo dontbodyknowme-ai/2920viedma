@@ -125,10 +125,10 @@ Se espera que arranque y sirva el documento HTML. **Todavía va a haber un error
 
 | Archivo | Línea | De | A |
 |---|---|---|---|
-| `src/components/carta_de_productos.tsx` | 2 | `'../types/wine'` | `'../types/vino'` |
-| `src/components/carta_de_catalogo.tsx` | 3 | `'../types/wine'` | `'../types/vino'` |
-| `src/components/carrito_de_compras.tsx` | 2 | `'../types/wine'` | `'../types/vino'` |
-| `src/components/editor_formador_productos.tsx` | 3 | `'../types/wine'` | `'../types/vino'` |
+| `src/components/carta_de_productos.tsx` | 2 | `'../types/wine'` | `'../types/producto'` |
+| `src/components/carta_de_catalogo.tsx` | 3 | `'../types/wine'` | `'../types/producto'` |
+| `src/components/carrito_de_compras.tsx` | 2 | `'../types/wine'` | `'../types/producto'` |
+| `src/components/editor_formador_productos.tsx` | 3 | `'../types/wine'` | `'../types/producto'` |
 | `src/components/carta_de_catalogo.tsx` | 4 | `'./ProductCard'` | `'./carta_de_productos'` |
 | `src/components/hero.tsx` | 2 | `'./HeroCanvas3D'` | `'./herocanvas3d'` |
 | `src/App.jsx` | 1 | `'./components/Navbar'` | `'./components/barra_de_navegacion'` |
@@ -141,10 +141,10 @@ Se espera que arranque y sirva el documento HTML. **Todavía va a haber un error
 
 **Parte B — Reubicar los validadores.** Justificación completa en **D-K**.
 
-1. Crear `src/utils/validadores.ts` con **el contenido exacto** de `test/validadores.ts`. Sin cambios de lógica, sin reescribir. El archivo importa `import type { Wine } from '../types/vino'`, y desde `src/utils/` esa ruta sigue siendo correcta porque tiene la misma profundidad de directorios.
+1. Crear `src/utils/validadores.ts` con **el contenido exacto** de `test/validadores.ts`. Sin cambios de lógica, sin reescribir. El archivo importa `import type { Producto } from '../types/producto'`, y desde `src/utils/` esa ruta sigue siendo correcta porque tiene la misma profundidad de directorios.
 2. Borrar `test/validadores.ts`.
 3. En `test/validadores.test.ts` línea 10: `'./validadores'` → `'../src/utils/validadores'`.
-4. En `test/integridad_datos_vino.test.ts` línea 4: `'./validadores'` → `'../src/utils/validadores'`.
+4. En `test/integridad_datos_producto.test.ts` línea 4: `'./validadores'` → `'../src/utils/validadores'`.
 
 **Los dos archivos de test siguen en `test/` y no se renombran.** `vitest.config.ts` recolecta `test/**/*.test.ts`. Renombrar cualquiera de los dos cambiaría un nombre del que RNF-05 depende: el requisito dice que los 46 preexistentes no se borran ni se modifican, y un rename los hace desaparecer.
 
@@ -200,11 +200,11 @@ src/components/herocanvas3d.tsx(71): export const HeroCanvas3D = () => {        
 
 El import **sí** está corregido: es `'./herocanvas3d'`, que existe. Lo que queda son el nombre del binding importado y la declaración del export, y ese nombre no se puede cambiar sin renombrar el componente exportado en `herocanvas3d.tsx`, que `plan.md` §2.3 lista como archivo que **no** se toca. Los otros 5 `grep` dan 0. Un criterio que dé 0 exige `grep -r "from './HeroCanvas3D'" src/`.
 
-**2. La ruta del import de tipos de los validadores sí tuvo que cambiar.** La nota de arriba dice que el archivo "importa `import type { Wine } from '../types/vino'`". No era así: importaba `from '../src/types/vino'`, que es lo correcto desde `test/` y **no** desde `src/utils/` (ahí resolvería a `src/src/types/vino`). Se ajustó a `'../types/vino'`, que es exactamente lo que la nota daba por hecho. Sin ese ajuste, el archivo no tipa:
+**2. La ruta del import de tipos de los validadores sí tuvo que cambiar.** La nota de arriba dice que el archivo "importa `import type { Producto } from '../types/producto'`". No era así: importaba `from '../src/types/producto'`, que es lo correcto desde `test/` y **no** desde `src/utils/` (ahí resolvería a `src/src/types/producto`). Se ajustó a `'../types/producto'`, que es exactamente lo que la nota daba por hecho. Sin ese ajuste, el archivo no tipa:
 
 ```
 $ npx tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution bundler src/utils/validadores.ts
-src/utils/validadores.ts(1,27): error TS2307: Cannot find module '../src/types/vino' or its
+src/utils/validadores.ts(1,27): error TS2307: Cannot find module '../src/types/producto' or its
 corresponding type declarations.
 ```
 
@@ -291,7 +291,7 @@ En navegador, sobre `npm run dev`:
 
 **Un hueco del plan, sin tocar.** `eslint.config.js` tiene `src/components/hero.tsx` dentro de `ignores`, con un comentario que dice que esa línea hay que borrarla "cuando esa spec los complete". **Ninguna tarea de T1 a T11 lo cubre.** No se tocó el archivo: no está en §2.2 (modificables) ni en §2.3 (intocables), y quitarlo es decisión del coordinador. Se verificó que el archivo lintaría igual: `npx eslint src/components/hero.tsx --no-ignore` sale **0**.
 
-**La verificación en navegador hubo que hacerse sin `App.tsx`.** `index.html` apunta a `/src/main.tsx`, que no existe hasta T4, así que `npm run dev` sirve la página **en blanco** con un 404 del módulo. Para no meter `main.tsx` ni `App.tsx` antes de tiempo, el hero se montó desde el contexto de la página con `createRoot`, importando los módulos ya transformados por Vite: primero `Hero` solo (para los anchos) y después `Navbar` + `Hero` + `ProductCatalog` con `INITIAL_WINES` (para el ancla). No se escribió ningún archivo.
+**La verificación en navegador hubo que hacerse sin `App.tsx`.** `index.html` apunta a `/src/main.tsx`, que no existe hasta T4, así que `npm run dev` sirve la página **en blanco** con un 404 del módulo. Para no meter `main.tsx` ni `App.tsx` antes de tiempo, el hero se montó desde el contexto de la página con `createRoot`, importando los módulos ya transformados por Vite: primero `Hero` solo (para los anchos) y después `Navbar` + `Hero` + `ProductCatalog` con `PRODUCTOS_INICIALES` (para el ancla). No se escribió ningún archivo.
 
 Resultados, con las cifras medidas:
 
@@ -299,7 +299,7 @@ Resultados, con las cifras medidas:
 |---|---|
 | 1280 px | `<h1>` "Vinos de Autor" a **72 px**, botón `<a>` "Explorar Cava" a **18 px**, **1 canvas** de 550 px, todo dentro del viewport sin scroll |
 | 375 px | `<h1>` a **36 px**, botón a **16 px**, subtítulo y eyebrow a **16 px**, **0 canvas**, `scrollWidth === clientWidth === 375` (sin scroll horizontal) |
-| Contraste | crema `#fdfbf7` sobre carbón `#0a0a0a`: **19,9:1**. Botón crema sobre vino-700 `#5b132b`: **12,9:1**. Ambos muy por encima de 4,5:1 |
+| Contraste | crema `#fdfbf7` sobre carbón `#0a0a0a`: **19,9:1**. Botón crema sobre producto-700 `#5b132b`: **12,9:1**. Ambos muy por encima de 4,5:1 |
 | Umbral | 640 px → canvas; **639 px → sin canvas**. Exacto |
 | Cleanup | con los listeners contados a mano: al montar, `agrega 2 / quita 1 / activos 1` (el doble montaje es el `StrictMode` de desarrollo). Después de **20 resize**: `42 / 41 / activos 1`, o sea ningún resize agrega un listener. Al desmontar: `42 / 42 / activos 0`. **No hay fuga** |
 | Consola | sin warnings de React ni errores propios, con el canvas montado y desmontado 20 veces |
@@ -403,7 +403,7 @@ La tarea más grande. `App.tsx` pasa de esqueleto a orquestador, y `editor_forma
 Puntos donde equivocarse es fácil:
 
 - **Firmas exactas.** `Navbar` pide `cartCount`, `onOpenCart`, `onOpenAdmin`, `searchQuery`, `onSearchChange`. `ProductCatalog` pide `wines`, `searchQuery`, `onAddToCart`, `onSelectWine`. `CartDrawer` pide `isOpen`, `onClose`, `items`, `onUpdateQuantity`, `onRemoveItem`, `onCheckout`. `ProductForm` pide `isOpen`, `onClose`, `onAddWine`. Copiar de las interfaces en los archivos, no de memoria.
-- **`onSelectWine={setVinoSeleccionado}` directo.** La firma de `ProductCatalogProps.onSelectWine` es `(wine: Wine) => void`, y `setVinoSeleccionado` es exactamente eso. Sin envoltorio.
+- **`onSelectWine={setVinoSeleccionado}` directo.** La firma de `ProductCatalogProps.onSelectWine` es `(wine: Producto) => void`, y `setVinoSeleccionado` es exactamente eso. Sin envoltorio.
 - **`.filter((item) => item.quantity > 0)`** implementa RF-23 sin condicional.
 - **Estado inicial por función perezosa** en los dos `useState` que leen `localStorage`.
 - **`try`/`catch` en `leer` y en `guardar`.** Es lo que cumple RF-34 ante datos corruptos y ante cuota llena.
@@ -440,8 +440,8 @@ En navegador, **empzando por el paso 0 de §8.1 de la spec** (`localStorage.clea
 | Formulario válido agrega una **tercera** tarjeta y cierra el formulario | CA-18 |
 | Precio `0`, `-100` y vacío: no agregan tarjeta **y muestran mensaje** | CA-19 |
 | Cosecha vacía, `1200` y `2028`: no agregan. Cosecha `2027` y `1850`: **sí** agregan | CA-20 |
-| Recargar conserva el tercer vino y la línea del carrito | CA-22 |
-| Escribir basura en `vinoteca_wines` y `vinoteca_cart`, recargar: arranca con 2 vinos y carrito vacío, sin pantalla en blanco | CA-23 |
+| Recargar conserva el tercer producto y la línea del carrito | CA-22 |
+| Escribir basura en `vinoteca_wines` y `vinoteca_cart`, recargar: arranca con 2 productos y carrito vacío, sin pantalla en blanco | CA-23 |
 | **Repetir el paso 0** después de CA-23 | — |
 
 **CA-21 no se verifica acá.** Requiere servir desde la IP local y depende del firewall (§12.3 de la spec, segundo ítem). Si el firewall bloquea, se reporta `no ejecutable`.
@@ -475,7 +475,7 @@ Cómo se verificó: primero se sospechó que era un artefacto de headless. **No 
 **Dos desvíos del pseudocódigo de D-G, ambos por `noUnusedLocals: true`.**
 
 1. **`VistaRapidaProducto` y `PieDePagina` no se importan todavía**, contra lo que dice D-G y `plan.md` §2.2. Sus archivos se crean en T7 y T8, así que importarlos ahora rompe el build con TS2307.
-2. **La posición del valor de `useState` va elidida:** `const [, setVinoSeleccionado] = useState<Wine | null>(null)`. Sin el modal que la lea, `vinoSeleccionado` queda declarado y sin usar, y `noUnusedLocals: true` lo rechaza con TS6133 (comprobado: el error real es `src/App.tsx(x,y): error TS6133: 'vinoSeleccionado' is declared but its value is never read`). **T7 tiene que volver a nombrarla** al agregar el bloque del modal; el `setVinoSeleccionado` y el cableado `onSelectWine` ya están como los pide D-G.
+2. **La posición del valor de `useState` va elidida:** `const [, setVinoSeleccionado] = useState<Producto | null>(null)`. Sin el modal que la lea, `vinoSeleccionado` queda declarado y sin usar, y `noUnusedLocals: true` lo rechaza con TS6133 (comprobado: el error real es `src/App.tsx(x,y): error TS6133: 'vinoSeleccionado' is declared but its value is never read`). **T7 tiene que volver a nombrarla** al agregar el bloque del modal; el `setVinoSeleccionado` y el cableado `onSelectWine` ya están como los pide D-G.
 
 **El mensaje de pedido confirmado usa clases de Tailwind, no estilos inline.** D-G dice "con estilos inline"; con hexadecimales en línea, CA-37 falla. Se resolvió con utilidades del tema (`border-gold-500/40`, `bg-charcoal-900/95`, `text-gold-400`), sin ningún color hexadecimal en `App.tsx`. Se le puso `pointer-events-none` para que no tape la página: el mensaje no se cierra solo y RF-27 no pide un cierre.
 
@@ -501,7 +501,7 @@ El MCP de **chrome-devtools no estuvo disponible** para esta sesión (el catálo
 | **CA-19** | **OK.** `0`, `-100` y vacío: **ninguno** agrega tarjeta, los tres muestran "El precio tiene que ser mayor que cero" y el formulario sigue abierto |
 | **CA-20** | **OK.** Vacía, `1200` y `2028` no agregan, con el mensaje "La cosecha tiene que ser un numero entero entre 1850 y 2027"; `2027` y `1850` **sí** agregan |
 | **CA-22** | **OK.** Tras recargar siguen las 5 tarjetas y el indicador del carrito en `1` |
-| **CA-23** | **OK.** Basura en ambas claves → arranca con 2 vinos y carrito vacío, `#root` con contenido, sin pantalla en blanco |
+| **CA-23** | **OK.** Basura en ambas claves → arranca con 2 productos y carrito vacío, `#root` con contenido, sin pantalla en blanco |
 | **CA-21** | **No ejecutado**, según lo indicado: depende del firewall. `npm run dev` sí publica `http://192.168.1.9:5173/`, o sea que `server.host: true` funciona |
 | **Paso 0 repetido** | **OK.** 2 tarjetas, indicador ausente, `vinoteca_cart = "[]"` |
 
@@ -516,7 +516,7 @@ El MCP de **chrome-devtools no estuvo disponible** para esta sesión (el catálo
 | `info` | aviso de React DevTools | `react-dom` |
 | `error` | `Failed to load resource: 404 /favicon.ico` | **el pedido automático de favicon del navegador** *(registro literal de esta sesión: una remedición posterior no lo reprodujo)* |
 
-En esta sesión el `404` de `/favicon.ico` se registró y **no se contó como error de la app**: la explicación de entonces era que `index.html` no declara `<link rel='icon'>` y no hay carpeta `public/`, así que Chrome lo pedía solo y Vite respondía 404. Aparece en el dominio `Log` de CDP, que es más verboso que la consola de DevTools; **no se pudo contrastar contra la línea base de T4** (3 mensajes) porque esa sesión usó el MCP de chrome-devtools, que no estuvo disponible acá. **Esa atribución al pedido automático del navegador queda como observación no confirmada, no como explicación**: una remedición posterior, con `Network.clearBrowserCache`, `setCacheDisabled: true` y perfil limpio, **no reprodujo** el `404` —Chrome no llegó a pedir `/favicon.ico` ni en carga fría ni en caliente—, así que no cabe afirmar que esa sea la causa ni que agregar un favicon sea la corrección. Lo que sí era permanente en esas cargas era un `loadingFailed: net::ERR_BLOCKED_BY_ORB` por la imagen de `src/datos/vino.ts:28`, cuya URL respondía `404` en el origen y que no produce entrada de consola. **Esa URL se reemplazó el 2026-10-07**, con la spec ya cerrada y por autorización del usuario, así que el `ORB` ya no se reproduce. Ver `spec.md` §12.6.
+En esta sesión el `404` de `/favicon.ico` se registró y **no se contó como error de la app**: la explicación de entonces era que `index.html` no declara `<link rel='icon'>` y no hay carpeta `public/`, así que Chrome lo pedía solo y Vite respondía 404. Aparece en el dominio `Log` de CDP, que es más verboso que la consola de DevTools; **no se pudo contrastar contra la línea base de T4** (3 mensajes) porque esa sesión usó el MCP de chrome-devtools, que no estuvo disponible acá. **Esa atribución al pedido automático del navegador queda como observación no confirmada, no como explicación**: una remedición posterior, con `Network.clearBrowserCache`, `setCacheDisabled: true` y perfil limpio, **no reprodujo** el `404` —Chrome no llegó a pedir `/favicon.ico` ni en carga fría ni en caliente—, así que no cabe afirmar que esa sea la causa ni que agregar un favicon sea la corrección. Lo que sí era permanente en esas cargas era un `loadingFailed: net::ERR_BLOCKED_BY_ORB` por la imagen de `src/datos/productos.ts:28`, cuya URL respondía `404` en el origen y que no produce entrada de consola. **Esa URL se reemplazó el 2026-10-07**, con la spec ya cerrada y por autorización del usuario, así que el `ORB` ya no se reproduce. Ver `spec.md` §12.6.
 
 ---
 
@@ -656,7 +656,7 @@ El MCP de **chrome-devtools no estuvo disponible** para esta sesión (el catálo
 | **CA-29** | **OK.** A 1280 px: marca, buscador, "+ Cargar Vino" e ícono de carrito visibles y **en el mismo eje**, y el **contador visible con `5`** cuando hay unidades. Barra de una fila, 80 px |
 | **CA-31** | **OK.** A 375 px: borde inferior de la barra en `114`, borde superior del `<h2>` en `216` → **102 px de holgura**. A 1280 px: `65` contra `279` → **214 px**. Sin solaparse en ninguno |
 | **RNF-09** | **OK.** Titular a **36 px** con contraste **19,16:1**; botón "Explorar Cava" a **16 px** con contraste **12,92:1**. Los dos por encima de los 16 px y 4,5:1 de §1.1, y ninguno tapado por la barra |
-| **Paso 0 repetido** | **OK.** 2 vinos, `vinoteca_cart = "[]"`, 2 tarjetas, indicador del carrito ausente |
+| **Paso 0 repetido** | **OK.** 2 productos, `vinoteca_cart = "[]"`, 2 tarjetas, indicador del carrito ausente |
 
 Las diez acciones de CA-28, todas a 375 px sin cambiar el ancho:
 
@@ -665,7 +665,7 @@ Las diez acciones de CA-28, todas a 375 px sin cambiar el ancho:
 | 1 | navegar el catálogo | 2 tarjetas, ambas con nombre |
 | 2 | filtrar "Blanco" | 1 tarjeta: Chardonnay White Bones |
 | 3 | escribir `chardonnay` | 1 tarjeta: Chardonnay White Bones |
-| 4 | agregar un vino | indicador `1`, `vinoteca_cart` con 1 línea |
+| 4 | agregar un producto | indicador `1`, `vinoteca_cart` con 1 línea |
 | 5 | abrir el carrito | panel montado, línea visible |
 | 6 | subir con `+` | `$45.000` → `$90.000`, total `$90.000` |
 | 7 | "Eliminar" | carrito vacío, **sin** bloque de total ni botón finalizar |
@@ -704,18 +704,18 @@ Crear `src/components/vista_rapida_producto.tsx` y conectarlo en `App.tsx`.
 
 ```tsx
 interface VistaRapidaProductoProps {
-  wine: Wine
+  wine: Producto
   onClose: () => void
 }
 ```
 
-Un solo vino a la vez, porque `App.tsx` guarda `vinoSeleccionado: Wine | null`. No hace falta un array.
+Un solo producto a la vez, porque `App.tsx` guarda `vinoSeleccionado: Producto | null`. No hace falta un array.
 
 **Estructura:**
 
 - Overlay de fondo oscurecido con `onClick={onClose}` (RF-37).
 - Panel centrado con `motion.div`.
-- **Imagen** del vino a mayor tamaño (RF-35). `alt={wine.name}`, que es lo que ya hace `ProductCard`.
+- **Imagen** del producto a mayor tamaño (RF-35). `alt={wine.name}`, que es lo que ya hace `ProductCard`.
 - Datos: nombre, bodega, varietal, categoría, cosecha, precio. El precio con el mismo `Intl.NumberFormat('es-AR', { currency: 'ARS', maximumFractionDigits: 0 })` que usa `carta_de_productos.tsx`.
 - **Bloque de notas de cata, solo si `wine.tastingNotes !== undefined`** (D-N).
 - **Bloque de maridaje, solo si `wine.foodPairing !== undefined`** (D-N).
@@ -736,10 +736,10 @@ En navegador:
 
 | Qué | CA |
 |---|---|
-| Click en la imagen o el nombre del primer vino: modal con imagen ampliada, nombre, bodega, categoría, cosecha, precio, notas de cata y maridaje. **Los dos vinos del catálogo inicial tienen ambos datos.** | CA-33 |
-| Cargar un vino nuevo (sin notas ni maridaje) y abrir su vista: imagen y datos, y **ningún** bloque de notas ni de maridaje, tampoco vacío | CA-34 |
+| Click en la imagen o el nombre del primer producto: modal con imagen ampliada, nombre, bodega, categoría, cosecha, precio, notas de cata y maridaje. **Los dos productos del catálogo inicial tienen ambos datos.** | CA-33 |
+| Cargar un producto nuevo (sin notas ni maridaje) y abrir su vista: imagen y datos, y **ningún** bloque de notas ni de maridaje, tampoco vacío | CA-34 |
 | Filtrar "Blanco", abrir la vista, cerrarla con el control de cierre: el modal desaparece y el catálogo **sigue filtrado en "Blanco"** con la búsqueda intacta. Repetir cerrando con el fondo | CA-35 |
-| Con el modal abierto, la imagen del vino se solicita desde `images.unsplash.com` (pestaña Network) | RNF-06 |
+| Con el modal abierto, la imagen del producto se solicita desde `images.unsplash.com` (pestaña Network) | RNF-06 |
 | Cerrar con la tecla Escape | buena práctica, no exigida por ningún RF |
 
 Ahora sí se puede verificar **CA-28** completo, porque la undécima acción de §1.1 es abrir y cerrar la vista rápida.
@@ -750,7 +750,7 @@ Ahora sí se puede verificar **CA-28** completo, porque la undécima acción de 
 
 - [x] `src/components/vista_rapida_producto.tsx` existe y exporta el componente
 - [x] `App.tsx` lo monta (siempre; ver nota 1)
-- [x] Los bloques de notas y maridaje aparecen solo cuando el vino los tiene
+- [x] Los bloques de notas y maridaje aparecen solo cuando el producto los tiene
 - [x] Hay un control de cierre identificable con `aria-label`, además del fondo
 - [x] Cerrar conserva el filtro por categoría y el texto de búsqueda
 - [x] El modal entra y sale con `AnimatePresence` (salida **animada**: ver nota 1)
@@ -759,28 +759,28 @@ Ahora sí se puede verificar **CA-28** completo, porque la undécima acción de 
 
 ### Notas de implementación (2026-10-06)
 
-**1. `wine` es `Wine | null`, y `App.tsx` lo monta siempre. Desvío del pseudocódigo de D-G, deliberado y necesario.**
+**1. `wine` es `Producto | null`, y `App.tsx` lo monta siempre. Desvío del pseudocódigo de D-G, deliberado y necesario.**
 
-D-G y el "Hecho cuando" de arriba piden `{vinoSeleccionado !== null && <VistaRapidaProducto wine={vinoSeleccionado} ... />}`. **Eso es incompatible con una animación de salida.** Si el componente se monta solo cuando hay vino, al cerrar React lo desmonta de golpe: `AnimatePresence` alcanza a registrar la salida, pero nunca llega a correrla, y el requisito de D-N ("paneles y modales siempre acompañados de animaciones de entrada/salida", constitución §3) queda sin cumplir. La composición correcta es la inversa: **el componente se monta siempre y es su `AnimatePresence` interno el que decide si hay algo que mostrar**, con `wine !== null` como condición de los hijos.
+D-G y el "Hecho cuando" de arriba piden `{vinoSeleccionado !== null && <VistaRapidaProducto wine={vinoSeleccionado} ... />}`. **Eso es incompatible con una animación de salida.** Si el componente se monta solo cuando hay producto, al cerrar React lo desmonta de golpe: `AnimatePresence` alcanza a registrar la salida, pero nunca llega a correrla, y el requisito de D-N ("paneles y modales siempre acompañados de animaciones de entrada/salida", constitución §3) queda sin cumplir. La composición correcta es la inversa: **el componente se monta siempre y es su `AnimatePresence` interno el que decide si hay algo que mostrar**, con `wine !== null` como condición de los hijos.
 
 Consecuencias, las dos son intencionales:
 
-- La interfaz queda `wine: Wine | null`, no `wine: Wine`. Con `Wine` no hay forma de que el componente siga montado en el render siguiente al del cierre: el padre solo podría dejar de renderizarlo, que es el caso quewantamos evitar.
+- La interfaz queda `wine: Producto | null`, no `wine: Producto`. Con `Producto` no hay forma de que el componente siga montado en el render siguiente al del cierre: el padre solo podría dejar de renderizarlo, que es el caso quewantamos evitar.
 - El retorno temprano que sugería el enunciado **no se puso**, y esa es la parte que hay que registrar: un `if (wine === null) return null` al principio del componente tiene exactamente el mismo problema que el montaje condicional, porque `AnimatePresence` desaparecería del árbol antes de animar la salida. El estrechamiento de tipo se hace en el JSX (`{wine !== null && (...)}`), que `strict` estrecha sin narrowing explicito.
 
 El componente es dueño de su `AnimatePresence`, igual que `CartDrawer` y `ProductForm`. Ponerlo en `App.tsx` habría funcionado, pero entonces la animación viviría fuera del componente que anima.
 
 **2. Sin `layout` en ningún elemento, por el hallazgo de T6.** T6 aisló que la proyección de layout frena el unmount cuando un hijo sale del árbol. Los dos bloques condicionales de D-N son exactamente un hijo que sale del árbol, así que la precaución aplica acá también: **no se puso `layout` en ningún elemento del modal**, ni por costumbre ni por simetría con `ProductCard`. No hacía falta para nada de lo que el componente muestra.
 
-**3. `role='dialog'` y `aria-modal='true'` no los pedía ningún RF.** Es el único agregado sobre el enunciado. Un modal sin rol de diálogo no es reconocible como modal por tecnología asistiva, y el enunciado ya llama "modal" a este componente y exige un control de cierre **identificable** (RF-37). El `aria-label` del panel lleva el nombre del vino, así que `getByRole('dialog')` y `getByLabelText` lo encuentran en los tests de T9.
+**3. `role='dialog'` y `aria-modal='true'` no los pedía ningún RF.** Es el único agregado sobre el enunciado. Un modal sin rol de diálogo no es reconocible como modal por tecnología asistiva, y el enunciado ya llama "modal" a este componente y exige un control de cierre **identificable** (RF-37). El `aria-label` del panel lleva el nombre del producto, así que `getByRole('dialog')` y `getByLabelText` lo encuentran en los tests de T9.
 
-**4. Escape se agregó.** El enunciado lo lista en la tabla de verificación como "buena práctica, no exigida por ningún RF", así que se implementó: listener de `keydown` en `window`, montado **solo mientras hay vino abierto** y con cleanup en el `return`, igual que el listener de `resize` de T3. Sin vino abierto no hay listener, así que no puede quedar ninguno acumulado.
+**4. Escape se agregó.** El enunciado lo lista en la tabla de verificación como "buena práctica, no exigida por ningún RF", así que se implementó: listener de `keydown` en `window`, montado **solo mientras hay producto abierto** y con cleanup en el `return`, igual que el listener de `resize` de T3. Sin producto abierto no hay listener, así que no puede quedar ninguno acumulado.
 
 **5. La imagen es más grande que la de la tarjeta en todos los anchos, y para lograrlo hizo falta `h-72`.** RF-35 pide la imagen "a mayor tamaño". En `md` en adelante la columna de la rejilla ya agranda la imagen (medido: 383×350 contra 285×256 de la tarjeta). **A una columna, que es el caso de móvil, la tarjeta ya ocupa todo el ancho disponible**, así que la única dimensión que queda para hacer la imagen mayor es la altura: con `h-64` las dos medían 342×256, idénticas. Con `h-72` la del modal mide 342×288 contra 326×256 de la tarjeta, o sea estrictamente mayor en área en los tres anchos medidos.
 
 **6. Sin scroll horizontal en ningún ancho, y el panel entra entero a 375×812.** Panel de 343 px con márgenes de 16 px a cada lado (`left: 16`, `right: 359` sobre 375). A 375×812 no hay scroll vertical dentro del overlay. A 375×720 el panel mide 682 px y **entra entero igual** (de 19 a 701 sobre 720); lo que desborda son los `my-8` de los márgenes, 26 px, no el contenido.
 
-**7. Lo que el modal NO muestra: la descripción.** El enunciado enumera los seis datos ("nombre, bodega, varietal, categoría, cosecha, precio") y `description` no está entre ellos, aunque `Wine` la tiene y la tarjeta ya la muestra. No se agregó para no inventar contenido fuera de la lista; si el revisor espera verla, es una línea y no cambia ningún RF.
+**7. Lo que el modal NO muestra: la descripción.** El enunciado enumera los seis datos ("nombre, bodega, varietal, categoría, cosecha, precio") y `description` no está entre ellos, aunque `Producto` la tiene y la tarjeta ya la muestra. No se agregó para no inventar contenido fuera de la lista; si el revisor espera verla, es una línea y no cambia ningún RF.
 
 ### Verificación en navegador (2026-10-06)
 
@@ -788,12 +788,12 @@ El MCP de **chrome-devtools no estuvo disponible** para esta sesión (el catálo
 
 | CA | Resultado |
 |---|---|
-| **CA-33** | **OK.** Click en la imagen del primer vino: diálogo con `aria-label='Vista rapida de Gran Reserva Malbec'`, imagen de 383×350 con `alt='Gran Reserva Malbec'`, nombre, "BODEGA CATENA ZAPATA • MALBEC", badge "TINTO", "Cosecha 2020", **$ 45.000**, "NOTAS DE CATA" y "MARIDAJE SUGERIDO" con sus textos. Los dos vinos del catálogo inicial tienen ambos datos |
+| **CA-33** | **OK.** Click en la imagen del primer producto: diálogo con `aria-label='Vista rapida de Gran Reserva Malbec'`, imagen de 383×350 con `alt='Gran Reserva Malbec'`, nombre, "BODEGA CATENA ZAPATA • MALBEC", badge "TINTO", "Cosecha 2020", **$ 45.000**, "NOTAS DE CATA" y "MARIDAJE SUGERIDO" con sus textos. Los dos productos del catálogo inicial tienen ambos datos |
 | **CA-34** | **OK.** Vino nuevo cargado por el formulario ("Vino Sin Notas", sin notas ni maridaje en el objeto guardado): diálogo con imagen, nombre, bodega, varietal, categoría, cosecha y **$ 33.000**, y **0 `<section>`**, **0 `<h3>`**, y el texto "notas de cata" y "maridaje" **no aparece** en ningún lado. Tampoco vacío: no se renderiza |
 | **CA-35** | **OK.** Filtrar "Blanco" → 1 tarjeta (Chardonnay White Bones). Abrir la vista y cerrar con el ✕: diálogo 0, overlay 0, **sigue 1 tarjeta** y el botón "Blanco" con su clase activa. Escribir `chardonnay` y cerrar por el fondo: diálogo 0, overlay 0, sigue 1 tarjeta, **búsqueda intacta** (`'chardonnay'`) y categoría "Blanco" activa. Cerrar por fondo y por control producen el mismo resultado |
 | **RNF-06** | **OK.** Con la caché del navegador vaciada justo antes de abrir el modal, la única petición de imagen que sale es `https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=800`, tipo `Image`, y la imagen carga (`naturalWidth 800`, `complete: true`). Ningún otro pedido |
 | **Escape** | **OK.** `KeyboardEvent('Escape')` sobre `window`: 1 diálogo abierto → 0, overlay 0 |
-| **Paso 0 repetido** | **OK.** 2 vinos en `vinoteca_wines`, `vinoteca_cart = "[]"`, 2 tarjetas, sin indicador de carrito, sin diálogo y sin overlay |
+| **Paso 0 repetido** | **OK.** 2 productos en `vinoteca_wines`, `vinoteca_cart = "[]"`, 2 tarjetas, sin indicador de carrito, sin diálogo y sin overlay |
 
 **El cierre desmonta de verdad, comprobado en el DOM** (el riesgo exacto que T6、突然 encontró en el carrito):
 
@@ -814,7 +814,7 @@ Que el nodo siga montado después del click y haya **2 animaciones de WAAPI corr
 | 1 | navegar el catálogo | 2 tarjetas, ambas con nombre |
 | 2 | filtrar "Blanco" | 1 tarjeta: Chardonnay White Bones |
 | 3 | escribir `chardonnay` | 1 tarjeta: Chardonnay White Bones, `input.value = 'chardonnay'` |
-| 4 | agregar un vino | 1 línea en `vinoteca_cart`, indicador `1` |
+| 4 | agregar un producto | 1 línea en `vinoteca_cart`, indicador `1` |
 | 5 | abrir el carrito | `aside = 1`, 1 línea visible |
 | 6 | subir con `+` | 2 items, línea **$ 76.000**, total **$ 76.000** |
 | 7 | "Eliminar" | carrito vacío, sin bloque de total ni botón finalizar |
@@ -856,7 +856,7 @@ Crear `src/components/pie_de_pagina.tsx` y montarlo en `App.tsx`, después de `<
 
 **No lleva `AnimatePresence`**: no es panel ni modal (D-O).
 
-**No inventar datos de contacto reales.** La dirección, los horarios y las cuentas de redes son contenido de ejemplo, igual que los dos vinos de `src/datos/vino.ts`. Si el usuario quiere datos reales, es una tarea aparte.
+**No inventar datos de contacto reales.** La dirección, los horarios y las cuentas de redes son contenido de ejemplo, igual que los dos productos de `src/datos/productos.ts`. Si el usuario quiere datos reales, es una tarea aparte.
 
 ### Verificación
 
@@ -882,7 +882,7 @@ Y recargar a 375 px y al final de la página: el pie no produce scroll horizonta
 
 Sin desvíos de `task.md` T8 ni de `plan.md` D-O: `<footer>` semántico, las cuatro secciones, iconos de `lucide-react`, sin `AnimatePresence`, colores por clases de Tailwind y **cero hexadecimales** en el archivo (CA-37).
 
-**Los datos de contacto son de ejemplo**, como los dos vinos de `src/datos/vino.ts`: "Avenida del Puerto 1280, Bodega Norte, Barrio Histórico, Ciudad de Mendoza", los tres horarios y las tres cuentas (`@cavayco`). Los enlaces externos llevan `target='_blank' rel='noreferrer'`.
+**Los datos de contacto son de ejemplo**, como los dos productos de `src/datos/productos.ts`: "Avenida del Puerto 1280, Bodega Norte, Barrio Histórico, Ciudad de Mendoza", los tres horarios y las tres cuentas (`@cavayco`). Los enlaces externos llevan `target='_blank' rel='noreferrer'`.
 
 **Cuatro decisiones que el enunciado deja abiertas:**
 
@@ -1013,7 +1013,7 @@ Crear **dos archivos de test nuevos**. Los nombres siguen el patrón del repo, q
 
 **Por qué dos y no uno.** Los de persistencia necesitan **preparar** `localStorage` con datos válidos o deliberadamente corruptos **antes** de montar, y eso no tiene sentido en un archivo de carrito. Un archivo, un `beforeEach`.
 
-**No se toca ningún archivo de test preexistente.** Los 46 tests de `test/validadores.test.ts` y `test/integridad_datos_vino.test.ts` quedan como están. RNF-05.
+**No se toca ningún archivo de test preexistente.** Los 46 tests de `test/validadores.test.ts` y `test/integridad_datos_producto.test.ts` quedan como están. RNF-05.
 
 ### El andamiaje, en el orden en que se escribe
 
@@ -1089,8 +1089,8 @@ En `beforeAll` el primer test que escribe contamina a todos los siguientes, y el
 | **RF-43** | Poner una línea en 1 y pulsar `−` → desaparece. Con cantidad 2, dos pulsaciones de `−` → desaparece. **Nunca** hay una línea con 0 ni negativa | CA-43 |
 | **RF-44** | Con dos líneas, "Eliminar" en una → esa línea desaparece y el total pasa a ser el de la otra | CA-44 |
 | **RF-45** | Con contenido, "Finalizar Pedido" → mensaje de pedido confirmado, carrito vacío, y `localStorage.getItem('vinoteca_cart')` es un array vacío. Con carrito vacío, no cambia nada | CA-45 |
-| **RF-46** | Agregar vino y artículo → las dos claves tienen lo esperado. **Desmontar, volver a montar** → el DOM muestra el vino y la línea | CA-46 |
-| **RF-47** | Texto no-JSON en ambas claves → monta sin lanzar, con 2 vinos iniciales y carrito vacío | CA-47 |
+| **RF-46** | Agregar producto y artículo → las dos claves tienen lo esperado. **Desmontar, volver a montar** → el DOM muestra el producto y la línea | CA-46 |
+| **RF-47** | Texto no-JSON en ambas claves → monta sin lanzar, con 2 productos iniciales y carrito vacío | CA-47 |
 | **RF-48** | Escribir en el buscador y elegir categoría, abrir la vista rápida, cerrarla → el texto sigue y la categoría sigue activa | CA-48 |
 | **RF-49** | Con cantidades 2 y 3, el número junto al ícono es 5. Al vaciar, ese nodo **no existe** en el DOM | CA-49 |
 
@@ -1138,7 +1138,7 @@ Es la suposición menos verificada de todo el plan, y está anotada en el `plan.
 
 **Un `WARNING: Multiple instances of Three.js being imported.` en la salida de los dos archivos nuevos.** Es ruido de `stderr` a nivel `warn`, no de `error`, y **no** es ninguno de los dos mensajes que CA-40 prohíbe. Viene de que `hero.tsx` importa `herocanvas3d.tsx`, que a su vez importa `three`, así que la librería se carga aunque el canvas no se renderice. Evitarlo exigiría `vi.mock` o tocar `src/`, y los dos están descartados.
 
-**La suite no es vacía: se comprobó rompiendo el código a propósito y deshaciendo el cambio.** Con `agregarAlCarrito` sin la rama de "ya existe", `actualizarCantidad` sin el `.filter(item => item.quantity > 0)` y `unidades` como `carrito.length`, **8 de los 13 tests de carrito fallen**: los de RF-41, RF-42, RF-43, RF-44 y RF-49. `App.tsx` quedó restaurado byte a byte después (143 líneas, idénticas). La primera versión de la prueba de suma del contador **no** detectaba el `carrito.length` porque con una unidad por vino el número de líneas coincide con la suma de cantidades; se corrigió para que las cantidades diverjan de propósito (dos líneas en 2 y 2, contador 4), que es lo que distingue las dos cosas.
+**La suite no es vacía: se comprobó rompiendo el código a propósito y deshaciendo el cambio.** Con `agregarAlCarrito` sin la rama de "ya existe", `actualizarCantidad` sin el `.filter(item => item.quantity > 0)` y `unidades` como `carrito.length`, **8 de los 13 tests de carrito fallen**: los de RF-41, RF-42, RF-43, RF-44 y RF-49. `App.tsx` quedó restaurado byte a byte después (143 líneas, idénticas). La primera versión de la prueba de suma del contador **no** detectaba el `carrito.length` porque con una unidad por producto el número de líneas coincide con la suma de cantidades; se corrigió para que las cantidades diverjan de propósito (dos líneas en 2 y 2, contador 4), que es lo que distingue las dos cosas.
 
 **Un error propio de un test, no de la app, que conviene registrar.** La primera versión de esa prueba pulsaba `pulsarPorTexto(montaje, '+')` sin índice y pulsaba el `+` de la línea 0 (2 → 3), mientras el comentario decía que iba a subir la línea 1. El rojo que produjo era correcto y el comentario estaba mal. Se pasó el índice explícito.
 
@@ -1212,7 +1212,7 @@ git diff package.json package-lock.json
 
 Sin cambios. → **CA-39**
 
-**8. Los tests preexistentes no fueron tocados.** Ninguno salvo la ruta de un import, en T2. Comprobarlo leyendo `test/validadores.test.ts` y `test/integridad_datos_vino.test.ts`: los casos son los mismos. Y que **no** aparezca `@testing-library/*` en las dependencias. → parte de **CA-39** y de **RNF-05**
+**8. Los tests preexistentes no fueron tocados.** Ninguno salvo la ruta de un import, en T2. Comprobarlo leyendo `test/validadores.test.ts` y `test/integridad_datos_producto.test.ts`: los casos son los mismos. Y que **no** aparezca `@testing-library/*` en las dependencias. → parte de **CA-39** y de **RNF-05**
 
 **9. UTF-8 sin BOM.** Inspección manual del BOM de cada archivo creado o modificado, **incluidos los dos archivos de test nuevos**. **No hay comando de proyecto que lo verifique** (`herramientas/` está vacía), así que es por inspección. → RNF-08, y el tercer ítem pendiente de §12.3
 
@@ -1253,18 +1253,18 @@ En la corrida original eran **38 `OK` y 1 `FALLA` (CA-36)**, y por eso la tarea 
 | CA-08 | `OK` | `<h2>` del catálogo: `ui-serif, Georgia, Cambria, "Times New Roman", Times, serif` (termina en `serif`); `<body>`: `ui-sans-serif, system-ui, sans-serif, …` (termina en `sans-serif`); **0** peticiones a `fonts.googleapis`, `fonts.gstatic` o `use.typekit` |
 | CA-09 | `OK` | `grep -rn "\bany\b"`: **0** en `src/` y en `test/`, y 0 en `package.json`, `tsconfig.json`, `vite.config.ts`, `vitest.config.ts`, `tailwind.config.js`, `postcss.config.js`. Los 4 únicos aciertos del repo están en `package-lock.json` y son el nombre del paquete npm `any-promise`, no el tipo `any` |
 | CA-10 | `OK` | `const x: string = 12345` en `test/andamiaje.ts` → `test/andamiaje.ts(269,7): error TS2322`, exit **2**. `test/` está dentro del programa de TypeScript |
-| CA-11 | `OK` | `npm test` exit **0**: **68 tests en 4 archivos**. Los 46 preexistentes en verde: 26 en `validadores.test.ts` + 20 en `integridad_datos_vino.test.ts`. Los 22 nuevos en verde: 13 + 9. Ninguno omitido ni marcado como esperado-fallido |
+| CA-11 | `OK` | `npm test` exit **0**: **68 tests en 4 archivos**. Los 46 preexistentes en verde: 26 en `validadores.test.ts` + 20 en `integridad_datos_producto.test.ts`. Los 22 nuevos en verde: 13 + 9. Ninguno omitido ni marcado como esperado-fallido |
 | CA-12 | `OK` | Almacenamiento vacío: **2** tarjetas; filtro **Blanco** → **1**; **Todos** → **2** |
 | CA-13 | `OK` | `chardonnay` → 1; `CHARDONNAY` → 1; `" chardonnay "` → 1; `zzzz` → 0 y aparece "No se encontraron etiquetas" |
 | CA-14 | `OK` | Dos "Agregar" → contador **2**, **1 sola línea** en el panel, `$ 90.000` |
 | CA-15 | `OK` | Contador 2 y cantidad 2 tras dos "Agregar"; `+` sube a 2 con el total presente; `−` deja la cantidad en **1**; `−` en 1 **elimina la línea** y el carrito queda vacío con el contador **desaparecido** (`null`); "Eliminar" también vacía; con carrito vacío se ve "El carrito está vacío" y **no** hay bloque de total ni botón de finalizar |
 | CA-16 | `OK` | Con el carrito abierto, el **✕** lo cierra y el **fondo oscurecido** también; en los dos casos el panel desaparece del DOM y el fondo sigue interactivo (el contador sube a 2 al pulsar "Agregar" con el carrito cerrado) |
 | CA-17 | `OK` | "Pedido confirmado. Gracias por tu compra."; contador `null`; panel cerrado; `vinoteca_cart` pasa a `"[]"`; el contexto de la página sigue vivo, **sin recarga** |
-| CA-18 | `OK` | Envío válido → **3 tarjetas**, **0 formularios en el DOM** (el formulario se cerró), y el vino queda en `vinoteca_wines` |
+| CA-18 | `OK` | Envío válido → **3 tarjetas**, **0 formularios en el DOM** (el formulario se cerró), y el producto queda en `vinoteca_wines` |
 | CA-19 | `OK` | Precio `0`, `-100` y vacío: los **tres** muestran "El precio tiene que ser mayor que cero" y las tarjetas siguen en 3 |
 | CA-20 | `OK` | Cosecha vacía, `1200` y `2028` → rechazadas, siguen 3 tarjetas, con el mensaje que nombra la cosecha. `2027` → **4 tarjetas** (aceptada). `1850` → **5 tarjetas** (aceptada). Año en curso 2026 |
-| CA-21 | `OK` | **Ejecutado y aprobado**, contra lo que T5 había dejado en `no ejecutable`. Desde `http://192.168.1.9:5173/`: `isSecureContext = false` y `typeof crypto.randomUUID = "undefined"`, o sea que se cumple la precondición de CE-10. El envío válido lleva las tarjetas de 2 a **3**, el formulario queda en **0** en el DOM, el identificador generado es **`vino-muy9uuzk-ttc765dc`** (el alternativo de RF-31, no un UUID) y quedan **0 errores de consola** y **0 peticiones fallidas** |
-| CA-22 | `OK` | Antes de recargar: 5 vinos y 1 línea de carrito. Tras recargar: **5 tarjetas** y contador **1**. Los nombres de las tarjetas se listan uno por uno |
+| CA-21 | `OK` | **Ejecutado y aprobado**, contra lo que T5 había dejado en `no ejecutable`. Desde `http://192.168.1.9:5173/`: `isSecureContext = false` y `typeof crypto.randomUUID = "undefined"`, o sea que se cumple la precondición de CE-10. El envío válido lleva las tarjetas de 2 a **3**, el formulario queda en **0** en el DOM, el identificador generado es **`producto-muy9uuzk-ttc765dc`** (el alternativo de RF-31, no un UUID) y quedan **0 errores de consola** y **0 peticiones fallidas** |
+| CA-22 | `OK` | Antes de recargar: 5 productos y 1 línea de carrito. Tras recargar: **5 tarjetas** y contador **1**. Los nombres de las tarjetas se listan uno por uno |
 | CA-23 | `OK` | Basura en `vinoteca_wines` y `vinoteca_cart` → arranca con **2** tarjetas (el catálogo inicial) y carrito vacío, y `#root` **no** queda vacío (sin pantalla en blanco). Paso 0 repetido después: 2 tarjetas y contador `null` |
 | CA-24 | `OK` | Con `*images.unsplash.com*` bloqueado **y la caché vacía**, las dos imágenes quedan con `naturalWidth = 0` (no cargaron) y la tarjeta sigue mostrando los seis datos: `TINTO`, `Cosecha 2020` / `2021`, `BODEGA CATENA ZAPATA • MALBEC`, el nombre, el precio y "AGREGAR". "Agregar" sigue funcionando: el contador sube |
 | CA-25 | `OK` | A 375 px: **1 columna**; `scrollWidth = 375 = clientWidth`, y `body.scrollWidth = 375`. Cero scroll horizontal |
@@ -1276,7 +1276,7 @@ En la corrida original eran **38 `OK` y 1 `FALLA` (CA-36)**, y por eso la tarea 
 | CA-31 | `OK` | Tras pulsar "Explorar Cava": `<h2>` "Catálogo de Vinos" con `top = 200`, `bottom = 248`, y la barra fija termina en `65`. Queda **135 px por debajo** de la barra: visible en el viewport y **sin solaparse** |
 | CA-32 | `OK` | Las cuatro secciones del `<footer>` están y son visibles: **Horarios**, **Ubicación**, **Redes** y **Aviso legal**; el aviso +18 está presente y hay 3 enlaces de redes |
 | CA-33 | `OK` | `role='dialog'` con `aria-modal='true'`; imagen ampliada de **383×350**; nombre; "BODEGA CATENA ZAPATA • MALBEC"; `TINTO`; "Cosecha 2020"; `$ 45.000`; "NOTAS DE CATA" con su texto; "MARIDAJE SUGERIDO" con su texto |
-| CA-34 | `OK` | Un vino nuevo sin notas ni maridaje: se ven imagen y datos, y **no** aparece el bloque de notas **ni** el de maridaje, tampoco vacíos |
+| CA-34 | `OK` | Un producto nuevo sin notas ni maridaje: se ven imagen y datos, y **no** aparece el bloque de notas **ni** el de maridaje, tampoco vacíos |
 | CA-35 | `OK` | Filtrando en "Blanco" y buscando "chardonnay", abrir y cerrar la vista rápida **con el control de cierre** y **con el fondo** deja las dos veces: diálogo fuera del DOM, **1 tarjeta**, categoría "Blanco" activa y búsqueda "chardonnay" intacta |
 | CA-36 | `OK` | **Con el criterio revisado el 2026-10-07**: el patrón `;$` se verifica **solo en `.ts` y `.tsx`**, y da **0** en los 13 archivos `.ts`/`.tsx` de `src/`. `src/index.css` **queda excluido** por decisión del usuario, así que sus 7 coincidencias no computan. Además, sin `.js` ni `.jsx` bajo `src/` (11 `.tsx`, 3 `.ts`, 1 `.css`). Con el criterio anterior era `FALLA`: ver abajo |
 | CA-37 | `OK` | En los 23 archivos creados o modificados por la spec: `src/index.css` tiene **1** hexadecimal, `#121212`; `MEMORY.md` tiene **5** (`#121212`, `#5B132B`, `#800020`, `#D4AF37`, `#FDFBF7`), y son la transcripción de la paleta en el relato de la bitácora. Los seis son **valores de `tailwind.config.js`** (`#121212` es `charcoal.900`, `#5B132B` es `wine.700`, `#800020` es `wine.500`, `#D4AF37` es `gold.500`, `#FDFBF7` es `cream.100`). Ninguno amplía la paleta |
@@ -1338,7 +1338,7 @@ La verificación real es por fecha de modificación, y es concluyente:
 | **`test/orquestador_carrito.test.ts`** | `69 6d 70 6f` (`impo`) | no |
 | **`test/orquestador_persistencia.test.ts`** | `69 6d 70 6f` (`impo`) | no |
 | `test/validadores.test.ts` | `69 6d 70 6f` (`impo`) | no |
-| `test/integridad_datos_vino.test.ts` | `69 6d 70 6f` (`impo`) | no |
+| `test/integridad_datos_producto.test.ts` | `69 6d 70 6f` (`impo`) | no |
 | `AGENTS.md` | `23 20 41 47` (`# AG`) | no |
 | `MEMORY.md` | `23 20 4d 45` (`# ME`) | no |
 
@@ -1348,7 +1348,7 @@ Los dos archivos que T11 tocó además se comprobaron aparte: `eslint.config.js`
 
 | Ítem | Estado en T11 |
 |---|---|
-| Línea base de avisos de consola para CA-06 | **Se estableció por fin.** En tres cargas seguidas: **0 errores y 0 avisos**; lo único que aparece es `debug: 2` e `info: 1`, que son la conexión del cliente de HMR de Vite. **La observación del `404` de `/favicon.ico` no se pudo reproducir, así que no es una observación vigente.** Se vio en las sesiones de T5 y de T11, en la primera carga con caché fría, pero una remedición posterior con `Network.clearBrowserCache`, `setCacheDisabled: true` y perfil limpio **no lo reproduce**: Chrome no llega a pedir `/favicon.ico` ni en carga fría ni en caliente, y en la traza de red no hay ninguna petición que mencione `favicon`. **Lo que sí era permanente en esas mismas cargas era otra cosa:** había un `loadingFailed: net::ERR_BLOCKED_BY_ORB` que no desaparecía nunca, y no venía del favicon sino de que **la imagen del segundo vino del catálogo inicial no cargaba jamás**: la URL de `src/datos/vino.ts:28` (`photo-1558001373-7b9fbd4830e1` de Unsplash) **respondía `404` en el origen**, verificado por petición HTTP directa (`404`, `text/html`), mientras que la de la línea 15 respondía `200`. **Ese `ERR_BLOCKED_BY_ORB` no producía ninguna entrada de consola**, porque Chrome lo bloquea sin escribir nada, así que **CA-06 se cumple igual, y por la razón correcta: cero errores de consola**, y no "cero errores salvo el favicon". La redacción de CA-06 no se modificó: sigue exigiendo cero errores de nivel `error`. **La URL que respondía `404` se documentó y no se corrigió** mientras la spec estuvo abierta, porque `plan.md` §2.3 declaraba `src/datos/vino.ts` intocable para esta spec. **Resuelto el 2026-10-07**, ya cerrada la spec y por autorización explícita del usuario: la URL se reemplazó por `photo-1599113656124-b96bf21e30d3`, verificada en `200` y en `images.unsplash.com` según **RNF-06**, y ese `ORB` ya no se reproduce. **Ni CE-13 ni CA-24 lo detectaron, porque los dos prueban el bloqueo deliberado**, que da el mismo `naturalWidth = 0` que el `404` real |
+| Línea base de avisos de consola para CA-06 | **Se estableció por fin.** En tres cargas seguidas: **0 errores y 0 avisos**; lo único que aparece es `debug: 2` e `info: 1`, que son la conexión del cliente de HMR de Vite. **La observación del `404` de `/favicon.ico` no se pudo reproducir, así que no es una observación vigente.** Se vio en las sesiones de T5 y de T11, en la primera carga con caché fría, pero una remedición posterior con `Network.clearBrowserCache`, `setCacheDisabled: true` y perfil limpio **no lo reproduce**: Chrome no llega a pedir `/favicon.ico` ni en carga fría ni en caliente, y en la traza de red no hay ninguna petición que mencione `favicon`. **Lo que sí era permanente en esas mismas cargas era otra cosa:** había un `loadingFailed: net::ERR_BLOCKED_BY_ORB` que no desaparecía nunca, y no venía del favicon sino de que **la imagen del segundo producto del catálogo inicial no cargaba jamás**: la URL de `src/datos/productos.ts:28` (`photo-1558001373-7b9fbd4830e1` de Unsplash) **respondía `404` en el origen**, verificado por petición HTTP directa (`404`, `text/html`), mientras que la de la línea 15 respondía `200`. **Ese `ERR_BLOCKED_BY_ORB` no producía ninguna entrada de consola**, porque Chrome lo bloquea sin escribir nada, así que **CA-06 se cumple igual, y por la razón correcta: cero errores de consola**, y no "cero errores salvo el favicon". La redacción de CA-06 no se modificó: sigue exigiendo cero errores de nivel `error`. **La URL que respondía `404` se documentó y no se corrigió** mientras la spec estuvo abierta, porque `plan.md` §2.3 declaraba `src/datos/productos.ts` intocable para esta spec. **Resuelto el 2026-10-07**, ya cerrada la spec y por autorización explícita del usuario: la URL se reemplazó por `photo-1599113656124-b96bf21e30d3`, verificada en `200` y en `images.unsplash.com` según **RNF-06**, y ese `ORB` ya no se reproduce. **Ni CE-13 ni CA-24 lo detectaron, porque los dos prueban el bloqueo deliberado**, que da el mismo `naturalWidth = 0` que el `404` real |
 | Accesibilidad de CA-21 desde la red local | **Resuelta: el firewall no bloqueó.** CA-21 se ejecutó completo y pasó (ver la tabla). El servidor publica `http://192.168.1.9:5173/`, la app monta desde ahí y el envío del formulario funciona con `crypto.randomUUID` ausente, que es el caso que CE-10 describe. El ítem de §12.4 se puede cerrar |
 | UTF-8 sin BOM (RNF-08) | **Resuelto por inspección.** 23 de 23 archivos sin BOM, con el detalle archivo por archivo arriba |
 | Presentación sin cobertura automatizada | **Sin cambio.** Sigue siendo una frontera de `jsdom`, no una omisión. Los 39 CA de navegador los cubrieron de verdad en esta tarea |
@@ -1399,7 +1399,7 @@ De los **cuatro** ítems de §12.4 de la spec, **T11 resolvió tres**. Queda **u
 
 | Ítem | Estado |
 |---|---|
-| Línea base de avisos de consola para CA-06 | **Resuelta por T11.** No se pudo registrar antes de los cambios, así que se estableció contra la aplicación ya construida: 0 errores y 0 avisos. La observación que T11 dejó escrita junto a esa cifra, el `404` de `/favicon.ico`, **no se pudo reproducir** en una remedición posterior con caché desactivada y perfil limpio: el navegador no llega a pedirlo. **La que sí era permanente y reproducible era un `loadingFailed: net::ERR_BLOCKED_BY_ORB`** por la imagen de `src/datos/vino.ts:28`, cuya URL respondía `404` en el origen. **No producía entrada de consola**, así que CA-06 se cumple igual por la razón correcta: cero errores de consola. **Se resolvió el 2026-10-07**, con la spec ya cerrada y por autorización explícita del usuario: la URL se reemplazó por `photo-1599113656124-b96bf21e30d3` (200, en `images.unsplash.com`), y el `ORB` ya no aparece. **Ni CE-13 ni CA-24 lo detectaron**, porque ambos prueban el bloqueo deliberado de las imágenes. Ver la nota de T11 y `spec.md` §12.6. |
+| Línea base de avisos de consola para CA-06 | **Resuelta por T11.** No se pudo registrar antes de los cambios, así que se estableció contra la aplicación ya construida: 0 errores y 0 avisos. La observación que T11 dejó escrita junto a esa cifra, el `404` de `/favicon.ico`, **no se pudo reproducir** en una remedición posterior con caché desactivada y perfil limpio: el navegador no llega a pedirlo. **La que sí era permanente y reproducible era un `loadingFailed: net::ERR_BLOCKED_BY_ORB`** por la imagen de `src/datos/productos.ts:28`, cuya URL respondía `404` en el origen. **No producía entrada de consola**, así que CA-06 se cumple igual por la razón correcta: cero errores de consola. **Se resolvió el 2026-10-07**, con la spec ya cerrada y por autorización explícita del usuario: la URL se reemplazó por `photo-1599113656124-b96bf21e30d3` (200, en `images.unsplash.com`), y el `ORB` ya no aparece. **Ni CE-13 ni CA-24 lo detectaron**, porque ambos prueban el bloqueo deliberado de las imágenes. Ver la nota de T11 y `spec.md` §12.6. |
 | Accesibilidad de CA-21 desde la red local | **Resuelta por T11: el firewall no bloqueó.** CA-21 se ejecutó desde `192.168.1.9` y pasó. |
 | UTF-8 sin BOM (RNF-08) | **Resuelta por T11**, por inspección: 23 de 23 archivos sin BOM. No hay herramienta en el repo, y no se agregó ninguna (RNF-04). |
 | Presentación sin cobertura automatizada | **Sin cambio: sigue abierta.** Es una frontera de las dependencias, no una omisión: jsdom no calcula layout, no aplica CSS, no tiene WebGL y su viewport es fijo. Los 39 CA de navegador la siguen cubriendo. Ver `plan.md` §7.1. |

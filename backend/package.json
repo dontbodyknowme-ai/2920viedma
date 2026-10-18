@@ -18,8 +18,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "seed": "node dist/scripts/seed.js && node dist/scripts/seed-vinos.js",
-    "seed:vinos": "node dist/scripts/seed-vinos.js",
+    "seed": "node dist/scripts/seed.js && node dist/scripts/seed-productos.js",
+    "seed:productos": "node dist/scripts/seed-productos.js",
     "verificar:storage": "node scripts/verificar-storage.mjs",
     "migrate:data": "tsx scripts/migrate-from-localstorage.ts"
   },

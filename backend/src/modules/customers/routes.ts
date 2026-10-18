@@ -63,7 +63,7 @@ export const customersRoutes = async (fastify: FastifyInstance): Promise<void> =
           orders: {
             orderBy: { createdAt: 'desc' },
             take: 10,
-            include: { items: { include: { wine: { select: { name: true } } } } }
+            include: { items: { include: { producto: { select: { name: true } } } } }
           }
         }
       })

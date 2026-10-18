@@ -1,19 +1,19 @@
 ﻿import { motion } from 'framer-motion'
-import { Wine } from '../types/vino'
+import { Producto } from '../types/producto'
 
 interface ProductCardProps {
-  wine: Wine
-  onAddToCart: (wine: Wine) => void
-  onSelectWine: (wine: Wine) => void
-  onEditWine?: (wine: Wine) => void
+  producto: Producto
+  onAddToCart: (producto: Producto) => void
+  onSelectProducto: (producto: Producto) => void
+  onEditProducto?: (producto: Producto) => void
 }
 
-export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: ProductCardProps) => {
+export const ProductCard = ({ producto, onAddToCart, onSelectProducto, onEditProducto }: ProductCardProps) => {
   const formattedPrice = new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
     maximumFractionDigits: 0
-  }).format(wine.price)
+  }).format(producto.price)
 
   return (
     <motion.div
@@ -27,34 +27,34 @@ export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: Pro
     >
       <div 
         className='relative h-64 overflow-hidden bg-blanco cursor-pointer'
-        onClick={() => onSelectWine(wine)}
+        onClick={() => onSelectProducto(producto)}
       >
         <img
-          src={wine.imageUrl}
-          alt={wine.name}
+          src={producto.imageUrl}
+          alt={producto.name}
           className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100'
         />
         <div className='absolute top-3 left-3 bg-verde-800/80 backdrop-blur-md border border-verde-500/30 text-blanco text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
-          {wine.category}
+          {producto.category}
         </div>
         <div className='absolute top-3 right-3 bg-blanco/80 backdrop-blur-md text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>
-          {wine.vintage}
+          {producto.vintage}
         </div>
       </div>
 
       <div className='p-5 flex-1 flex flex-col justify-between'>
         <div>
           <p className='text-verde-salvia/90 text-xs font-semibold uppercase tracking-widest mb-1'>
-            {wine.winery} • {wine.varietal}
+            {producto.winery} • {producto.varietal}
           </p>
           <h3 
-            onClick={() => onSelectWine(wine)}
+            onClick={() => onSelectProducto(producto)}
             className='text-carbon font-serif text-xl font-bold line-clamp-1 cursor-pointer hover:text-verde-600 transition-colors mb-2'
           >
-            {wine.name}
+            {producto.name}
           </h3>
           <p className='text-neutral-600 text-sm line-clamp-2 mb-4 font-light'>
-            {wine.description}
+            {producto.description}
           </p>
         </div>
 
@@ -63,20 +63,20 @@ export const ProductCard = ({ wine, onAddToCart, onSelectWine, onEditWine }: Pro
             {formattedPrice}
           </span>
           <div className='flex items-center gap-2'>
-            {onEditWine && (
+            {onEditProducto && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  onEditWine(wine)
+                  onEditProducto(producto)
                 }}
                 className='bg-neutral-200 hover:bg-neutral-600 text-neutral-600 text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 border border-neutral-600'
-                aria-label={`Editar ${wine.name}`}
+                aria-label={`Editar ${producto.name}`}
               >
                 Editar
               </button>
             )}
             <button
-              onClick={() => onAddToCart(wine)}
+              onClick={() => onAddToCart(producto)}
               className='bg-verde-600 hover:bg-verde-600 text-blanco text-xs uppercase tracking-wider font-bold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-verde-900/40 border border-verde-500/20 active:scale-95'
             >
               Agregar

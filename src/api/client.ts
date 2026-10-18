@@ -1,6 +1,6 @@
 import type {
-  Wine,
-  PublicWine,
+  Producto,
+  ProductoPublico,
   AuthTokens,
   PublicUser,
   ImportResult,
@@ -8,8 +8,8 @@ import type {
   Customer,
   Metrics,
   HealthResponse,
-  WineCreateInput,
-  WineUpdateInput,
+  ProductoCreateInput,
+  ProductoUpdateInput,
   OrderUpdateInput,
   CustomerUpdateInput
 } from './schemas.js'
@@ -153,7 +153,7 @@ function buildQueryString(query?: Record<string, string>): string {
  * Error de la API con lo que el backend devolvio.
  *
  * Antes era un `Error` con el texto del `message` y nada mas, asi que un 409
- * con `details.count` (un vino que aparece en pedidos y no se puede borrar)
+ * con `details.count` (un producto que aparece en pedidos y no se puede borrar)
  * llegaba al panel sin el numero de pedidos: el mensaje de error era
  * indistinguible del de cualquier otro fallo.
  */
@@ -181,7 +181,7 @@ const apiObj = {
     })
   },
 
-  /** POST con `text/csv`: es lo que espera `POST /api/wines/import`. */
+  /** POST con `text/csv`: es lo que espera `POST /api/products/import`. */
   postText<T>(path: string, body: string): Promise<T> {
     return request(path, {
       method: 'POST',
@@ -212,30 +212,30 @@ const apiObj = {
       body: formData
     })
   },
-  wines: {
-    list: (query?: Record<string, string>): Promise<{ data: Wine[]; total: number; page: number; limit: number; totalPages: number }> =>
-      request(`/api/wines${buildQueryString(query)}`, { method: 'GET' }),
+  products: {
+    list: (query?: Record<string, string>): Promise<{ data: Producto[]; total: number; page: number; limit: number; totalPages: number }> =>
+      request(`/api/products${buildQueryString(query)}`, { method: 'GET' }),
 
-    public: (): Promise<PublicWine[]> =>
-      request<PublicWine[]>('/api/wines/public', { method: 'GET' }),
+    public: (): Promise<ProductoPublico[]> =>
+      request<ProductoPublico[]>('/api/products/public', { method: 'GET' }),
 
-    create: (data: WineCreateInput): Promise<Wine> =>
-      request<Wine>('/api/wines', {
+    create: (data: ProductoCreateInput): Promise<Producto> =>
+      request<Producto>('/api/products', {
         method: 'POST',
         body: JSON.stringify(data)
       }),
 
-    update: (id: string, data: WineUpdateInput): Promise<Wine> =>
-      request<Wine>(`/api/wines/${id}`, {
+    update: (id: string, data: ProductoUpdateInput): Promise<Producto> =>
+      request<Producto>(`/api/products/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(data)
       }),
 
     delete: (id: string): Promise<void> =>
-      request<void>(`/api/wines/${id}`, { method: 'DELETE' }),
+      request<void>(`/api/products/${id}`, { method: 'DELETE' }),
 
     import: (formData: FormData): Promise<ImportResult> =>
-      request<ImportResult>('/api/wines/import', {
+      request<ImportResult>('/api/products/import', {
         method: 'POST',
         body: formData,
         headers: {}

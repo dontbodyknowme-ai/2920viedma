@@ -35,7 +35,7 @@
 | **Framework Frontend** | React 18 + Vite 5 + TypeScript (no Next.js) |
 | **Framework Backend** | Fastify + Node 24 + PostgreSQL + Prisma (spec 004-b **COMPLETA**) |
 | **Routing Frontend** | `react-router-dom` v7; `/admin` es hijo de `AdminLayout` (protege 5 rutas) |
-| **Estado tienda** | `localStorage`: `vinoteca_wines` y `vinoteca_cart` (sin librería global) |
+| **Estado tienda** | `localStorage`: `vinoteca_wines` y `vinoteca_cart` (sin librería global). La clave `vinoteca_wines` **no** se renombró con el modelo: ya está en el navegador de quien visitó la tienda |
 | **Estado admin (frontend)** | Sin estado local: `accessToken` solo en memoria del módulo `src/api/client.ts`, refresh en cookie httpOnly |
 | **Auth real (backend)** | JWT access 15min + refresh rotativo 7d cookie httpOnly, roles admin/gestor/vendedor |
 | **Permisos del panel (006)** | **Una tabla**: `src/utils/permisos.ts` → `puedeVer(rol, ruta)`, `seccionesVisibles(rol)`, `primeraVisible(rol)` |
@@ -66,7 +66,7 @@
 - Swagger UI: `http://localhost:3000/api/docs`
 
 **Común:**
-- `AdminWine` extiende `Wine` (agrega `stock` y `activo`); formulario separado: `AdminWineForm` ≠ `ProductForm`
+- `ProductoAdmin` extiende `Producto` (agrega `stock` y `activo`); formulario separado: `AdminProductoForm` ≠ `ProductForm`
 - 5 módulos: Dashboard, Catálogo, Pedidos, Clientes CRM, Configuración
 - **Cada módulo se filtra por rol (spec 006)**: el sidebar lee
   `seccionesVisibles(user.role)` y `admin_layout.tsx` redirige a
@@ -79,12 +79,17 @@
 
 ## Paleta de colores (fuente única: `tailwind.config.js`)
 
-- **Superficies**: `charcoal` = negro carbón neutro (`#2E2E2E` → `#0A0A0A`); fondo página `charcoal-950` `#0A0A0A`, cards `charcoal-800/900`
-- **Acento rojo**: `wine` 400→950 (9 tonos, `#AD0021` a `#4F0718`) — botones, bordes, badges
-- **Dorado**: `gold` (`#F0D98C` → `#AA8C2C`) — acento de marca
-- **Blanco**: `white` (`#ffffff` + 100-300) para `bg-white`/`text-white`
-- **Texto largo**: `cream` (`#FDFBF7`) — menos fatigante sobre oscuro
-- **Neutros**: grises puros más claros que Tailwind para WCAG AA (> 4.5:1) sobre `#0A0A0A`
+> **Esta seccion estuvo mucho tiempo mintiendo.** Describia la paleta oscura
+> (`charcoal`, `wine`, `gold`, `cream`) que ya no existe: cuando el diseno paso a
+> la marca `2920` se renombraron a `verde`, `marfil`, `carbon`, `arena` y
+> `blanco`. El bloque de abajo esta corregido; si vuelven a aparecer nombres que
+> no esten en `tailwind.config.js`, es que esta otra vez atras.
+
+- **Superficies**: `marfil` `#f7f4ee` (fondo de página), `blanco` (cards y superficies)
+- **Acento verde**: `verde` 400→950 (9 tonos) + `salvia` como acento de marca — botones, bordes, badges
+- **Acento cálido**: `arena` para bloques destacados (banner de envío)
+- **Texto**: `carbon` `#292d2f` para texto largo, `neutral` para texto secundario
+- **Neutros**: grises de Tailwind, ajustados para WCAG AA (> 4.5:1) sobre `marfil`
 
 ## Tests
 
@@ -164,8 +169,8 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
 - Páginas admin en `src/pages/admin/`
 - Hooks en `src/hooks/` (`useApi`, `useCatalogo`, `usePedidos`, `useClientes`, `useMediaQuery`)
 - Utilidades en `src/utils/`
-- Tipos en `src/types/` (`vino.ts`, `admin.ts`)
-- Datos iniciales en `src/datos/vino.ts`
+- Tipos en `src/types/` (`producto.ts`, `admin.ts`)
+- Datos iniciales en `src/datos/productos.ts`
 - Cliente HTTP en `src/api/` (`client.ts`, `schemas.ts`); **no hay `src/mocks/`** (eliminado en 004-c)
 
 ## Reglas de gobernanza
@@ -271,6 +276,39 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
     Y en el mismo componente: **si el `<header>` lleva `initial`/`animate` de Framer Motion, su `transform` inline le gana a cualquier clase de Tailwind** y el `-translate-y-full` deja de hacer nada sin que se note por que. O el header se mueve con CSS y no lleva esas props, o el movimiento se hace con `animate={{ y: ... }}`.
 35. **Un `z.enum` de la API es una puerta que no se puede abrir** (2026-10-17). `category` era `z.enum(['Tinto', 'Blanco', 'Rosado', 'Espumante'])`, y habia un test **fijando** que `'Orange'` fuera rechazado — o sea, el enum estaba protegido a proposito. Mientras la tienda fue una vinateria eso cerraba bien. Cuando paso a ser un kiosco, **el enum era el bug**: cargar una cerveza, una gaseosa o una galletita daba `400` y no habia forma de venderlas. El enum en Prisma ya se habia sacar en la spec 011 (`category` es `String`), pero **el de Zod se quedo**, y esa diferencia es invisible: el uno acepta texto libre y el otro no.
     La regla que quedo: **el enum en la frontera y el `String` en la base tienen que moverse juntos.** Si uno ya es texto libre, el otro tambien; y el test que fijaba el enum viejo hay que invertirlo, no borrar — "rechaza 'Cerveza'" es exactamente la afirmacion que hay que dejar de poder hacer.
-    Y de ahi sale la siguiente: `vintage`, `winery` y `varietal` eran **obligatorios**, porque todos los productos eran vinos. Concederles valor a una gaseosa (`2024`, `"Bodega X"`, `"Blend"`) es escribir informacion falsa en la base, asi que pasaron a nullable — y con eso `esCampoOpcionalValido` tuvo que **aceptar `null`**, que antes rechazaba a proposito. `null` paso de ser "dato roto" a ser "este producto no tiene bodega".
+    Y de ahi sale la siguiente: `vintage`, `winery` y `varietal` eran **obligatorios**, porque todos los productos eran vinos. Concederles valor a una gaseosa (`2024`, `"Bodega X"`, `"Blend"`) es escribir informacion falsa en la base, asi que pasaron a nullable - y con eso `esCampoOpcionalValido` tuvo que **aceptar `null`**, que antes rechazaba a proposito. `null` paso de ser "dato roto" a ser "este producto no tiene bodega".
 36. **`CAMPOS_REQUERIDOS` con `toHaveLength` es lo que avisa de un cambio de modelo** (2026-10-17). Ese numero esta a proposito y no es decorativo: cuando `winery`/`varietal`/`vintage` volvieron opcionales, el test fijo en 10 fallo y obligo a decidir explicitamente que pasaban a `CAMPOS_OPCIONALES`. Sin el numero, el unico aviso seria un fixture sin el campo —y eso lo ve `tsc` **solo si el campo es requerido**, que es justo el caso que no aplica cuando el campo nuevo es opcional.
-    El riesgo del otro lado es peor: si se sacan de `CAMPOS_REQUERIDOS` y no entran en `CAMPOS_OPCIONALES`, quedan **en ninguna de las dos listas** y `integridad_datos_vino.test.ts` los trata como propiedades fuera del contrato. Hay un test para eso ("los que se volvieron opcionales estan en CAMPOS_OPCIONALES").
+    El riesgo del otro lado es peor: si se sacan de `CAMPOS_REQUERIDOS` y no entran en `CAMPOS_OPCIONALES`, quedan **en ninguna de las dos listas** y `integridad_datos_producto.test.ts` los trata como propiedades fuera del contrato. Hay un test para eso ("los que se volvieron opcionales estan en CAMPOS_OPCIONALES").
+37. **Un rename se verifica mirando lo que el rename no toca** (2026-10-18). El paso de `Wine` a `Producto`
+    (modelo, tabla, rutas, tipos, archivos) salio bien, y sin embargo quedaron **cuatro cosas rotas** que ni
+    `tsc` ni los tests detectaron:
+
+    - **`Wine` de `lucide-react`**: el icono se llama `Wine` porque es una copa, y `Producto` no existe en
+      el paquete. Renombrarlo da un error de import, no un nombre raro.
+    - **La clave de un mock de Prisma**: `prismaFalso.wine` se renombro a `prismaFalso.product` en los
+      usos, pero la **clave del objeto** seguia siendo `wine:`. Compilaba —el mock es un objeto plano con
+      `vi.fn()`— y fallaba en runtime con `undefined.findMany`, en 15 tests a la vez.
+    - **Textos de interfaz**: `Editar Vino`, `Cargar Nuevo Vino`, `Guardar Vino` son **strings**, no
+      identificadores, asi que un rename de simbolos no los toca. Quedaron diciendo Vino en un kiosco.
+    - **Un import que apunta a un archivo mal nombrado**: `datos/vino.ts` -> `datos/productos.ts` con
+      `git mv`, y el import quedo en `datos/producto` (singular). Da un error de tipos, ese si.
+
+    La leccion: **un rename de identificadores no renombra strings, claves de objeto ni imports**. Los tres
+    se buscan a mano, y el de la clave del mock es el que no da ningun aviso del compilador.
+38. **Un rename de ruta deja al test de coherencia sin poder detectar el error** (2026-10-18).
+    `coherencia_permisos.test.ts` cruza la tabla del frontend con los `requireRole` del backend, y su segundo
+    `describe` **fija 14 rutas contra una lista escrita a mano**. Al renombrar `/api/wines` a `/api/products`
+    se renombraron **las dos**: el codigo y la lista. Los 166 tests pasan y **eso no prueba nada** sobre el
+    rename —los dos lados se movieron juntos, que es justo lo que ese test existe para impedir.
+    La unica forma de comprobarlo es **contar a mano**: las declaraciones `fastify.<metodo>(` con
+    `requireRole` en `src/modules/*/routes.ts` contra las 14 de `ESPERADO`. Para un rename es barato; para
+    un cambio de permisos no sirve de nada, porque ahi lo que importa es el *rol* de cada una y el test si lo
+    fijaba.
+39. **La documentacion vieja sobrevive a los commits que la invalidan** (2026-10-18). La seccion de paleta de
+    `AGENTS.md` describia `charcoal`/`wine`/`gold`/`cream` mucho tiempo despues de que el diseno los
+    cambiara a `verde`/`marfil`/`carbon`/`arena`/`blanco`. No hay test que la revise, asi que el unico aviso
+    es que alguien vaya a leerla y le mienta. **Un doc que describe el estado anterior es el mismo bug que
+    un docstring que afirma algo que no existe.**
+    Y el mismo rename dejo una frase sin sentido en un gotcha: "todos los productos eran productos". Un
+    reemplazo mecanico de `vino` por `producto` no sabe cuando la palabra era un **dato** y cuando era un
+    **comentario**. Hay que leer el diff de los `.md`.

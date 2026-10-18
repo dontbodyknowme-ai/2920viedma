@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename)
 
 const prisma = new PrismaClient()
 
-interface WineFromLocalStorage {
+interface ProductoFromLocalStorage {
   id: string
   name: string
   winery: string
@@ -28,7 +28,7 @@ interface WineFromLocalStorage {
 }
 
 interface CartFromLocalStorage {
-  product: WineFromLocalStorage
+  product: ProductoFromLocalStorage
   quantity: number
 }
 
@@ -52,16 +52,16 @@ async function main() {
   }
 
   const winesJson = fs.readFileSync(winesPath, 'utf-8')
-  let wines: WineFromLocalStorage[]
+  let wines: ProductoFromLocalStorage[]
   try {
     wines = JSON.parse(winesJson)
   } catch (e) {
-    console.error('❌ JSON inválido en archivo de vinos')
+    console.error('❌ JSON inválido en archivo de productos')
     process.exit(1)
   }
 
   if (!Array.isArray(wines)) {
-    console.error('❌ El archivo de vinos debe ser un array')
+    console.error('❌ El archivo de productos debe ser un array')
     process.exit(1)
   }
 
@@ -77,7 +77,7 @@ async function main() {
     }
   }
 
-  console.log(`📦 ${wines.length} vinos a migrar`)
+  console.log(`📦 ${wines.length} productos a migrar`)
   console.log(`🛒 ${cart.length} líneas de carrito a migrar`)
   console.log(options.dryRun ? '🔍 MODO DRY-RUN: no se escriben datos\n' : '')
 
@@ -87,7 +87,7 @@ async function main() {
 
   for (const wine of wines) {
     try {
-      const existing = await prisma.wine.findUnique({ where: { id: wine.id } })
+      const existing = await prisma.product.findUnique({ where: { id: wine.id } })
 
       const data = {
         name: wine.name,
@@ -106,13 +106,13 @@ async function main() {
 
       if (existing) {
         if (!options.dryRun) {
-          await prisma.wine.update({ where: { id: wine.id }, data })
+          await prisma.product.update({ where: { id: wine.id }, data })
         }
         updated++
         if (options.verbose) console.log(`  ↻ Actualizado: ${wine.name} (${wine.id})`)
       } else {
         if (!options.dryRun) {
-          await prisma.wine.create({ data: { ...data, id: wine.id } })
+          await prisma.product.create({ data: { ...data, id: wine.id } })
         }
         created++
         if (options.verbose) console.log(`  ✓ Creado: ${wine.name} (${wine.id})`)
@@ -145,7 +145,7 @@ async function main() {
         shippingAddress: { migrated: true },
         items: {
           create: cart.map(item => ({
-            wineId: item.product.id,
+            productoId: item.product.id,
             quantity: item.quantity,
             price: item.product.price
           }))

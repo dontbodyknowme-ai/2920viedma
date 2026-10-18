@@ -6,5 +6,5 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["scripts/seed.ts", "scripts/seed-vinos.ts"]
+  "include": ["scripts/seed.ts", "scripts/seed-productos.ts"]
 }

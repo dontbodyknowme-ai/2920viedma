@@ -100,7 +100,7 @@ Modificar `src/components/ProductCatalog.tsx` y `src/components/ProductCard.tsx`
 ### Implementación clave
 ```tsx
 // ProductCatalog.tsx
-// useEffect: client.get<Wine[]>('/api/wines/public') → setWines()
+// useEffect: client.get<Producto[]>('/api/wines/public') → setWines()
 // Filtros: en memoria sobre wines[] (tipo, cepa, precio, búsqueda)
 // Carrito: sin cambios (localStorage)
 // Botón "Editar": {useAuth().hasRole('admin') || useAuth().hasRole('gestor')} && <EditButton />
@@ -112,7 +112,7 @@ Modificar `src/components/ProductCatalog.tsx` y `src/components/ProductCard.tsx`
 ### Verificación T3
 ```bash
 npm run typecheck && npm run lint && npm run build && npm run test
-# Manual: catálogo carga vinos de API → filtros funcionan → carrito agrega/quita → botón editar solo visible si admin
+# Manual: catálogo carga productos de API → filtros funcionan → carrito agrega/quita → botón editar solo visible si admin
 ```
 
 ---
@@ -120,19 +120,19 @@ npm run typecheck && npm run lint && npm run build && npm run test
 ## T4 — Admin Vinos: CRUD + Import CSV + Upload Real
 
 ### Objetivo
-Conectar admin vinos a API real: listado paginado, crear, editar, eliminar, import CSV, upload imagen real (`POST /api/upload`).
+Conectar admin productos a API real: listado paginado, crear, editar, eliminar, import CSV, upload imagen real (`POST /api/upload`).
 
 ### Archivos a modificar
 - `src/pages/admin/catalogo.tsx` — listado + acciones
-- `src/components/AdminWineForm.tsx` — create/update + upload + import
+- `src/components/AdminProductoForm.tsx` — create/update + upload + import
 
 ### Implementación clave
 ```tsx
 // catalogo.tsx
-// - client.get<Paginated<Wine>>('/api/wines', {page, limit, search, category, varietal, status})
-// - Acciones: Editar (abre AdminWineForm), Eliminar (ConfirmDialog + client.delete), Import CSV
+// - client.get<Paginated<Producto>>('/api/wines', {page, limit, search, category, varietal, status})
+// - Acciones: Editar (abre AdminProductoForm), Eliminar (ConfirmDialog + client.delete), Import CSV
 
-// AdminWineForm.tsx
+// AdminProductoForm.tsx
 // - Imagen: <input type="file" accept="image/*" onChange={handleImageUpload}>
 //   handleImageUpload: formData.append('file', file) → client.upload('/api/upload', formData) → {id, url} → setImageUrl(url)
 // - Submit create: client.post('/api/wines', data) → 201
@@ -144,7 +144,7 @@ Conectar admin vinos a API real: listado paginado, crear, editar, eliminar, impo
 ### Verificación T4
 ```bash
 npm run typecheck && npm run lint && npm run build && npm run test
-# Manual: admin → catálogo → listado paginado → crear vino con imagen → editar → eliminar (sin pedidos) → import CSV válido → import CSV con errores (207)
+# Manual: admin → catálogo → listado paginado → crear producto con imagen → editar → eliminar (sin pedidos) → import CSV válido → import CSV con errores (207)
 ```
 
 ---
@@ -281,7 +281,7 @@ npm run dev
 # Pruebas manuales completas:
 # 1. Login → navbar → logout
 # 2. Catálogo público → filtros → carrito
-# 2. Admin → vinos CRUD + upload + import CSV
+# 2. Admin → productos CRUD + upload + import CSV
 # 3. Admin → pedidos + timeline + cambio estado
 # 4. Admin → clientes + notas/tags
 # 5. Admin → dashboard métricas

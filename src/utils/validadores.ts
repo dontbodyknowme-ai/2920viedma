@@ -1,9 +1,9 @@
-import type { Wine } from '../types/vino'
+import type { Producto } from '../types/producto'
 
 /**
- * Validadores en tiempo de ejecucion para el contrato de datos de `Wine`.
+ * Validadores en tiempo de ejecucion para el contrato de datos de `Producto`.
  *
- * `Wine` y `WineCategory` son tipos de TypeScript, por lo que se borran al
+ * `Producto` y `CategoriaProducto` son tipos de TypeScript, por lo que se borran al
  * compilar y no existen en runtime. Estos helpers reconstruyen ese contrato
  * para poder verificar los datos reales con `expect`.
  */
@@ -29,7 +29,7 @@ export const CATEGORIA_MAX_LONGITUD = 40
  *
  * - **no vacia**, ni con espacios alrededor
  * - **empieza en mayuscula**: `'tinto'` y `'Tinto'` serian dos categorias
- *   distintas en el filtro, y el usuario veria el mismo vino dos veces al
+ *   distintas en el filtro, y el usuario veria el mismo producto dos veces al
  *   filtrar. La lista fija hacia esto imposible por construccion; ahora lo
  *   hace esta linea.
  */
@@ -47,7 +47,7 @@ export const esCategoriaValida = (valor: unknown): valor is string => {
  *
  * `grupo` y `tipoVino` son obligatorios de negocio pero admiten `null` de
  * legitimo —"Energizantes" cuelga sin grupo y una cerveza no tiene color de
- * vino—, asi que **no entran en ninguna de las dos listas**: no son requeridos
+ * producto—, asi que **no entran en ninguna de las dos listas**: no son requeridos
  * (hay productos sin ellos) y tampoco son opcionales a la vista de
  * `esCampoOpcionalValido`, que acepta `undefined` y no `null`. Meterlos en
  * `CAMPOS_OPCIONALES` los haria pasar por ausentes, que en runtime es otra cosa:
@@ -56,7 +56,7 @@ export const esCategoriaValida = (valor: unknown): valor is string => {
  * Los verifica `test/taxonomia.test.ts`, que mira el arbol entero y no campos
  * sueltos.
  */
-export const CAMPOS_REQUERIDOS: ReadonlyArray<keyof Wine> = [
+export const CAMPOS_REQUERIDOS: ReadonlyArray<keyof Producto> = [
   'id',
   'name',
   'category',
@@ -75,7 +75,7 @@ export const CAMPOS_REQUERIDOS: ReadonlyArray<keyof Wine> = [
  * dos—, asi que el validador acepta `undefined` y el `null` se cubre en el test
  * de taxonomia.
  */
-export const CAMPOS_OPCIONALES: ReadonlyArray<keyof Wine> = [
+export const CAMPOS_OPCIONALES: ReadonlyArray<keyof Producto> = [
   'tastingNotes',
   'foodPairing',
   'winery',
@@ -83,7 +83,7 @@ export const CAMPOS_OPCIONALES: ReadonlyArray<keyof Wine> = [
   'vintage'
 ]
 
-// Un vino no puede ser mas viejo que las primeras cosechas vpn documentadas,
+// Un producto no puede ser mas viejo que las primeras cosechas vpn documentadas,
 // ni del futuro (salvo la tolerancia de una vendimia en curso).
 export const ANIO_MINIMO = 1850
 
@@ -119,9 +119,9 @@ export const esUrlHttpValida = (valor: unknown): boolean => {
  * Devuelve la lista de campos requeridos que faltan o tienen tipo incorrecto.
  * Un array vacio significa que el objeto cumple el contrato.
  */
-export const camposRequeridosInvalidos = (vino: Wine): Array<string> =>
+export const camposRequeridosInvalidos = (producto: Producto): Array<string> =>
   CAMPOS_REQUERIDOS.filter((campo) => {
-    const valor = vino[campo]
+    const valor = producto[campo]
 
     switch (campo) {
       case 'category':
@@ -139,7 +139,7 @@ export const camposRequeridosInvalidos = (vino: Wine): Array<string> =>
  * Un campo opcional es valido si esta ausente (`undefined`), si es un `null`, o
  * si es un string no vacio.
  *
- * **El `null` se sumo cuando la tienda dejo de vender solo vinos.** Una API que
+ * **El `null` se sumo cuando la tienda dejo de vender solo productos.** Una API que
  * serializa `String?` de Prisma manda `null` para una gaseosa sin bodega, y sin
  * aceptarlo el producto entero se marcaba como invalido. Antes solo se
  * aceptaba `undefined`, y `null` se rechazaba a proposito: era un dato roto.

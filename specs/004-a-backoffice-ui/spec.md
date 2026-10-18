@@ -31,11 +31,11 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 
 | Funcionalidad | Estado |
 |---|---|
-| E-commerce frontend | Completo (catálogo, carrito, checkout, carga/edición vinos) |
+| E-commerce frontend | Completo (catálogo, carrito, checkout, carga/edición productos) |
 | Filtros avanzados | Precio, cepa, categoría, búsqueda texto |
 | Animaciones | Scroll reveal, parallax, degradación móvil |
 | Persistencia | `localStorage` (`vinoteca_wines`, `vinoteca_cart`) |
-| Formulario vinos | Carga + edición + drag & drop imagen |
+| Formulario productos | Carga + edición + drag & drop imagen |
 | Build/Types/Lint | `npm run build` ✅, `npx tsc --noEmit` ✅ |
 
 ### 2.2 Lo que falta para Back-Office
@@ -110,7 +110,7 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 - **RF-14** — CUANDO el usuario cambia página o items por página, EL SISTEMA actualiza paginación
 - **RF-15** — CUANDO el usuario pulsa "Nuevo Vino", EL SISTEMA abre formulario existente (`editor_formador_productos`) en modo creación
 - **RF-16** — CUANDO el usuario pulsa "Editar" en una fila, EL SISTEMA abre formulario en modo edición con datos precargados
-- **RF-17** — CUANDO el usuario pulsa "Eliminar", EL SISTEMA muestra ConfirmDialog y al confirmar elimina el vino
+- **RF-17** — CUANDO el usuario pulsa "Eliminar", EL SISTEMA muestra ConfirmDialog y al confirmar elimina el producto
 - **RF-18** — CUANDO el usuario pulsa "Duplicar", EL SISTEMA crea copia con nuevo ID y nombre "Copia de {nombre}"
 - **RF-19** — CUANDO el usuario cambia estado (activo/inactivo), EL SISTEMA actualiza sin recargar
 - **RF-20** — CUANDO el usuario pulsa "Exportar CSV", EL SISTEMA descarga CSV con datos filtrados actuales
@@ -138,8 +138,8 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 ### 4.6 MSW Mock API
 
 - **RF-35** — CUANDO la app hace `GET /api/wines`, EL SISTEMS devuelve lista paginada con filtros aplicados
-- **RF-36** — CUANDO la app hace `POST /api/wines`, EL SISTEMA crea vino con ID único y devuelve creado
-- **RF-37** — CUANDO la app hace `PATCH /api/wines/:id`, EL SISTEMA actualiza vino y devuelve actualizado
+- **RF-36** — CUANDO la app hace `POST /api/wines`, EL SISTEMA crea producto con ID único y devuelve creado
+- **RF-37** — CUANDO la app hace `PATCH /api/wines/:id`, EL SISTEMA actualiza producto y devuelve actualizado
 - **RF-38** — CUANDO la app hace `DELETE /api/wines/:id`, EL SISTEMA elimina y devuelve 204
 - **RF-39** — CUANDO la app hace `GET /api/orders`, EL SISTEMA devuelve lista paginada con filtros
 - **RF-40** — CUANDO la app hace `PATCH /api/orders/:id`, EL SISTEMA actualiza estado y timeline
@@ -167,7 +167,7 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 
 | ID | Situación | Comportamiento esperado | RF |
 |---|---|---|---|
-| CE-01 | Usuario elimina vino con pedidos asociados | Handler DELETE verifica `mockOrders`; si vino está en pedidos, retorna 409 con mensaje "No se puede eliminar: tiene X pedidos asociados" | RF-17 |
+| CE-01 | Usuario elimina producto con pedidos asociados | Handler DELETE verifica `mockOrders`; si producto está en pedidos, retorna 409 con mensaje "No se puede eliminar: tiene X pedidos asociados" | RF-17 |
 | CE-02 | Importar CSV con columnas faltantes | Valida headers requeridos, muestra errores por fila | RF-21 |
 | CE-03 | Cambiar estado pedido a "entregado" sin pasar por "enviado" | Permite pero registra salto en timeline | RF-27 |
 | CE-04 | Cliente sin email ni teléfono | Permite guardar, muestra warning en fila | RF-31 |
@@ -221,13 +221,13 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 | CA-11 | Filtros combinados | Categoría "Tinto" + Cepa "Malbec" + Estado "Activo" → AND lógico |
 | CA-12 | Ordenamiento | Click header → asc, click → desc, click → sin orden |
 | CA-13 | Paginación | Cambia página, items por página (10/25/50) |
-| CA-14 | Crear vino | "Nuevo Vino" → formulario → guardar → aparece en tabla |
-| CA-15 | Editar vino | "Editar" → formulario precargado → guardar → actualiza fila |
-| CA-16 | Eliminar vino | "Eliminar" → ConfirmDialog → confirmar → fila desaparece |
-| CA-17 | Duplicar vino | "Duplicar" → nuevo vino "Copia de X" en tabla |
+| CA-14 | Crear producto | "Nuevo Vino" → formulario → guardar → aparece en tabla |
+| CA-15 | Editar producto | "Editar" → formulario precargado → guardar → actualiza fila |
+| CA-16 | Eliminar producto | "Eliminar" → ConfirmDialog → confirmar → fila desaparece |
+| CA-17 | Duplicar producto | "Duplicar" → nuevo producto "Copia de X" en tabla |
 | CA-18 | Cambiar estado | Toggle activo/inactivo → actualiza badge sin recargar |
 | CA-19 | Exportar CSV | Descarga .csv con datos filtrados actuales |
-| CA-20 | Importar CSV | Modal → archivo válido → agrega vinos → tabla actualizada |
+| CA-20 | Importar CSV | Modal → archivo válido → agrega productos → tabla actualizada |
 
 ### 8.4 Pedidos Admin
 
@@ -289,7 +289,7 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 | D-11 | **MetricCard con tendencia** | Icono + valor + flecha % vs período anterior + label |
 | D-12 | **CSV export usa PapaParse o nativo** | PapaParse si disponible, sino `Blob` + `URL.createObjectURL` nativo |
 | D-13 | **Mock data realista** | 25 pedidos estados distribuidos, 15 clientes con historial, 30 días ventas |
-| D-14 | **`stock` y `activo` se definen en `AdminWine extends Wine`, no en `Wine`** | **CORREGIDA en T1.** Se pedían como campos de `Wine`, pero las dos listas de `src/utils/validadores.ts` cierran ese contrato por los dos lados. `CAMPOS_REQUERIDOS` no puede incluirlos: los fixtures de `test/validadores.test.ts` arman un `Wine` sin ellos, y RNF-05 protege el contenido de esos tests (18 de 26 fallan). `CAMPOS_OPCIONALES` tampoco: `test/integridad_datos_vino.test.ts:201` exige que `esCampoOpcionalValido` rechace `0` y `false`, y `stock: 0` y `activo: false` son valores legítimos. No queda ningún campo libre. La solución coincide además con **RF-06 de la spec 004-b**, que ya define que el endpoint público omite `stock` y `activo`: son datos internos de la operación, no del catálogo. Ver C-1 en `task.md` |
+| D-14 | **`stock` y `activo` se definen en `ProductoAdmin extends Producto`, no en `Producto`** | **CORREGIDA en T1.** Se pedían como campos de `Producto`, pero las dos listas de `src/utils/validadores.ts` cierran ese contrato por los dos lados. `CAMPOS_REQUERIDOS` no puede incluirlos: los fixtures de `test/validadores.test.ts` arman un `Producto` sin ellos, y RNF-05 protege el contenido de esos tests (18 de 26 fallan). `CAMPOS_OPCIONALES` tampoco: `test/integridad_datos_producto.test.ts:201` exige que `esCampoOpcionalValido` rechace `0` y `false`, y `stock: 0` y `activo: false` son valores legítimos. No queda ningún campo libre. La solución coincide además con **RF-06 de la spec 004-b**, que ya define que el endpoint público omite `stock` y `activo`: son datos internos de la operación, no del catálogo. Ver C-1 en `task.md` |
 | D-15 | **Estados de pedido fijos** | 5 estados principales + devuelto; no configurables en esta spec |
 | D-16 | **Solo flag `isAdmin`** | Sin roles granulares; mock auth suficiente para validar UI |
 | D-17 | **Logs de auditoría en timeline/notas** | Timestamp + acción + autor en timeline pedidos y notas clientes; autor hardcoded `"Admin"` (mock sin auth real) |
@@ -300,7 +300,7 @@ Construir la **interfaz de administración (Back-Office)** para el equipo de la 
 
 | # | Pregunta | Decisión | Justificación |
 |---|---|---|---|
-| 1 | **¿Gestión de stock en Catálogo Admin?** | **SÍ** — Agregar campo `stock: number` y `activo: boolean` a `Wine` type | Necesario para gestión de inventario realista |
+| 1 | **¿Gestión de stock en Catálogo Admin?** | **SÍ** — Agregar campo `stock: number` y `activo: boolean` a `Producto` type | Necesario para gestión de inventario realista |
 | 2 | **¿Estados de pedido personalizables?** | **FIJOS** — 5 estados: pendiente, preparando, enviado, entregado, cancelado (+ devuelto como sub-estado) | Simplicidad; configurables en spec 005+ |
 | 3 | **¿Permisos granulares?** | **SOLO `isAdmin` boolean** | Mock auth suficiente para UI; roles en spec 005+ |
 | 4 | **¿Logs de auditoría?** | **SÍ** — En esta spec: timestamp + acción + entidad en timeline de pedidos y notas de clientes | Trazabilidad básica sin backend real |

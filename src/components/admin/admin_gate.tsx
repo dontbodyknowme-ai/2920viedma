@@ -1,6 +1,10 @@
 ﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { KeyRound, Wine } from 'lucide-react'
+// El alias no es cosmetico: `Wine` es el nombre del **icono** en lucide-react
+// (una copa), y ese nombre no depende de lo que venda la tienda. Renombrarlo a
+// `Producto` deja de compilar, porque el paquete no exporta ningun icono con ese
+// nombre.
+import { KeyRound, Wine as IconoVino } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { primeraVisible } from '../../utils/permisos'
 import { ApiError } from '../../api/client'
@@ -111,7 +115,7 @@ export const AdminGate = () => {
     <div className='flex min-h-screen items-center justify-center bg-marfil px-4 text-carbon'>
       <div className='w-full max-w-sm'>
         <div className='mb-6 text-center'>
-          <Wine className='mx-auto h-10 w-10 text-verde-500' aria-hidden='true' />
+          <IconoVino className='mx-auto h-10 w-10 text-verde-500' aria-hidden='true' />
           <h1 className='mt-3 font-serif text-2xl font-bold'>Administracion</h1>
           <p className='mt-1 text-sm text-neutral-600'>
             Esta seccion es restringida.

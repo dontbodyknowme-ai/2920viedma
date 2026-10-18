@@ -13,7 +13,7 @@ La app funciona de punta a punta en local y el CI está en verde. Nunca se **[ d
 
 El 2026-10-11 la verificación end-to-end encontró **9 bugs de producción** que ninguna verificación automática detectaba. Los dos que quedan abiertos **solo se ven en un entorno real**, y son parte de esta spec:
 
-1. **Las imágenes firmadas caducan a la hora.** `POST /api/upload` devuelve una URL firmada con `expiresIn: 3600` y `admin_wine_form.tsx:286` la guarda como `imageUrl` del vino. Es decir: **la imagen que sube el admin deja de verse una hora después**, y queda para siempre en la base. Es el bug más caro de esta spec.
+1. **Las imágenes firmadas caducan a la hora.** `POST /api/upload` devuelve una URL firmada con `expiresIn: 3600` y `admin_producto_form.tsx:286` la guarda como `imageUrl` del producto. Es decir: **la imagen que sube el admin deja de verse una hora después**, y queda para siempre en la base. Es el bug más caro de esta spec.
 2. **La app cuelga de `NODE_ENV=development` sin querer.** `logger.ts` pedía `pino-pretty` (devDependency) siempre que `NODE_ENV !== 'production'`, y `.env.example` pone justamente `development`. En la imagen de producción eso es un contenedor que no arranca. Ya corregido, y la spec lo blinda.
 
 ## 2. Objetivo
@@ -50,7 +50,7 @@ Tener la app **en producción, con HTTPS, base de datos real y archivos reales**
 ### Storage en Cloudflare R2
 
 - **RF-09** Las imágenes se guardan en el bucket `wine-images` de R2.
-- **RF-10** **Las imágenes se sirven con una URL pública y estable**, no con una URL firmada de una hora. El vino guarda esa URL y sigue siendo válida para siempre.
+- **RF-10** **Las imágenes se sirven con una URL pública y estable**, no con una URL firmada de una hora. El producto guarda esa URL y sigue siendo válida para siempre.
 - **RF-11** El backend convierte a WebP, redimensiona a 1920×1920 sin agrandar y sube. Ese comportamiento no cambia.
 - **RF-12** `DELETE /api/upload/:id` sigue borrando el objeto.
 
@@ -92,7 +92,7 @@ Tener la app **en producción, con HTTPS, base de datos real y archivos reales**
 | **CE-07** | Preview de Vercel en un dominio distinto | La API tiene que rechazarlo por CORS en vez de aceptarlo: el preview no es un origen confiable |
 | **CE-08** | `migrate deploy` corre sin `DATABASE_URL` | Falla antes de tocar la base; Railway la inyecta, pero el orden de pasos del deploy importa |
 | **CE-09** | El seed corre dos veces | Debe ser idempotente: `upsert` por email, no `create` |
-| **CE-10** | El bucket R2 se borra por error | Las imágenes quedan huérfanas; el vino conserva la URL y muestra el fallback. Se acepta el riesgo en esta spec |
+| **CE-10** | El bucket R2 se borra por error | Las imágenes quedan huérfanas; el producto conserva la URL y muestra el fallback. Se acepta el riesgo en esta spec |
 
 ## 7. Criterios de aceptación
 
@@ -181,7 +181,7 @@ Es claramente mejor, **salvo por una cosa**: el correo pasa a ser el eslabón m�
 
 Se anota explícitamente para que no se cuele en esta spec:
 
-- **Imágenes privadas.** Con RF-10 el bucket es público. Si alguna vez hacen falta imágenes privadas, hay que re-firmar en cada lectura (el backend devuelve URLs firmadas nuevas al listar vinos) y guardar la *clave* del objeto en vez de la URL. Es trabajo aparte.
+- **Imágenes privadas.** Con RF-10 el bucket es público. Si alguna vez hacen falta imágenes privadas, hay que re-firmar en cada lectura (el backend devuelve URLs firmadas nuevas al listar productos) y guardar la *clave* del objeto en vez de la URL. Es trabajo aparte.
 - **Dominio propio y DNS.** Se usa el dominio que den los proveedores; HTTPS ya sale gratis ahí. El dominio propio va en la spec 008.
 - **Pagos, emails, analytics.**
 - **Escalado** (réplicas, CDN de assets).

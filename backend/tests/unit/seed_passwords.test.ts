@@ -21,7 +21,7 @@ const leer = (ruta: string): string => readFileSync(join(RAIZ, ruta), 'utf8')
 
 const RUTAS_DE_CODIGO = [
   'backend/scripts/seed.ts',
-  'backend/scripts/seed-vinos.ts',
+  'backend/scripts/seed-productos.ts',
   'backend/src/config/env.ts',
   'backend/tests/unit/deploy.test.ts'
 ]

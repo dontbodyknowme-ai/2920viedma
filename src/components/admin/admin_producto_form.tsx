@@ -1,29 +1,29 @@
 ﻿import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
-import type { AdminWine } from '../../types/admin'
+import type { ProductoAdmin } from '../../types/admin'
 import { CATEGORIAS_ARRANCAMIENTO } from './constantes_categoria'
 import { DEPARTAMENTOS, TIPOS_DE_VINO, gruposDe } from '../../utils/departamentos'
 import { api } from '../../api/client'
 
 /**
- * Formulario de alta y edicion de vinos del panel.
+ * Formulario de alta y edicion de productos del panel.
  *
  * **No reutiliza `editor_formador_productos.tsx`, y esa es una decision que
- * viene de C-1.** Ese formulario produce un `Wine`, que es lo que ve un
- * visitante. Este produce un `AdminWine`, que suma `stock` y `activo`. Con C-1
+ * viene de C-1.** Ese formulario produce un `Producto`, que es lo que ve un
+ * visitante. Este produce un `ProductoAdmin`, que suma `stock` y `activo`. Con C-1
  * resuelto, son dos tipos distintos y un solo formulario para los dos
  * tendria que hacer `mostrarInventario: boolean` y ensuciar las dos ramas de
  * envio con casts. Dos formularios, dos contratos limpios.
  *
- * `stock` y `activo` no existen en `Wine` porque el catalogo publico no los
+ * `stock` y `activo` no existen en `Producto` porque el catalogo publico no los
  * necesita: ver RF-06 de la spec 004-b.
  */
 
-interface AdminWineFormProps {
+interface AdminProductoFormProps {
   isOpen: boolean
-  /** `null` para crear, un vino para editar. */
-  vino: AdminWine | null
+  /** `null` para crear, un producto para editar. */
+  producto: ProductoAdmin | null
   /**
    * Las categorias que ya estan en uso, para el `datalist` de sugerencias.
    *
@@ -32,7 +32,7 @@ interface AdminWineFormProps {
    */
   categoriasExistentes: string[]
   onClose: () => void
-  onGuardar: (vino: Omit<AdminWine, 'id'> & { id?: string }) => Promise<void>
+  onGuardar: (producto: Omit<ProductoAdmin, 'id'> & { id?: string }) => Promise<void>
 }
 
 const ANIO_EN_CURSO = new Date().getFullYear()
@@ -71,58 +71,58 @@ const CAMPOS_VACIOS = {
 
 type EstadoFormulario = typeof CAMPOS_VACIOS
 
-export const AdminWineForm = ({
+export const AdminProductoForm = ({
   isOpen,
-  vino,
+  producto,
   categoriasExistentes,
   onClose,
   onGuardar
-}: AdminWineFormProps) => {
+}: AdminProductoFormProps) => {
   const [campos, setCampos] = useState<EstadoFormulario>(CAMPOS_VACIOS)
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
 
   // Al abrir, el formulario arranca en blanco para crear o con los datos del
-  // vino para editar. Sin esto, cerrar un formulario de edicion y abrir el de
-  // creacion dejaria los datos del vino anterior.
+  // producto para editar. Sin esto, cerrar un formulario de edicion y abrir el de
+  // creacion dejaria los datos del producto anterior.
   useEffect(() => {
     if (!isOpen) return
 
     setError('')
-    if (vino === null) {
+    if (producto === null) {
       setCampos(CAMPOS_VACIOS)
       return
     }
 
     setCampos({
-      name: vino.name,
+      name: producto.name,
       // Bodega, cepa y anada pueden ser `null` desde que la tienda vendio cosas
       // que no las tienen. Sin el `?? ''` el `<input>` recibe `null`, que en
       // React deja el campo sin controlar, y `String(null)` en el anada
       // guardaria la palabra "null" como anada.
-      winery: vino.winery ?? '',
-      varietal: vino.varietal ?? '',
-      category: vino.category,
+      winery: producto.winery ?? '',
+      varietal: producto.varietal ?? '',
+      category: producto.category,
       // `?? ''` y no un default: un producto que ya existia puede no tener
       // departamento si entro por una fila escrita a mano en SQL. Sin el fallback
       // el `<select>` queda sin valor —y `value` sin `onChange` valido es un
       // select deshabilitado en React.
-      departamento: vino.departamento ?? '',
+      departamento: producto.departamento ?? '',
       // El grupo **si** puede ser null de legitimo: "Energizantes" cuelga
       // directo de Bebidas. Por eso el sentinela es `''` y hay una opcion que lo
       // representa, en vez de asumir un grupo por defecto.
-      grupo: vino.grupo ?? '',
-      tipoVino: vino.tipoVino ?? '',
-      vintage: vino.vintage === null ? '' : String(vino.vintage),
-      price: String(vino.price),
-      stock: String(vino.stock),
-      description: vino.description,
-      imageUrl: vino.imageUrl,
-      tastingNotes: vino.tastingNotes ?? '',
-      foodPairing: vino.foodPairing ?? '',
-      activo: vino.activo
+      grupo: producto.grupo ?? '',
+      tipoVino: producto.tipoVino ?? '',
+      vintage: producto.vintage === null ? '' : String(producto.vintage),
+      price: String(producto.price),
+      stock: String(producto.stock),
+      description: producto.description,
+      imageUrl: producto.imageUrl,
+      tastingNotes: producto.tastingNotes ?? '',
+      foodPairing: producto.foodPairing ?? '',
+      activo: producto.activo
     })
-  }, [isOpen, vino])
+  }, [isOpen, producto])
 
   const cambiar = <K extends keyof EstadoFormulario>(clave: K, valor: EstadoFormulario[K]): void => {
     // El `if` por clave en vez de comparar `valor` a secas: `valor` es
@@ -140,7 +140,7 @@ export const AdminWineForm = ({
       }
     } else if (clave === 'category') {
       const nuevo = valor as string
-      // Cambiar de categoria borra el color: si se estaba editando un vino y se
+      // Cambiar de categoria borra el color: si se estaba editando un producto y se
       // cambia a "Cerveza", el "Tinto" que quedo seria basura.
       if (nuevo !== campos.category) {
         setCampos((previo) => ({ ...previo, category: nuevo, tipoVino: '' }))
@@ -151,7 +151,7 @@ export const AdminWineForm = ({
     setCampos((previo) => ({ ...previo, [clave]: valor }))
   }
 
-  // El color del vino **se muestra solo para la categoria "Vinos"**: es un
+  // El color del producto **se muestra solo para la categoria "Vinos"**: es un
   // atributo de esa categoria, no un campo general. Fuera de ella se oculta
   // porque un `<select>` de "Tinto / Blanco" al lado de una cerveza es una
   // pregunta sin sentido, y lleno con "" el admin tendria que borrarlo a mano
@@ -188,7 +188,7 @@ export const AdminWineForm = ({
 
     // **Bodega y anada dejaron de ser obligatorias.** Una gaseosa no tiene
     // ninguna de las dos, y exigirlas era el bug que hacia imposible vender
-    // cualquier cosa que no fuera vino: el admin no tenia forma de cargar el
+    // cualquier cosa que no fuera producto: el admin no tenia forma de cargar el
     // producto que queria.
     //
     // La anada se valida **solo si viene escrita**: vacia es `null` —una
@@ -207,7 +207,7 @@ export const AdminWineForm = ({
     setGuardando(true)
     try {
       await onGuardar({
-        ...(vino !== null && { id: vino.id }),
+        ...(producto !== null && { id: producto.id }),
         name: nombre,
         // Los tres que se volvieron opcionales van como `null` cuando el campo
         // esta vacio, y no como `''`: un string vacio en la base es "la bodega se
@@ -256,7 +256,7 @@ export const AdminWineForm = ({
             <motion.aside
               role='dialog'
               aria-modal='true'
-              aria-label={vino === null ? 'Nuevo vino' : `Editar ${vino.name}`}
+              aria-label={producto === null ? 'Nuevo producto' : `Editar ${producto.name}`}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -265,7 +265,7 @@ export const AdminWineForm = ({
             >
               <div className='flex items-center justify-between border-b border-neutral-200 px-6 py-4'>
                 <h2 className='font-serif text-xl font-bold'>
-                  {vino === null ? 'Nuevo vino' : 'Editar vino'}
+                  {producto === null ? 'Nuevo producto' : 'Editar producto'}
                 </h2>
                 <button
                   type='button'
@@ -406,7 +406,7 @@ export const AdminWineForm = ({
                     {/*
                       Antes era obligatoria, con el `*`. Una gaseosa no tiene
                       anada, y exigirla era el bug que hacia imposible vender
-                      cualquier cosa fuera del vino. Ahora vacia se guarda como
+                      cualquier cosa fuera del producto. Ahora vacia se guarda como
                       `null`, que es "no tiene anada" y no "anada cero".
                     */}
                     <input
@@ -424,7 +424,7 @@ export const AdminWineForm = ({
                   <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
                     <div>
                       <label htmlFor='admin-tipovino' className={etiqueta}>
-                        Tipo de vino
+                        Tipo de producto
                       </label>
                       {/*
                         Solo para la categoria "Vinos", y `<select>` a proposito:
@@ -475,7 +475,7 @@ export const AdminWineForm = ({
 
                 <div>
                   <label htmlFor='admin-image' className={etiqueta}>
-                    Imagen del vino
+                    Imagen del producto
                   </label>
                   <div className='space-y-2'>
                     <div className='relative'>
@@ -570,7 +570,7 @@ export const AdminWineForm = ({
                   </div>
                 </div>
 
-                {/* El interruptor de activo es el que saca el vino del catalogo
+                {/* El interruptor de activo es el que saca el producto del catalogo
                     sin borrarlo del historial de pedidos. */}
                 <label className='flex cursor-pointer items-center gap-3 rounded-xl border border-neutral-200 bg-blanco/40 px-4 py-3'>
                   <input

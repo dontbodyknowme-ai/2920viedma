@@ -45,7 +45,7 @@ export interface OpcionesApi {
    * Nombre del respaldo en `localStorage`.
    *
    * Se pasa **sin** este parametro en los endpoints que no tienen equivalente
-   * guardable: un vino en detalle, o los pedidos de un cliente. Si se pasa, y
+   * guardable: un producto en detalle, o los pedidos de un cliente. Si se pasa, y
    * falla el fetch, se muestra lo guardado la ultima vez que se entro a ese
    * endpoint.
    */

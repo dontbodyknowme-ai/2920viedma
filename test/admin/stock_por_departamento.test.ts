@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, createElement } from 'react'
-import type { AdminWine } from '../../src/types/admin'
+import type { ProductoAdmin } from '../../src/types/admin'
 import { montarAdmin, desmontarAdmin, type MontajeAdmin } from './andamiaje_admin'
 import { CatalogoAdmin } from '../../src/pages/admin/catalogo'
 import {
@@ -9,7 +9,7 @@ import {
   SIN_DEPARTAMENTO,
   etiquetaDeStock
 } from '../../src/utils/departamentos'
-import { CLAVE_CARRITO, CLAVE_VINOS } from '../andamiaje'
+import { CLAVE_CARRITO, CLAVE_PRODUCTOS } from '../andamiaje'
 
 /**
  * El stock separado por departamento (pestañas de "Stock de ...").
@@ -33,7 +33,7 @@ import { CLAVE_CARRITO, CLAVE_VINOS } from '../andamiaje'
  */
 
 /** Los cuatro productos: uno por departamento, con nombres reconocibles. */
-const VINOS: AdminWine[] = DEPARTAMENTOS.map((departamento, indice) => ({
+const VINOS: ProductoAdmin[] = DEPARTAMENTOS.map((departamento, indice) => ({
   id: `v${indice}`,
   name: `Producto de ${departamento.valor}`,
   winery: 'Bodega Test',
@@ -45,7 +45,7 @@ const VINOS: AdminWine[] = DEPARTAMENTOS.map((departamento, indice) => ({
   vintage: 2021,
   price: 10000 + indice,
   description: 'Producto de prueba.',
-  imageUrl: 'https://example.com/vino.jpg',
+  imageUrl: 'https://example.com/producto.jpg',
   stock: indice,
   activo: true,
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -80,7 +80,7 @@ const fetchStub = (): typeof fetch =>
     if (url.endsWith('/api/auth/refresh')) {
       return respuesta(401, { message: 'Sin refresh' })
     }
-    if (url.includes('/api/wines')) {
+    if (url.includes('/api/products')) {
       const pedido = new URL(url, 'http://localhost')
       const departamento = pedido.searchParams.get('departamento')
 
@@ -89,7 +89,7 @@ const fetchStub = (): typeof fetch =>
       const datos =
         departamento === null
           ? VINOS
-          : VINOS.filter((vino) => vino.departamento === departamento)
+          : VINOS.filter((producto) => producto.departamento === departamento)
 
       return respuesta(200, {
         data: datos,
@@ -123,9 +123,9 @@ const montarCatalogo = async (): Promise<MontajeAdmin> => {
 
 /** La URL de la ultima peticion al catalogo. */
 const ultimaPeticionDeCatalogo = (): URL => {
-  const deCatalogo = pedidas.filter((url) => url.includes('/api/wines'))
+  const deCatalogo = pedidas.filter((url) => url.includes('/api/products'))
   const ultima = deCatalogo[deCatalogo.length - 1]
-  if (ultima === undefined) throw new Error('No se pidio /api/wines')
+  if (ultima === undefined) throw new Error('No se pidio /api/products')
   return new URL(ultima, 'http://localhost')
 }
 
@@ -156,7 +156,7 @@ const pestanaActiva = (montaje: MontajeAdmin): string | null =>
 beforeEach(() => {
   pedidas = []
   vi.stubGlobal('fetch', fetchStub())
-  localStorage.removeItem(CLAVE_VINOS)
+  localStorage.removeItem(CLAVE_PRODUCTOS)
   localStorage.removeItem(CLAVE_CARRITO)
 })
 

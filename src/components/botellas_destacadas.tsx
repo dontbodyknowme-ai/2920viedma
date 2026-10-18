@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { AnimatedSection } from './animated_section'
-import type { Wine } from '../types/vino'
+import type { Producto } from '../types/producto'
 
 /**
  * Botellas destacadas: las 3 mas caras del catalogo.
@@ -21,8 +21,8 @@ import type { Wine } from '../types/vino'
  */
 
 interface BotellasDestacadasProps {
-  wines: Wine[]
-  onSelectWine: (wine: Wine) => void
+  wines: Producto[]
+  onSelectWine: (wine: Producto) => void
 }
 
 export const BotellasDestacadas = ({ wines, onSelectWine }: BotellasDestacadasProps) => {

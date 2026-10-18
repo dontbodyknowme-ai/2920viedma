@@ -26,22 +26,22 @@ async function salesByDay(prisma: any, startDate: Date) {
 
 async function topProducts(prisma: any) {
   const items = await prisma.orderItem.groupBy({
-    by: ['wineId'],
+    by: ['productoId'],
     _sum: { quantity: true, price: true },
     orderBy: { _sum: { price: 'desc' } },
     take: 5
   })
 
-  const wines = await prisma.wine.findMany({
-    where: { id: { in: items.map((i: any) => i.wineId) } },
+  const productos = await prisma.product.findMany({
+    where: { id: { in: items.map((i: any) => i.productoId) } },
     select: { id: true, name: true }
   })
 
-  const wineMap = new Map(wines.map((w: any) => [w.id, w.name]))
+  const wineMap = new Map(productos.map((w: any) => [w.id, w.name]))
 
   return items.map((i: any) => ({
-    wineId: i.wineId,
-    name: wineMap.get(i.wineId) ?? '',
+    productoId: i.productoId,
+    name: wineMap.get(i.productoId) ?? '',
     revenue: i._sum.price ?? 0,
     count: i._sum.quantity ?? 0
   }))

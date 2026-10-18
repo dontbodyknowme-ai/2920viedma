@@ -53,8 +53,8 @@ T1 (Cliente HTTP + Auth hook) ──► T2 (Navbar real + Login modal) ──►
 | `src/components/AuthModal.tsx` | Modal login (email/password) | T2 |
 | `src/components/Navbar.tsx` (modificar) | Login/logout real, user menu, botón Panel Admin | T2 |
 | `src/components/ProductCatalog.tsx` (modificar) | `GET /api/wines/public` en vez de localStorage | T3 |
-| `src/components/AdminWineForm.tsx` (modificar) | `POST /api/upload` + CRUD real | T4 |
-| `src/components/AdminWineForm.tsx` (modificar) | Import CSV real (`POST /api/wines/import`) | T4 |
+| `src/components/AdminProductoForm.tsx` (modificar) | `POST /api/upload` + CRUD real | T4 |
+| `src/components/AdminProductoForm.tsx` (modificar) | Import CSV real (`POST /api/wines/import`) | T4 |
 | `src/pages/admin/catalogo.tsx` (modificar) | Listado paginado real + acciones | T4 |
 | `src/pages/admin/pedidos.tsx` (modificar) | Listado + drawer real + timeline | T5 |
 | `src/pages/admin/clientes.tsx` (modificar) | Listado + drawer real | T6 |
@@ -75,7 +75,7 @@ T1 (Cliente HTTP + Auth hook) ──► T2 (Navbar real + Login modal) ──►
 | Archivo | Cuándo tocar |
 |---|---|
 | `backend/src/modules/auth/routes.ts` | Solo si hay bug en login/refresh/me |
-| `backend/src/modules/wines/routes.ts` | Solo si hay bug en CRUD/import |
+| `backend/src/modules/products/routes.ts` | Solo si hay bug en CRUD/import |
 | Cualquier otro | **Solo fixes críticos** — backend está aprobado |
 
 ---
@@ -144,20 +144,20 @@ interface AuthActions {
 ### D-E — Catálogo público (`ProductCatalog.tsx`)
 
 ```tsx
-// useEffect: client.get<Wine[]>('/api/wines/public') → setWines()
+// useEffect: client.get<Producto[]>('/api/wines/public') → setWines()
 // Filtros: en memoria sobre wines[] (tipo, cepa, precio, búsqueda)
 // Carrito: localStorage sin cambios (agregar/quitar/cantidad)
 // Botón "Editar": condicional useAuth().hasRole('admin'/'gestor')
 ```
 
-### D-F — Admin Vinos (`catalogo.tsx` + `AdminWineForm.tsx`)
+### D-F — Admin Vinos (`catalogo.tsx` + `AdminProductoForm.tsx`)
 
 ```tsx
 // catalogo.tsx:
-// - client.get<Paginated<Wine>>('/api/wines', {page, limit, search, category, varietal, status})
-// - Acciones: Editar (abre AdminWineForm), Eliminar (confirm + client.delete), Import CSV
+// - client.get<Paginated<Producto>>('/api/wines', {page, limit, search, category, varietal, status})
+// - Acciones: Editar (abre AdminProductoForm), Eliminar (confirm + client.delete), Import CSV
 
-// AdminWineForm.tsx:
+// AdminProductoForm.tsx:
 // - Imagen: input file → client.upload('/api/upload', formData) → {id, url} → setImageUrl(url)
 // - Submit: client.post('/api/wines', data) o client.patch(`/api/wines/${id}`, data)
 // - Import: input file CSV → client.upload('/api/wines/import', formData)
@@ -220,7 +220,7 @@ VITE_API_URL=http://localhost:3000
 | `test/components/AuthModal.test.tsx` | Submit, validación, cierre |
 | `test/components/Navbar.test.tsx` | Render condicional, logout, navegación |
 | `test/components/ProductCatalog.test.tsx` | Carga API, filtros, carrito |
-| `test/components/AdminWineForm.test.tsx` | Upload, submit, import CSV |
+| `test/components/AdminProductoForm.test.tsx` | Upload, submit, import CSV |
 
 ### 4.2 Integration (Playwright — opcional, futura)
 

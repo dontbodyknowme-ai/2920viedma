@@ -1,31 +1,31 @@
-import type { Wine } from './vino'
+import type { Producto } from './producto'
 
 /**
- * El vino como lo ve el panel de administracion.
+ * El producto como lo ve el panel de administracion.
  *
- * `stock` y `activo` viven ACA y no en `Wine`, y eso es deliberado:
+ * `stock` y `activo` viven ACA y no en `Producto`, y eso es deliberado:
  *
  * - `stock` es un dato interno de la operacion. No hay razon para mandarlo al
  *   navegador de un visitante, y RF-06 de la spec 004-b define que el endpoint
  *   publico los omite. Que el tipo loimponga desde el lado del admin hace que
  *   unificar los dos sea un error de compilación, no una forgotencia.
- * - `activo` decide si el vino aparece en el catalogo. Es lo que permite sacarlo
+ * - `activo` decide si el producto aparece en el catalogo. Es lo que permite sacarlo
  *   de la venta sin borrarlo del historial de pedidos.
  *
- * La alternativa era agregar los dos campos a `Wine`, y se descarto: los tests
- * preexistentes fijan el contrato de `Wine` y lo cierran por los dos lados.
+ * La alternativa era agregar los dos campos a `Producto`, y se descarto: los tests
+ * preexistentes fijan el contrato de `Producto` y lo cierran por los dos lados.
  * `CAMPOS_REQUERIDOS` no puede incluirlos porque los fixtures de
- * `test/validadores.test.ts` arman un `Wine` sin ellos y RNF-05 protege su
+ * `test/validadores.test.ts` arman un `Producto` sin ellos y RNF-05 protege su
  * contenido. Y `CAMPOS_OPCIONALES` tampoco, porque
- * `test/integridad_datos_vino.test.ts` exige que `esCampoOpcionalValido(0)` y
+ * `test/integridad_datos_producto.test.ts` exige que `esCampoOpcionalValido(0)` y
  * `esCampoOpcionalValido(false)` den `false`, y `stock: 0` y `activo: false` son
  * valores legitimos. Las dos listas quedan fuera, asi que el campo tiene que
  * vivir en un tipo aparte.
  */
-export interface AdminWine extends Wine {
+export interface ProductoAdmin extends Producto {
   /** Unidades disponibles. 0 es un valor valido, no "desconocido". */
   stock: number
-  /** Si el vino se ofrece en el catalogo. */
+  /** Si el producto se ofrece en el catalogo. */
   activo: boolean
 }
 
@@ -45,8 +45,8 @@ export interface AdminUser {
 }
 
 export interface OrderItem {
-  wineId: string
-  wineName: string
+  productoId: string
+  productoNombre: string
   imageUrl: string
   quantity: number
   price: number
@@ -107,7 +107,7 @@ export interface DailySale {
 }
 
 export interface TopProduct {
-  wineId: string
+  productoId: string
   name: string
   imageUrl: string
   units: number
@@ -164,5 +164,5 @@ export interface ImportResult {
 }
 
 // Reexportado para que los componentes admin no tengan que importar de dos
-// lugares distintos cuando solo necesitan el tipo del vino.
-export type { Wine }
+// lugares distintos cuando solo necesitan el tipo del producto.
+export type { Producto }

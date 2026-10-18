@@ -170,7 +170,7 @@ export const OrderDrawer = ({
                   <ul className='space-y-3'>
                     {pedido.items.map((item) => (
                       <li
-                        key={item.wineId}
+                        key={item.productoId}
                         className='flex items-center gap-3 rounded-xl border border-neutral-200 bg-blanco/40 p-3'
                       >
                         <img
@@ -180,7 +180,7 @@ export const OrderDrawer = ({
                         />
                         <div className='min-w-0 flex-1'>
                           <p className='truncate text-sm font-semibold text-carbon'>
-                            {item.wineName}
+                            {item.productoNombre}
                           </p>
                           <p className='text-xs text-neutral-500'>
                             {item.quantity} x {dinero(item.price)}
@@ -314,22 +314,22 @@ export const OrderDrawer = ({
                       <div className='space-y-2'>
                         {pedido.items.map((item) => (
                           <label
-                            key={item.wineId}
+                            key={item.productoId}
                             className='flex cursor-pointer items-center gap-2.5 rounded-xl border border-neutral-200 bg-blanco/40 px-3 py-2 text-sm transition-colors hover:bg-blanco'
                           >
                             <input
                               type='checkbox'
-                              checked={itemsElegidos.includes(item.wineId)}
+                              checked={itemsElegidos.includes(item.productoId)}
                               onChange={() =>
                                 setItemsElegidos((previas) =>
-                                  previas.includes(item.wineId)
-                                    ? previas.filter((id) => id !== item.wineId)
-                                    : [...previas, item.wineId]
+                                  previas.includes(item.productoId)
+                                    ? previas.filter((id) => id !== item.productoId)
+                                    : [...previas, item.productoId]
                                 )
                               }
                               className='h-4 w-4 accent-verde-salvia'
                             />
-                            <span className='min-w-0 flex-1 truncate'>{item.wineName}</span>
+                            <span className='min-w-0 flex-1 truncate'>{item.productoNombre}</span>
                             <span className='shrink-0 text-xs text-neutral-500'>
                               {item.quantity}
                             </span>
@@ -350,7 +350,7 @@ export const OrderDrawer = ({
                         rows={2}
                         value={motivo}
                         onChange={(e) => setMotivo(e.target.value)}
-                        placeholder='Empaque danado, vino que no taste bien...'
+                        placeholder='Empaque danado, producto que no taste bien...'
                         className='w-full resize-none rounded-xl border border-neutral-300 bg-blanco px-3 py-2 text-sm focus:border-verde-salvia focus:outline-none'
                       />
                     </div>

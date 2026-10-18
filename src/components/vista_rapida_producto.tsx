@@ -1,13 +1,13 @@
 ﻿import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { Wine } from '../types/vino'
+import type { Producto } from '../types/producto'
 
 // RF-37 y constitucion 3: la vista rapida se monta siempre y es este
 // `AnimatePresence`, interno al componente, el que decide cuando hay algo que
 // mostrar. Si el montaje lo condicionara `App.tsx` con `vinoSeleccionado !== null`
 // el componente se desmontaria de golpe al cerrar y la salida no se animaria.
 interface VistaRapidaProductoProps {
-  wine: Wine | null
+  producto: Producto | null
   onClose: () => void
 }
 
@@ -20,21 +20,21 @@ const formatearPrecio = (price: number): string =>
     maximumFractionDigits: 0
   }).format(price)
 
-export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps) => {
+export const VistaRapidaProducto = ({ producto, onClose }: VistaRapidaProductoProps) => {
   // Escape no lo exige ningun RF, pero cierra el panel y el listener solo existe
-  // mientras hay un vino abierto. El cleanup evita acumular listeners.
+  // mientras hay un producto abierto. El cleanup evita acumular listeners.
   useEffect(() => {
-    if (wine === null) return
+    if (producto === null) return
     const alPulsarEscape = (evento: KeyboardEvent) => {
       if (evento.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', alPulsarEscape)
     return () => window.removeEventListener('keydown', alPulsarEscape)
-  }, [wine, onClose])
+  }, [producto, onClose])
 
   return (
     <AnimatePresence>
-      {wine !== null && (
+      {producto !== null && (
         <>
           <motion.div
             initial={{ opacity: 0 }}
@@ -48,7 +48,7 @@ export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps)
             <motion.div
               role='dialog'
               aria-modal='true'
-              aria-label={`Vista rapida de ${wine.name}`}
+              aria-label={`Vista rapida de ${producto.name}`}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -62,8 +62,8 @@ export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps)
               <div className='grid md:grid-cols-2'>
                 <div className='relative h-72 md:h-full bg-marfil'>
                   <img
-                    src={wine.imageUrl}
-                    alt={wine.name}
+                    src={producto.imageUrl}
+                    alt={producto.name}
                     className='absolute inset-0 h-full w-full object-cover'
                   />
                 </div>
@@ -71,7 +71,7 @@ export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps)
                 <div className='p-6 flex flex-col gap-4'>
                   <div className='flex items-start justify-between gap-3'>
                     <h2 className='text-2xl font-serif font-bold text-carbon leading-tight'>
-                      {wine.name}
+                      {producto.name}
                     </h2>
                     <button
                       type='button'
@@ -84,42 +84,42 @@ export const VistaRapidaProducto = ({ wine, onClose }: VistaRapidaProductoProps)
                   </div>
 
                   <p className='text-verde-salvia/90 text-xs font-semibold uppercase tracking-widest'>
-                    {wine.winery} • {wine.varietal}
+                    {producto.winery} • {producto.varietal}
                   </p>
 
                   <div className='flex flex-wrap items-center gap-2'>
                     <span className='bg-verde-800/80 border border-verde-500/30 text-blanco text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
-                      {wine.category}
+                      {producto.category}
                     </span>
                     <span className='bg-blanco text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>
-                      Cosecha {wine.vintage}
+                      Cosecha {producto.vintage}
                     </span>
                   </div>
 
                   <p className='text-carbon text-2xl font-bold font-serif'>
-                    {formatearPrecio(wine.price)}
+                    {formatearPrecio(producto.price)}
                   </p>
 
                   {/* D-N: el chequeo es `!== undefined`, no un truthy check. Un
                       string vacio es un dato presente, no ausente. */}
-                  {wine.tastingNotes !== undefined && (
+                  {producto.tastingNotes !== undefined && (
                     <section>
                       <h3 className='text-xs uppercase tracking-widest text-verde-salvia/90 font-semibold mb-1'>
                         Notas de cata
                       </h3>
                       <p className='text-neutral-700 text-sm leading-relaxed'>
-                        {wine.tastingNotes}
+                        {producto.tastingNotes}
                       </p>
                     </section>
                   )}
 
-                  {wine.foodPairing !== undefined && (
+                  {producto.foodPairing !== undefined && (
                     <section>
                       <h3 className='text-xs uppercase tracking-widest text-verde-salvia/90 font-semibold mb-1'>
                         Maridaje sugerido
                       </h3>
                       <p className='text-neutral-700 text-sm leading-relaxed'>
-                        {wine.foodPairing}
+                        {producto.foodPairing}
                       </p>
                     </section>
                   )}
