@@ -21,7 +21,13 @@ const leer = (ruta: string): string => readFileSync(join(RAIZ, ruta), 'utf8')
 
 const RUTAS_DE_CODIGO = [
   'backend/scripts/seed.ts',
-  'backend/scripts/seed-productos.ts',
+  // El catalogo de demostracion se movio de `scripts/` a `src/demo/` para que el
+  // arranque lo pueda sembrar (`deploy.test.ts` explica por que no puede al
+  // reves). El archivo cambio de lugar, no de deber: la clave de desarrollo no
+  // puede aparecer ahi tampoco.
+  'backend/src/demo/catalogo.ts',
+  'backend/src/demo/seed.ts',
+  'backend/src/demo/bootstrap.ts',
   'backend/src/config/env.ts',
   'backend/tests/unit/deploy.test.ts'
 ]

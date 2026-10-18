@@ -117,6 +117,90 @@ describe('filtrarVinos: la busqueda tiene que cubrir lo que promete el placehold
     expect(() => filtrarVinos([gaseosa], { ...sinFiltros, searchQuery: 'cola' })).not.toThrow()
     expect(filtrarVinos([gaseosa], { ...sinFiltros, searchQuery: 'cola' })).toHaveLength(1)
   })
+
+  it('encuentra por la descripcion', () => {
+    // Es lo unico que hay para un producto sin marca ni cepa, que es la mitad
+    // del catalogo: una gaseosa, una papa, un alfajor. Sin la descripcion, la
+    // busqueda de esos productos se reduce a acertar el nombre exacto.
+    const alfajor = producto({
+      id: 'alfajor',
+      name: 'Alfajor',
+      category: 'Chocolates',
+      departamento: 'Snacks y chocolates',
+      grupo: null,
+      tipoVino: null,
+      winery: null,
+      varietal: null,
+      vintage: null,
+      description: 'Capas de chocolate con dulce de leche'
+    })
+
+    expect(filtrarVinos([alfajor], { ...sinFiltros, searchQuery: 'dulce de leche' })).toHaveLength(1)
+  })
+})
+
+/**
+ * Las tildes, que en espanol casi nunca se escriben.
+ *
+ * ## Por que hay un archivo (o un `describe`) para esto
+ *
+ * Buscar `regaleria` **no encontraba nada**, aunque la etiqueta del filtro dijera
+ * "Regalería". No es un caso raro ni una excentricidad: la tilde se omite en
+ * cualquier teclado y en cualquier celular con autocorrector.
+ *
+ * Y el fallo es de los que no se reportan: no hay error, no hay excepcion, no
+ * hay estado raro. El buscador responde, devuelve cero, y el usuario concluye que
+ * el producto no existe. Una tienda donde buscar "gastronomia" no encuentra
+ * nada parece una tienda vacia.
+ *
+ * Se verifico en contra: volviendo a `toLowerCase()` sin `normalize`, el primer
+ * test de abajo vuelve a fallar.
+ */
+describe('filtrarVinos: buscar sin tildes', () => {
+  it('encuentra un departamento escrito sin tilde', () => {
+    // "Regalería" con tilde y "regaleria" sin ella tienen que dar lo mismo.
+    const copas = producto({
+      id: 'copas',
+      name: 'Set de Copas',
+      category: 'Vajilla',
+      departamento: 'Regalería',
+      grupo: null,
+      tipoVino: null
+    })
+
+    expect(filtrarVinos([copas], { ...sinFiltros, searchQuery: 'regaleria' })).toHaveLength(1)
+    expect(filtrarVinos([copas], { ...sinFiltros, searchQuery: 'Regalería' })).toHaveLength(1)
+  })
+
+  it('encuentra una palabra con Ñ', () => {
+    // `ñ` es un caso aparte: no es `n` con diacritico, es una letra. Con `NFD` la
+    // `ñ` **no** se descompone —no tiene un equivalente de una sola letra—, asi
+    // que la palabra queda con la `ñ` puesta y "manana" y "mañana" siguen siendo
+    // cadenas distintas. Este test es el que avisaria si `normalize` se aplicara
+    // de la forma que solo funciona con diacriticos combinables.
+    const item = producto({
+      id: 'manana',
+      name: 'Factura de Mañana',
+      category: 'Panadería',
+      departamento: 'Gastronomía',
+      grupo: null,
+      tipoVino: null,
+      description: 'Recién horneada'
+    })
+
+    expect(filtrarVinos([item], { ...sinFiltros, searchQuery: 'mañana' })).toHaveLength(1)
+    expect(filtrarVinos([item], { ...sinFiltros, searchQuery: 'manana' })).toHaveLength(1)
+    expect(filtrarVinos([item], { ...sinFiltros, searchQuery: 'horneada' })).toHaveLength(1)
+  })
+
+  it('agregar normalize no rompe buscar un acento que si esta', () => {
+    // El otro lado: arreglar la tilde ausente no puede hacer que buscar "café"
+    // deje de encontrar "Café".
+    const cafe = producto({ id: 'cafe', name: 'Café de Olla', category: 'Cafés' })
+
+    expect(filtrarVinos([cafe], { ...sinFiltros, searchQuery: 'café' })).toHaveLength(1)
+    expect(filtrarVinos([cafe], { ...sinFiltros, searchQuery: 'cafe' })).toHaveLength(1)
+  })
 })
 
 describe('filtrarVinos: los tres niveles de la taxonomia', () => {

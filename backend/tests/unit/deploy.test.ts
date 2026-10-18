@@ -279,31 +279,62 @@ describe('comandos que se ejecutan dentro del contenedor', () => {
   })
 
   it('el seed se compila, no se interpreta con tsx', () => {
-    // Compilado a `dist/scripts/*.js`, el Dockerfile lo copia sin tocar nada
-    // mas: `COPY --from=builder /app/dist ./dist`.
+    // Compilado, el Dockerfile lo copia sin tocar nada mas:
+    // `COPY --from=builder /app/dist ./dist`.
     expect(packageJson.scripts.seed).toContain('node dist/scripts/seed.js')
-    expect(packageJson.scripts['seed:productos']).toBe('node dist/scripts/seed-productos.js')
+    expect(packageJson.scripts['seed:productos']).toBe('node dist/demo/seed.js')
     expect(packageJson.scripts.build).toContain('tsconfig.scripts.json')
   })
 
-  it('todo script que apunte a dist/scripts tiene su fuente en el tsconfig', () => {
+  it('todo script que apunte a dist tiene su fuente en algun tsconfig', () => {
     // `npm run seed` encadena dos scripts compilados. Si uno existiera en el
-    // `package.json` pero no en `tsconfig.scripts.json`, el `tsc` no lo genera
-    // y el comando muere con "Cannot find module" **en produccion**, no en el
-    // build: el build pasa igual porque compila lo que hay.
+    // `package.json` pero en ninguno de los dos tsconfig, el `tsc` no lo
+    // genera y el comando muere con "Cannot find module" **en produccion**, no
+    // en el build: el build pasa igual porque compila lo que hay.
+    //
+    // Los dos tsconfig porque los dos compilan, cada uno a su carpeta:
+    // `tsconfig.json` -> `src/` -> `dist/`, y `tsconfig.scripts.json` ->
+    // `scripts/` -> `dist/scripts/`. Antes el catalogo vivia en `scripts/` y
+    // alcanzaba con mirar el segundo; ahora vive en `src/` y hace falta el
+    // primero tambien.
+    const tsconfigSrc = leerJson<{ include: string[] }>('backend/tsconfig.json')
     const tsconfigScripts = leerJson<{ include: string[] }>('backend/tsconfig.scripts.json')
 
+    // `src/**/*` alcanza para todo lo que cuelgue de `src/`. Se comprueba que
+    // el glob siga ahi en vez de hardcodear la lista: cambiarlo a mano es
+    // justamente lo que haria que esto pasara sin avisar.
+    const incluyeSrc = (relativo: string): boolean =>
+      tsconfigSrc.include.includes('src/**/*') && relativo.startsWith('src/')
+    const incluyeScripts = (relativo: string): boolean =>
+      tsconfigScripts.include.includes(relativo)
+
     const referenciados = Object.values(packageJson.scripts).flatMap((comando) =>
-      [...comando.matchAll(/dist\/scripts\/([\w-]+)\.js/g)].map((m) => m[1] ?? '')
+      [...comando.matchAll(/dist\/(?:scripts\/)?([\w-]+)\.js/g)].map((m) => m[1] ?? '')
     )
 
     expect(referenciados.length).toBeGreaterThan(1)
 
     const sinFuente = referenciados.filter(
-      (nombre) => !tsconfigScripts.include.includes(`scripts/${nombre}.ts`)
+      (nombre) =>
+        !incluyeScripts(`scripts/${nombre}.ts`) && !incluyeSrc(`src/demo/${nombre}.ts`)
     )
 
     expect(sinFuente).toEqual([])
+  })
+
+  it('el catalogo de demostracion no se siembra desde scripts/', () => {
+    // El arranque (`src/`) **no puede** importar de `scripts/`: `tsconfig.json`
+    // tiene `rootDir: ./src`, asi que un import ahi no compila. Y al reves
+    // tampoco, que es lo que fija el test de `scripts/seed.ts`.
+    //
+    // O sea que el catalogo de demostracion tiene que estar en `src/`, como
+    // esta. Este test existe para que nadie lo mueva de vuelta creyendo que es
+    // un script suelto: es codigo del arranque y corre en cada deploy.
+    // Sin regex a proposito: el patron terminaria en `/`, que es el delimitador
+    // del literal, y el archivo entero deja de parsear. `includes` dice lo mismo
+    // y no tiene ese problema.
+    expect(leer('backend/src/demo/bootstrap.ts')).toContain("from './catalogo.js'")
+    expect(leer('backend/src/demo/catalogo.ts').includes('../scripts/')).toBe(false)
   })
 
   it('el seed compilado no importa codigo que solo exista en el repo', () => {

@@ -44,8 +44,46 @@ export interface Filtros {
   searchQuery: string
 }
 
+/**
+ * Deja el texto comparable: minusculas y **sin tildes**.
+ *
+ * Sin esto, buscar `regaleria` no encuentra nada aunque la etiqueta del filtro
+ * diga **"Regalería"**. Y no es un caso raro: en espanol la tilde casi nunca se
+ * escribe, ni en un teclado ni en un celular con autocorrector.
+ *
+ * El sintoma es de los peores que puede tener un buscador: **no hay error, no
+ * hay estado vacio raro, no hay nada que reportar**. El usuario escribe, no ve
+ * resultados, y la conclusion que saca es que el producto no existe. Y el
+ * buscador no fallo: esta comparando `i` con `í`.
+ *
+ * `NFD` descompone `í` en `i` + diacritico, y los diacriticos viven en el rango
+ * `0300`-`036f`, que es lo que se borra despues. La alternativa —una tabla de
+ * equivalencias escrita a mano— se desincroniza en la primera palabra con
+ * doble acento.
+ */
+export const normalizarTexto = (texto: string): string =>
+  texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
+/** Todos los campos por los que se busca, ya normalizados. */
+const camposDeBusqueda = (producto: Producto): string[] =>
+  [
+    producto.name,
+    producto.winery,
+    producto.varietal,
+    producto.category,
+    producto.departamento,
+    producto.grupo,
+    producto.tipoVino,
+    producto.description
+  ]
+    .filter((campo): campo is string => typeof campo === 'string' && campo !== '')
+    .map(normalizarTexto)
+
 export const filtrarVinos = (productos: Producto[], filtros: Filtros): Producto[] => {
-  const consulta = filtros.searchQuery.trim().toLowerCase()
+  const consulta = normalizarTexto(filtros.searchQuery.trim())
   const min = filtros.minPrice === '' ? null : Number(filtros.minPrice)
   const max = filtros.maxPrice === '' ? null : Number(filtros.maxPrice)
 
@@ -61,10 +99,10 @@ export const filtrarVinos = (productos: Producto[], filtros: Filtros): Producto[
     // `wine.grupo === filtros.grupo` a secas no habria forma de pedirlo.
     //
     // Por eso el filtro de grupo es exacto y `null` se representa como string
-    // vacio del lado de la pantalla —que es justo lo que hace `''`— mientras que
-    // el filtro `''` global significa "no filtrar". La distincion esta en que el
-    // filtro de grupo solo se compara cuando hay un departamento elegido: sin
-    // departamento no hay grupo que acotar.
+    // vacio del lado de la pantalla —que es justo lo que hace `''`— mientras
+    // que el filtro `''` global significa "no filtrar". La distincion esta en
+    // que el filtro de grupo solo se compara cuando hay un departamento
+    // elegido: sin departamento no hay grupo que acotar.
     const matchesGrupo =
       filtros.departamento === '' || filtros.grupo === '' || wine.grupo === filtros.grupo
 
@@ -74,22 +112,17 @@ export const filtrarVinos = (productos: Producto[], filtros: Filtros): Producto[
     const matchesPrice =
       (min === null || wine.price >= min) && (max === null || wine.price <= max)
 
-    // La categoría también se busca: el placeholder del buscador y el del navbar
-    // prometen "nombre, marca o categoría", y sin esta línea el tercero no
-    // encontraba nada. Un texto que promete una búsqueda que no existe es peor
-    // que un placeholder más corto.
+    // La categoria tambien se busca: el placeholder del buscador y el del
+    // navbar prometen "nombre, marca o categoria", y sin esta linea el tercero
+    // no encontraba nada. Un texto que promete una busqueda que no existe es
+    // peor que un placeholder mas corto.
     //
     // Se busca tambien por departamento y grupo, porque son las palabras que el
-    // usuario escribe ("busco gaseosas", "algo de regalería") y no estan en el
-    // nombre del producto.
-    const matchesSearch =
-      wine.name.toLowerCase().includes(consulta) ||
-      (wine.winery ?? '').toLowerCase().includes(consulta) ||
-      (wine.varietal ?? '').toLowerCase().includes(consulta) ||
-      wine.category.toLowerCase().includes(consulta) ||
-      wine.departamento.toLowerCase().includes(consulta) ||
-      (wine.grupo ?? '').toLowerCase().includes(consulta) ||
-      (wine.tipoVino ?? '').toLowerCase().includes(consulta)
+    // usuario escribe ("busco gaseosas", "algo de regaleria") y no estan en el
+    // nombre del producto. Y por la **descripcion**: es lo unico que hay para
+    // un producto sin marca ni cepa —una gaseosa, un alfajor—, donde todos los
+    // demas campos vienen en `null` y la busqueda se reduce al nombre.
+    const matchesSearch = camposDeBusqueda(wine).some((campo) => campo.includes(consulta))
 
     return (
       matchesDepartamento &&

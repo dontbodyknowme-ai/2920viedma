@@ -47,6 +47,41 @@ const origenesCors = z
     { message: 'cada origen tiene que ser una URL http(s) completa, separados por coma' }
   )
 
+/**
+ * Un booleano de entorno que **no adivina**.
+ *
+ * Lo de siempre seria `valor !== 'false'`: cualquier otra cosa es `true`. O sea,
+ * `SEED_CATALOGO=flashe`, `SEED_CATALOGO=si` o un espacio que se coló desde el
+ * panel de despliegue pasan por `true` sin decir nada. Es el gotcha 27 de otra
+ * vez —"una variable con el valor equivocado no rompe nada, apaga cosas"— pero
+ * al reves: aqui no apaga nada, **prende** el seed en una base de produccion.
+ *
+ * Con un valor asi, cualquier cosa rara avisa por `stderr` en vez de pasar
+ * inadvertido. No se tira el proceso: es una variable de cortesia y tumbar la app
+ * por una mayuscula de mas seria peor que avisar.
+ */
+const booleanoEnv = (defecto: boolean) =>
+  z
+    .string()
+    .optional()
+    .transform((valor, ctx) => {
+      if (valor === undefined || valor.trim() === '') return defecto
+
+      const normalizado = valor.trim().toLowerCase()
+      if (['1', 'true', 'yes', 'si', 'sí', 'on'].includes(normalizado)) return true
+      if (['0', 'false', 'no', 'off'].includes(normalizado)) return false
+
+      process.stderr.write(
+        `\nAVISO: se esperaba true/false y vino "${valor}". Se usa ${defecto}.\n` +
+          'Valores validos: true, false, 1, 0, yes, no, on, off.\n\n'
+      )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `no es un booleano ("${valor}")`
+      })
+      return z.NEVER
+    })
+
 const esquema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -76,7 +111,16 @@ const esquema = z.object({
   // No se firma: una URL firmada caduca en una hora y el producto la tiene guardada
   // para siempre, o sea que la imagen se rompia al dia siguiente.
   STORAGE_PUBLIC_URL: z.string().url(),
-  PUBLIC_API_URL: z.string().url()
+  PUBLIC_API_URL: z.string().url(),
+  /**
+   * Sembrar el catalogo de demostracion al arrancar, **solo si la tabla esta
+   * vacia**. Ver `src/demo/bootstrap.ts`.
+   *
+   * Con `false`, un negocio que carga su catalogo por otro lado no tiene que
+   * acordarse de apagar nada: simplemente no siembra. Y con el valor por defecto
+   * en `true`, la app queda servible en el primer deploy sin pasos manuales.
+   */
+  SEED_CATALOGO: booleanoEnv(true)
 })
 
 /**

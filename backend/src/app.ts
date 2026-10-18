@@ -57,6 +57,35 @@ const MENSAJES_FASTIFY: Record<string, string> = {
   FST_ERR_RATE_LIMIT: 'Demasiadas peticiones, espera un momento'
 }
 
+// Prisma Client **no loguea nada por defecto**. Sin esto, un fallo de
+// conexion a la base era literalmente invisible: en produccion el unico
+// sintoma era `/health` respondiendo `"db":"disconnected"` y un 503, sin
+// una sola linea que dijera por que.
+//
+// Los eventos van al logger del proyecto, por el mismo motivo que
+// `logger: false` mas abajo: una sola fuente de logs, no dos en formatos
+// distintos. Los listeners se registran aca y no despues, porque Prisma
+// lanza si un evento se emite antes de que exista alguien escuchando.
+//
+// Vive **a nivel de modulo** y se exporta, y no dentro de `buildApp`, por el
+// bootstrap del catalogo: `main.ts` necesita sembrar **antes** de que el
+// servidor escuche, o sea que todavia no llamo a `buildApp`. Crear el cliente
+// adentro habria exigido un segundo cliente —dos pools contra la misma base, con
+// el limite de conexiones del plan de la base de datos partido en dos y el
+// `SIGTERM` desconectando solo uno— o mover el bootstrap adentro de `buildApp`,
+// que es donde vive el ciclo de vida de Fastify y no el de la base.
+export const prisma = new PrismaClient({
+  log: [{ emit: 'event', level: 'error' }, { emit: 'event', level: 'warn' }]
+})
+
+prisma.$on('error', (evento) => {
+  logger.error({ target: evento.target, message: evento.message }, 'prisma')
+})
+
+prisma.$on('warn', (evento) => {
+  logger.warn({ target: evento.target, message: evento.message }, 'prisma')
+})
+
 export const buildApp = async (): Promise<FastifyInstance> => {
   const fastify = Fastify({
     // El log de Fastify va apagado a proposito: el proyecto tiene su propio
@@ -67,27 +96,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     ajv: { customOptions: { strict: false } }
   })
 
-  // Prisma Client **no loguea nada por defecto**. Sin esto, un fallo de
-  // conexion a la base era literalmente invisible: en produccion el unico
-  // sintoma era `/health` respondiendo `"db":"disconnected"` y un 503, sin
-  // una sola linea que dijera por que.
-  //
-  // Los eventos van al logger del proyecto, por el mismo motivo que
-  // `logger: false` mas arriba: una sola fuente de logs, no dos en formatos
-  // distintos. Los listeners se registran aca y no despues, porque Prisma
-  // lanza si un evento se emite antes de que exista alguien escuchando.
-  const prisma = new PrismaClient({
-    log: [{ emit: 'event', level: 'error' }, { emit: 'event', level: 'warn' }]
-  })
-
-  prisma.$on('error', (evento) => {
-    logger.error({ target: evento.target, message: evento.message }, 'prisma')
-  })
-
-  prisma.$on('warn', (evento) => {
-    logger.warn({ target: evento.target, message: evento.message }, 'prisma')
-  })
-
+  // El `prisma` de arriba, a nivel de modulo: se decora el mismo y no uno nuevo.
   fastify.decorate('prisma', prisma)
 
   // Fastify se niega a parsear un `application/json` vacio y responde

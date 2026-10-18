@@ -7,16 +7,24 @@
  * Tres niveles, y el del medio es **opcional**:
  *
  *   Bebidas
- *     ├─ Con alcohol      → Vinos, Espumante, Cerveza, Aperitivos, Destilados
- *     ├─ Energizantes     → (sin grupo: cuelga directo del departamento)
+ *     ├─ Con alcohol      → Vinos, Cerveza, Aperitivos, Destilados
+ *     ├─ Energizantes     → (sin subcategorias: el grupo **es** la hoja)
  *     └─ Sin alcohol      → Gaseosas, Agua saborizada, Jugos
  *   Regalería            → (sin estructura por ahora)
  *   Gastronomía          → (sin estructura por ahora)
  *   Snacks y chocolates  → (sin estructura por ahora)
  *
  * Un producto tiene siempre `departamento` y `categoria`. El `grupo` es el que
- * puede faltar: "Energizantes" cuelga directo de Bebidas porque no es ni con
- * alcohol ni sin alcohol, y meterlo en alguno de los dos seria mentir.
+ * puede faltar, y solo falta en los departamentos que **no tienen estructura**:
+ * un vaso de regaloeria no es "con alcohol" ni "sin alcohol", asi que no hay que
+ * inventarle un grupo.
+ *
+ * Y "Energizantes" **si** es un grupo, aunque no tenga subcategorias: es una
+ * hoja de la rama de bebidas. Meterlo en "Con alcohol" o en "Sin alcohol" seria
+ * mentir, y dejarlo sin grupo tampoco, porque entonces el filtro de grupo
+ * ofreceria "Energizantes" —la fila lo lista, porque es un grupo declarado— y no
+ * devolveria nada: el producto tendria `grupo: null`. Un boton de filtro que
+ * lleva a cero resultados.
  *
  * **Por que el grupo es un campo y no solo como se dibuja:** porque se filtra.
  * En el catalogo publico el filtro de "Con alcohol" tiene que devolver las
@@ -65,7 +73,6 @@ export const DEPARTAMENTOS: DepartamentoDeTienda[] = [
         etiqueta: 'Con alcohol',
         categorias: [
           { valor: 'Vinos', etiqueta: 'Vinos' },
-          { valor: 'Espumante', etiqueta: 'Espumante' },
           { valor: 'Cerveza', etiqueta: 'Cerveza' },
           { valor: 'Aperitivos', etiqueta: 'Aperitivos' },
           { valor: 'Destilados', etiqueta: 'Destilados' }
@@ -110,15 +117,21 @@ export const SIN_DEPARTAMENTO = ''
 export const PESTAÑA_TODOS = 'Todos'
 
 /**
- * El nombre de la etiqueta que muestra la categoria "suelta" de un
- * departamento, la que cuelga sin grupo.
+ * El valor de `grupo` que significa "sin filtro".
  *
- * Existe porque sin esto el filtro de categorias de "Energizantes" no tendria
- * que mostrar: el grupo ya esta en pantalla y no hay nada que elegir adentro.
+ * No es lo mismo que `grupo: null` en un producto: el filtro `''` pide todos los
+ * grupos de un departamento, y `null` es un producto que no tiene grupo —que solo
+ * existe en los departamentos sin estructura.
  */
 export const SIN_GRUPO = ''
 
-/** El departamento del grupo vacio: "Energizantes" cuelga aca. */
+/**
+ * El grupo sin subcategorias: "Energizantes".
+ *
+ * Sus productos llevan `grupo: 'Energizantes'` y `category: 'Energizantes'`: el
+ * grupo y la hoja son el mismo nombre, porque no hay un nivel mas abajo. Ver la
+ * nota de cabecera.
+ */
 export const GRUPO_SUELTO: CategoriaDeTienda = {
   valor: 'Energizantes',
   etiqueta: 'Energizantes'

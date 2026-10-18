@@ -1,8 +1,39 @@
 import { Producto } from '../types/producto'
 
-// Los dos productos base del catalogo publico. No llevan `stock` ni `activo`: esos
-// campos son del panel de administracion y viven en `ProductoAdmin`
-// (`src/types/admin.ts`). El catalogo que ve un visitante no los necesita.
+/**
+ * Siete productos para el contrato de `Producto`, no para la tienda.
+ *
+ * ## Que es y que no es
+ *
+ * **Lo que el visitante ve NO sale de aca.** El catalogo publico lo pide a
+ * `/api/products/public` (`components/carta_de_catalogo.tsx`), y el demo lo
+ * siembra el backend al arrancar (`backend/src/demo/bootstrap.ts`).
+ *
+ * Esto es lo que queda:
+ *
+ *   1. la **semilla de `localStorage`** que usa `loadWines` en `App.tsx`. Ese
+ *      estado ya no alimenta el catalogo publico —el componente tiene el
+ *      suyo, alimentado por la API—, asi que hoy es una lista que se escribe
+ *      y no se lee. Se conserva porque `ProductForm` (el editor que quedo de
+ *      la epoca de MSW) la usa.
+ *   2. el **fixture del contrato**: `test/integridad_datos_producto.test.ts`
+ *      verifica aca que los campos requeridos y los opcionales se comportan
+ *      como deben, y para eso necesita productos reales, no inventados.
+ *
+ * ## Por que son siete y no los del catalogo
+ *
+ * Copiar los 35 productos del backend aca seria crear una **segunda lista** que
+ * hay que mantener en linea con la primera, y esta es justo la clase de
+ * duplicacion que el repo vino desarmando: la primera vez que se separan, la
+ * tienda muestra una cosa y el panel otra, sin ningun error que lo diga.
+ *
+ * Lo que hace falta es que el catalogo tenga productos de cada rama de la
+ * taxonomia —un vino con bodega y anada, una cerveza sin ninguna de las dos
+ * cosas, un producto de un departamento sin estructura— y siete alcanzan.
+ *
+ * La lista de verdad es `backend/src/demo/catalogo.ts`, y sus fotos se
+ * comprueban con `npm run verificar:fotos` (desde `backend/`).
+ */
 export const PRODUCTOS_INICIALES: Producto[] = [
   {
     id: '1',
@@ -74,7 +105,6 @@ export const PRODUCTOS_INICIALES: Producto[] = [
     varietal: null,
     category: 'Energizantes',
     departamento: 'Bebidas',
-    // Sin grupo a proposito: un energizante no es ni con alcohol ni sin alcohol.
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -94,7 +124,7 @@ export const PRODUCTOS_INICIALES: Producto[] = [
     vintage: null,
     price: 28000,
     description: 'Set de dos copas de cristal, para regalar o para la mesa.',
-    imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=800'
+    imageUrl: 'https://images.unsplash.com/photo-1566754436893-98224ee05be4?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: '7',
@@ -110,6 +140,6 @@ export const PRODUCTOS_INICIALES: Producto[] = [
     vintage: null,
     price: 5400,
     description: 'Tableta de chocolate negro 70%, con IBD de cacao.',
-    imageUrl: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&q=80&w=800'
+    imageUrl: 'https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=80&w=800'
   }
 ]

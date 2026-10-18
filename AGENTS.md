@@ -16,7 +16,8 @@
 
 **Backend (spec 004-b):**
 - `cd backend && npm run db:migrate` — aplica migraciones Prisma
-- `cd backend && npm run seed` — crea usuarios admin/gestor/vendedor
+- `cd backend && npm run seed` — crea usuarios admin/gestor/vendedor **y el catalogo de demostracion**. Para el catalogo **no hace falta**: `npm start` lo siembra solo si la tabla esta vacia (`src/demo/bootstrap.ts`, apagable con `SEED_CATALOGO=false`). El comando manual queda para completar un seed que fallo a medias y para reponer el catalogo en desarrollo.
+- `cd backend && npm run verificar:fotos` — comprueba que las 35 fotos del catalogo respondan y no esten repetidas. **Necesita red**: por eso es script y no test de `npm test`. No verifica que la foto sea *del* producto, asi que hay que mirar la salida
 - `cd backend && npm run dev` — levanta Fastify en :3000
 - `cd backend && npm run test` — tests unitarios (mock Prisma)
 - `docker compose up -d db` — levanta PostgreSQL
@@ -107,7 +108,7 @@
   drawer de móvil no se ve nunca
 - **Montaje**: `montarApp()` en `test/andamiaje.ts` (sin StrictMode; evita doble sincronización a localStorage)
 - **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
-- **Cobertura**: 221 tests en 14 archivos. `admin/stock_por_departamento` y
+- **Cobertura**: 230 tests en 15 archivos. `admin/stock_por_departamento` y
   `carrito_agregado` interceptan `fetch` y montan `CatalogoAdmin` / `App` enteros;
   `npm test` pasa en modo no interactivo (`watch: false`)
 - **Nota 004-c**: se borraron los tests que dependían de `src/mocks/*` y de `admin_acceso.ts`.
@@ -148,7 +149,7 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
   mock corre antes que los `const`; sin `hoisted` revienta por TDZ)
 - **`tests/setup.ts`** pone los defaults de `process.env` **antes** de importar el servidor:
   `config/env.ts` valida el entorno de forma eager y sin ellos no arranca ningún test
-- **Cobertura**: 165 tests en 14 archivos
+- **Cobertura**: 184 tests en 15 archivos
 - `backend/tsconfig.json` incluye solo `src/**/*`: los tests **no** entran al `typecheck` ni al `build`.
   Es a propósito (el build de la imagen no debe typecheckear tests) y **no** es el
   olvido que había en el frontend. Si se cambia, va un `tsconfig` aparte, no
@@ -312,3 +313,44 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
     Y el mismo rename dejo una frase sin sentido en un gotcha: "todos los productos eran productos". Un
     reemplazo mecanico de `vino` por `producto` no sabe cuando la palabra era un **dato** y cuando era un
     **comentario**. Hay que leer el diff de los `.md`.
+40. **`npm start` migraba pero no sembraba** (2026-10-18). Es `prisma migrate deploy && node dist/main.js`, y
+    el seed de productos era un script que alguien corria **a mano, una vez, acordandose**. Un deploy que lo
+    olvidaba dejaba la tienda con **cero productos y sin un solo error en los logs**: la migracion habia
+    funcionado, `/health` daba 200, el deploy figuraba sano. El unico sintoma era que un visitante no encontraba
+    nada que buscar — y en una tienda que se comparte por primera vez, eso es la unica prueba que importa.
+    Por eso `src/demo/bootstrap.ts` siembra **al arrancar, y solo si `product.count() === 0`**. La condicion
+    importa mas que el seed: con un producto en la base no hace nada, y asi el dueno del negocio edita
+    precios a mano sin que el proximo deploy se los revierta. El caso raro —borra todos los productos a
+    proposito y el siguiente arranque los vuelve a sembrar— es el precio de que la app se llene sola, y
+    `SEED_CATALOGO=false` lo desactiva.
+    Y `scripts/` **no puede** importar de `src/`: cada tsconfig tiene su `rootDir`, asi que el catalogo de
+    demostracion vive en `src/demo/` y no en `scripts/`. `deploy.test.ts` lo fija.
+41. **Una foto que carga bien puede ser la foto que no es** (2026-10-18). El catalogo de demostracion tiene
+    las URLs de Unsplash escritas a mano, y de 20 productos **4 dan 404** (malo visible: se ve el icono de
+    imagen rota) y **2 mostraban otra cosa**: la "Cerveza Artesanal IPA" tenia una foto de un apicultor con su
+    colmena, y el "Chocolate Amargo 70%" una de chocolate **blanco**. Las dos respondian 200.
+    **Un 200 es un 200, no importa lo que muestre**, asi que ningun test de URLs las agarra. Por eso existe
+    `npm run verificar:fotos`, que ademas es **script y no test**: necesita red, y en `npm test` un test que
+    falla cuando se cae internet no informa nada sobre el codigo. Lo que el script **no** verifica es que la
+    foto sea del producto — eso no se puede automatizar sin falsos positivos — asi que imprime el nombre al
+    lado de la miniatura para que sean comparables de a ojo.
+42. **La busqueda compara `i` con `í`** (2026-10-18). Escribir `regaleria` no encontraba nada aunque la
+    etiqueta del filtro dijera **"Regalería"**, y en espanol la tilde casi nunca se escribe. El sintoma es de
+    los peores que puede tener un buscador: **no hay error, no hay estado raro, no hay nada que reportar**. El
+    usuario escribe, no ve resultados, y concluye que el producto no existe. Se arreglo con `normalizarTexto`
+    (`NFD` + borrar el rango `0300`-`036f`), que ademas empeora un caso: la `ñ` **no** se descompone, asi que
+    "manana" y "mañana" siguen siendo cadenas distintas. Por eso el test busca las dos formas.
+    Y se agrego la **descripcion** a los campos de busqueda: es lo unico que hay para un producto sin marca ni
+    cepa, que es la mitad del catalogo.
+43. **La copia mas cara es la que se desincroniza en silencio** (2026-10-18). El test de bootstrap empezo
+    reimplementando la busqueda del frontend —concatenar campos y hacer `includes`— y fallo con *"blanco no
+    encuentra nada"*: se le habia olvidado `tipoVino`. O sea, **una segunda copia de `filtrarVinos`**. Lo que
+    quedo son reglas sobre los **datos** (ninguna categoria con menos de dos productos, ids unicos, fotos sin
+    repetir, `tipoVino` solo en "Vinos"), que solo se pueden comprobar aca y que dicen algo real: una
+    categoria con un solo producto hace que la busqueda no sirva, porque con esos datos un `filtrarVinos` que
+    devolviera el catalogo entero daria el mismo resultado y ningun test lo notaria.
+    La regla que sale de ahi: **ningun filtro puede llevar a un lugar vacio**. Un boton que devuelve cero no es
+    un filtro, es un error con forma de boton. Y por eso `Espumante` dejo de ser una categoria —los espumantes
+    van en "Vinos" y se distinguen por `tipoVino`—, y `Energizantes` paso a ser un **grupo** de verdad: antes
+    los productos lo tenían en `null` y el filtro de grupo lo ofrecia igual, con lo que llevaba a cero
+    resultados.
