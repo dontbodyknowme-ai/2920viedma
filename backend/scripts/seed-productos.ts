@@ -282,9 +282,10 @@ const CATALOGO: VinoSeed[] = [
    *   **no se podia cargar**.
    * - **Energizante**: `grupo` en `null`. Cuelga directo de Bebidas porque no es
    *   ni con alcohol ni sin alcohol.
-   * - **Regalería** y **Gastronomía**: los dos departamentos que todavia no
-   *   tienen estructura. Dicen la verdad sobre el catalogo —estan vacios de
-   *   subcategorias— en vez de fingir un arbol que el boceto no dibujo.
+   * - **Regalería**, **Gastronomía** y **Snacks y chocolates**: los tres
+   *   departamentos que todavia no tienen estructura. Dicen la verdad sobre el
+   *   catalogo —estan vacios de subcategorias— en vez de fingir un arbol que el
+   *   boceto no dibujo.
    */
   {
     id: 'bebida-cerveza-artesanal-ipa',
@@ -398,6 +399,46 @@ const CATALOGO: VinoSeed[] = [
     foodPairing: 'Vino blanco, pan de campagne y uvas.',
     imageUrl: 'https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&q=80&w=800',
     stock: 22,
+    activo: true
+  },
+  {
+    id: 'snacks-chocolate-amargo-70',
+    name: 'Chocolate Amargo 70% 100g',
+    winery: null,
+    varietal: null,
+    category: 'Chocolates',
+    departamento: 'Snacks y chocolates',
+    // Sin grupo, como el resto de este departamento: el boceto dibuja la
+    // jerarquia solo de Bebidas, y "chocolates / alfajores / papas chips" todavia
+    // no se decidio. La `categoria` si dice que es, porque es NOT NULL y un
+    // producto sin categoria no aparece en ningun filtro.
+    grupo: null,
+    tipoVino: null,
+    vintage: null,
+    price: 5400,
+    description: 'Tableta de chocolate negro 70%, con IBD de cacao.',
+    tastingNotes: 'Amargo, con final largo y una acidez que limpia.',
+    foodPairing: 'Cafe de filtro y quesos blandos.',
+    imageUrl: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&q=80&w=800',
+    stock: 80,
+    activo: true
+  },
+  {
+    id: 'snacks-papas-chips-classicas',
+    name: 'Papas Chips Clásicas 150g',
+    winery: null,
+    varietal: null,
+    category: 'Snacks salados',
+    departamento: 'Snacks y chocolates',
+    grupo: null,
+    tipoVino: null,
+    vintage: null,
+    price: 3200,
+    description: 'Papas fritas clicasicas, saladas y crocantes.',
+    tastingNotes: 'Salada, con aceite limpio.',
+    foodPairing: 'Cerveza y algo dulce despues.',
+    imageUrl: 'https://images.unsplash.com/photo-1621447504864-d4416ecdb69d?auto=format&fit=crop&q=80&w=800',
+    stock: 110,
     activo: true
   }
 ]

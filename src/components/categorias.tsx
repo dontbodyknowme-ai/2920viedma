@@ -1,18 +1,46 @@
 // `Wine` es el nombre del icono en lucide-react, no de lo que vende la tienda.
-import { Wine as IconoVino, Gift, Candy, Utensils } from 'lucide-react'
-
-const CATEGORIAS = [
-  { icon: IconoVino, titulo: 'Bebidas', detalle: 'Con y sin alcohol' },
-  { icon: Gift, titulo: 'Regalería', detalle: 'Detalles para regalar' },
-  { icon: Candy, titulo: 'Snacks y chocolates', detalle: 'Algo rico para disfrutar' },
-  { icon: Utensils, titulo: 'Comidas', detalle: 'Opciones preparadas' }
-]
+import { Wine as IconoVino, Gift, Candy, Utensils, type LucideIcon } from 'lucide-react'
+import { DEPARTAMENTOS } from '../utils/departamentos'
 
 /**
- * Categorias de la home: "Que estas buscando?".
+ * El icono y el detalle de cada departamento, por su `valor`.
  *
- * Cuatro tarjetas con icono, titulo y detalle. Son el segundo punto de entrada
- * al catalogo, despues del buscador.
+ * **La lista sale de `DEPARTAMENTOS`, no de aca.** Antes esta componente tenia su
+ * propia lista de cuatro tarjetas, y quedo desincronizada de la taxonomia sin que
+ * nada avisara: la homeSeguia mostrando una tarjeta llamada **"Comidas"** que ya
+ * no era ningun departamento, mientras la taxonomia tenia **"Gastronomia"**. Dos
+ * copias de la misma lista divergen en el primer cambio de una de las dos, y el
+ * sintoma es una tienda que ofrece algo que no existe.
+ *
+ * Lo que si vive aca es lo que **no** sale de la taxonomia: el icono y el texto
+ * de abajo. Son presentacion, y la taxonomia no deberia saber de copas.
+ *
+ * La clave es el `valor` del departamento, no el `etiqueta`: `Snacks y chocolates`
+ * y `Bebidas` son los dos que viajan a la base y a la query, y asi una tarjeta
+ * mal escrita se ve en el review en vez de mostrar un catalogo vacio.
+ */
+const PRESENTACION: Record<string, { icon: LucideIcon; detalle: string }> = {
+  Bebidas: { icon: IconoVino, detalle: 'Con y sin alcohol' },
+  'Regalería': { icon: Gift, detalle: 'Detalles para regalar' },
+  'Gastronomía': { icon: Utensils, detalle: 'Opciones preparadas' },
+  'Snacks y chocolates': { icon: Candy, detalle: 'Algo rico para disfrutar' }
+}
+
+/**
+ * Que esta entrada de la taxonomia tiene su tarjeta en la home.
+ *
+ * Se exporta para que un test pueda comparar **las dos listas**. Sin el, agregar
+ * un departamento lo deja invisible en la home sin error de compilacion ni de
+ * test: la lista de `PRESENTACION` acepta cualquier clave y el `icon` seria
+ * `undefined` en pantalla.
+ */
+export const tienePresentacion = (departamento: string): boolean =>
+  Object.prototype.hasOwnProperty.call(PRESENTACION, departamento)
+
+/**
+ * Departamentos de la home: "¿Que estas buscando?".
+ *
+ * Un punto de entrada al catalogo, despues del buscador.
  *
  * El boceto marca que los botones no tienen que funcionar todavia: por ahora son
  * tarjetas con hover, no enlaces. Si despues se quiere que filtren el catalogo,
@@ -24,21 +52,34 @@ export const Categorias = () => (
       ¿Qué estás buscando?
     </h2>
     <div className='grid grid-cols-1 gap-5 sm:grid-cols-2'>
-      {CATEGORIAS.map((c) => (
-        <button
-          key={c.titulo}
-          type='button'
-          className='group flex items-start gap-4 rounded-2xl border border-neutral-200 bg-blanco p-6 text-left transition-all duration-300 hover:border-verde-salvia/40 hover:shadow-lg'
-        >
-          <div className='rounded-xl bg-verde-50 p-3 text-verde-600 transition-colors group-hover:bg-verde-100'>
-            <c.icon className='h-6 w-6' aria-hidden='true' />
-          </div>
-          <div>
-            <h3 className='font-serif text-lg font-bold text-carbon'>{c.titulo}</h3>
-            <p className='text-sm text-neutral-500'>{c.detalle}</p>
-          </div>
-        </button>
-      ))}
+      {DEPARTAMENTOS.map((departamento) => {
+        const presentacion = PRESENTACION[departamento.valor]
+
+        // Sin la entrada no hay tarjeta, en vez de una con `undefined` adentro.
+        // Es el mismo criterio del catalogo: cada fila muestra solo lo que tiene
+        // algo que ofrecer.
+        if (presentacion === undefined) return null
+
+        const Icono = presentacion.icon
+
+        return (
+          <button
+            key={departamento.valor}
+            type='button'
+            className='group flex items-start gap-4 rounded-2xl border border-neutral-200 bg-blanco p-6 text-left transition-all duration-300 hover:border-verde-salvia/40 hover:shadow-lg'
+          >
+            <div className='rounded-xl bg-verde-50 p-3 text-verde-600 transition-colors group-hover:bg-verde-100'>
+              <Icono className='h-6 w-6' aria-hidden='true' />
+            </div>
+            <div>
+              <h3 className='font-serif text-lg font-bold text-carbon'>
+                {departamento.etiqueta}
+              </h3>
+              <p className='text-sm text-neutral-500'>{presentacion.detalle}</p>
+            </div>
+          </button>
+        )
+      })}
     </div>
   </section>
 )

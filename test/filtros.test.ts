@@ -127,11 +127,24 @@ describe('filtrarVinos: los tres niveles de la taxonomia', () => {
     producto({ id: 'cerveza', category: 'Cerveza', grupo: 'Con alcohol', tipoVino: null, varietal: null, vintage: null }),
     producto({ id: 'gaseosa', category: 'Gaseosas', grupo: 'Sin alcohol', tipoVino: null }),
     producto({ id: 'energizante', category: 'Energizantes', grupo: null, tipoVino: null }),
-    producto({ id: 'copas', name: 'Set de Copas', category: 'Vajilla', departamento: 'Regalería', grupo: null, tipoVino: null })
+    producto({ id: 'copas', name: 'Set de Copas', category: 'Vajilla', departamento: 'Regalería', grupo: null, tipoVino: null }),
+    producto({ id: 'chocolate', name: 'Chocolate Amargo', category: 'Chocolates', departamento: 'Snacks y chocolates', grupo: null, tipoVino: null }),
+    producto({ id: 'papas', name: 'Papas Chips', category: 'Snacks salados', departamento: 'Snacks y chocolates', grupo: null, tipoVino: null })
   ]
 
+  it('un departamento sin estructura agrupa lo suyo igual', () => {
+    // "Snacks y chocolates" no tiene grupos, asi que `grupo` es `null` en sus
+    // productos. El filtro tiene que devolver **los dos**, y no confundirlos
+    // con "sin filtro": la prueba es que las otras ramas quedan afuera.
+    const r = filtrarVinos(catalogo, {
+      ...sinFiltros,
+      departamento: 'Snacks y chocolates'
+    })
+    expect(r.map((p) => p.id)).toEqual(['chocolate', 'papas'])
+  })
+
   it('sin filtros devuelve el catalogo completo', () => {
-    expect(filtrarVinos(catalogo, sinFiltros)).toHaveLength(6)
+    expect(filtrarVinos(catalogo, sinFiltros)).toHaveLength(8)
   })
 
   it('el departamento acota a lo suyo', () => {
@@ -195,9 +208,9 @@ describe('filtrarVinos: los tres niveles de la taxonomia', () => {
     // Filtrar por grupo sin departamento es una combinacion que la pantalla
     // nunca produce: la fila de grupos no se renderiza sin departamento. Si
     // llegara, el filtro tiene que ignorarlo en vez de devolver una tabla
-    // rarísima.
+    // rarísima. Por eso el resultado es el catalogo **completo**, 8.
     const r = filtrarVinos(catalogo, { ...sinFiltros, grupo: 'Con alcohol' })
-    expect(r).toHaveLength(6)
+    expect(r).toHaveLength(catalogo.length)
   })
 
   it('un departamento que no existe da vacio', () => {

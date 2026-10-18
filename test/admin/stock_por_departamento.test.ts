@@ -171,13 +171,19 @@ describe('las pestañas de stock', () => {
     // y era tautologico: borrando dos departamentos de la lista, el test
     // comparaba dos Departamentos contra dos Departamentos y daba verde. Se
     // comprobo saboteando la lista, que es la unica forma de que se note.
+    //
+    // Por eso **cada vez que se agrega un departamento hay que venir aca**: este
+    // es el test que dice cuantos son, y si no se actualiza falla —que es
+    // exactamente lo que tiene que pasar, porque un departamento nuevo que no
+    // aparece en la lista es un departamento que no existe en la pantalla.
     const montaje = await montarCatalogo()
 
     expect(pestanas(montaje)).toEqual([
       PESTAÑA_TODOS,
       'Stock de bebidas',
       'Stock de regalería',
-      'Stock de gastronomía'
+      'Stock de gastronomía',
+      'Stock de snacks y chocolates'
     ])
 
     await desmontarAdmin(montaje)
@@ -190,7 +196,8 @@ describe('las pestañas de stock', () => {
     expect(DEPARTAMENTOS.map((d) => d.valor)).toEqual([
       'Bebidas',
       'Regalería',
-      'Gastronomía'
+      'Gastronomía',
+      'Snacks y chocolates'
     ])
     // El `String(...)` es para que el guard siga siendo de runtime: con `as
     // const`, TypeScript ya prueba que los dos son literales distintos y

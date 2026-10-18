@@ -95,5 +95,21 @@ export const PRODUCTOS_INICIALES: Producto[] = [
     price: 28000,
     description: 'Set de dos copas de cristal, para regalar o para la mesa.',
     imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: '7',
+    name: 'Chocolate Amargo 70% 100g',
+    // `grupo: null` a proposito: el departamento "Snacks y chocolates" todavia no
+    // tiene estructura, asi que el producto cuelga directo de el.
+    winery: null,
+    varietal: null,
+    category: 'Chocolates',
+    departamento: 'Snacks y chocolates',
+    grupo: null,
+    tipoVino: null,
+    vintage: null,
+    price: 5400,
+    description: 'Tableta de chocolate negro 70%, con IBD de cacao.',
+    imageUrl: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&q=80&w=800'
   }
 ]
