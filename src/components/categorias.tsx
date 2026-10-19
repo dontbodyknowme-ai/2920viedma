@@ -40,13 +40,32 @@ export const tienePresentacion = (departamento: string): boolean =>
 /**
  * Departamentos de la home: "¿Que estas buscando?".
  *
- * Un punto de entrada al catalogo, despues del buscador.
+ * Un punto de entrada al catalogo, y el primero que **de verdad entra**: cada
+ * tarjeta elige el departamento y baja al catalogo con el filtro puesto.
  *
- * El boceto marca que los botones no tienen que funcionar todavia: por ahora son
- * tarjetas con hover, no enlaces. Si despues se quiere que filtren el catalogo,
- * se les agrega el click y el estado.
+ * ## Antes no hacían nada
+ *
+ * El boceto decia que no tenian que funcionar todavia, asi que eran tarjetas con
+ * hover y sin `onClick`. Con la tienda ya armada y para compartir, una tarjeta
+ * de "Bebidas" que al tocarla no hace nada es un boton roto: es la primera cosa
+ * que prueba un visitante y no hay forma de distinguir "noImplemented todavia"
+ * de "no ando".
+ *
+ * ## Por que el estado vive arriba y no aca
+ *
+ * El filtro de departamento lo tiene `ProductCatalog`, en el otro extremo de la
+ * pagina. Si el `onClick` de la tarjeta lo setease aca, el catalogo no se
+ * enteraria: haria falta un evento, un contexto o subir el estado a `App`. Se
+ * sube a `App`, que ya es el dueno de `searchQuery` y de los filtros de precio,
+ * y las dos mitades leen y escriben ahi. Lo que se pasa por prop es una funcion,
+ * no el estado del filtro entero.
  */
-export const Categorias = () => (
+export const Categorias = ({
+  onSelectDepartamento
+}: {
+  /** Elige el departamento y lleva al catalogo. */
+  onSelectDepartamento: (departamento: string) => void
+}) => (
   <section className='mx-auto max-w-7xl px-6 py-12'>
     <h2 className='mb-8 font-serif text-2xl font-bold text-carbon md:text-3xl'>
       ¿Qué estás buscando?
@@ -66,7 +85,9 @@ export const Categorias = () => (
           <button
             key={departamento.valor}
             type='button'
-            className='group flex items-start gap-4 rounded-2xl border border-neutral-200 bg-blanco p-6 text-left transition-all duration-300 hover:border-verde-salvia/40 hover:shadow-lg'
+            onClick={() => onSelectDepartamento(departamento.valor)}
+            aria-label={`Ver productos de ${departamento.etiqueta}`}
+            className='group flex items-start gap-4 rounded-2xl border border-neutral-200 bg-blanco p-6 text-left transition-all duration-300 hover:border-verde-salvia/40 hover:shadow-lg focus-visible:border-verde-salvia focus-visible:outline-none'
           >
             <div className='rounded-xl bg-verde-50 p-3 text-verde-600 transition-colors group-hover:bg-verde-100'>
               <Icono className='h-6 w-6' aria-hidden='true' />

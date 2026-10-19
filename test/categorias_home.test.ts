@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { DEPARTAMENTOS } from '../src/utils/departamentos'
@@ -42,8 +42,13 @@ const montar = async (): Promise<void> => {
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   root = createRoot(contenedor)
+  // El callback va en un `vi.fn()` porque aca se verifica **la lista**, no la
+  // accion. Quien verifica que tocar una tarjeta lleve al catalogo es
+  // `test/tarjetas_home.test.ts`, que monta la app entera: aca, con la
+  // componente suelta, se podria pasar con un `onClick` que no llega a ningun
+  // lado y ningun test lo notaria.
   await act(async () => {
-    root.render(createElement(Categorias))
+    root.render(createElement(Categorias, { onSelectDepartamento: vi.fn() }))
   })
 }
 

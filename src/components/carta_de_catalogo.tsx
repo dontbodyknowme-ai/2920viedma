@@ -50,6 +50,16 @@ interface ProductCatalogProps {
   maxPrice: number | ''
   onMinPriceChange: (value: number | '') => void
   onMaxPriceChange: (value: number | '') => void
+  /**
+   * El departamento elegido, y quien lo elige.
+   *
+   * **Vive en `App` y no aca** porque las tarjetas de "¿Qué estás buscando?" de la
+   * home lo mueven: el usuario toca "Bebidas" arriba y el filtro de abajo tiene
+   * que quedar en "Bebidas". Con el estado aca, el `onClick` de la tarjeta tendria
+   * que lanzar un evento o un contexto entero solo para avisarle.
+   */
+  departamento: string
+  onDepartamentoChange: (departamento: string) => void
 }
 
 /**
@@ -92,7 +102,9 @@ export const ProductCatalog = ({
   minPrice,
   maxPrice,
   onMinPriceChange,
-  onMaxPriceChange
+  onMaxPriceChange,
+  departamento,
+  onDepartamentoChange
 }: ProductCatalogProps): React.ReactElement => {
   const [productos, setWines] = useState<Producto[]>([])
 
@@ -105,10 +117,27 @@ export const ProductCatalog = ({
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [departamento, setDepartamento] = useState('')
   const [grupo, setGrupo] = useState('')
   const [categoria, setCategoria] = useState<Producto['category'] | ''>('')
   const { hasRole } = useAuth()
+
+  /**
+   * Cambiar el departamento **borra los niveles de abajo**, venga de donde venga.
+   *
+   * Sin esto: se elige "Bebidas" + "Con alcohol" + "Cerveza", despues se elige
+   * "Regalería" desde la tarjeta de la home, y el filtro queda diciendo "Grupo:
+   * todos" y "Tipo de producto: Cerveza" sobre productos de regalería. El
+   * resultado es una tabla vacia con un filtro que dice una cosa y muestra otra:
+   * el filtro mas confuso que se puede construir.
+   *
+   * Por eso el reset esta **aca**, en un `useEffect` sobre `departamento`, y no
+   * dentro de `elegirDepartamento`. Si viviera en el manejador del click, el
+   * cambio que viene de la home pasaria sin pasar por el.
+   */
+  useEffect(() => {
+    setGrupo('')
+    setCategoria('')
+  }, [departamento])
 
   /**
    * Elegir un nivel **borra los de abajo**.
@@ -120,9 +149,7 @@ export const ProductCatalog = ({
    * vuelven a "todos".
    */
   const elegirDepartamento = (valor: string): void => {
-    setDepartamento(valor)
-    setGrupo('')
-    setCategoria('')
+    onDepartamentoChange(valor)
   }
 
   const elegirGrupo = (valor: string): void => {

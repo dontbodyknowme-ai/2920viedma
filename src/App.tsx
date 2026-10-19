@@ -67,6 +67,40 @@ export default function App() {
   const [productos, setWines] = useState<Producto[]>(() => loadWines())
   const [cart, setCart] = useState<CartItem[]>(() => loadCart())
   const [searchQuery, setSearchQuery] = useState('')
+  /**
+   * El departamento del filtro del catalogo vive **aca**, no en `ProductCatalog`.
+   *
+   * Porque hay dos lugares que lo mueven: la fila "Departamento" del catalogo y
+   * las tarjetas de "¿Qué estás buscando?" de la home. Con el estado dentro del
+   * catalogo, tocar "Bebidas" arriba no podria llegar: haria falta un evento o un
+   * contexto para avisarle, y la unica forma de que un boton de la home quede
+   * sin efecto es justo la que ya se vio —tarjetas que no hacen nada—.
+   *
+   * Lo de al lado, `searchQuery` y los precios, ya estaban aca por el mismo
+   * motivo: los usa el navbar y el catalogo a la vez.
+   */
+  const [departamento, setDepartamento] = useState('')
+
+  /**
+   * Lo que hace una tarjeta de la home: elige el departamento y **baja al
+   * catalogo**.
+   *
+   * El scroll no es un detalle. Sin el, en una pagina larga el usuario toca
+   * "Bebidas", no ve ningun cambio —el filtro cambio dosmil pixeles mas abajo— y
+   * concluye que el boton no funciona. El sintoma es identico al de una tarjeta
+   * sin `onClick`, y es justo lo que hace que un boton que **si** funciona
+   * parezca roto.
+   *
+   * Por id y no por `ref`: la seccion del catalogo ya lo tiene, y un `ref` seria
+   * una segunda forma de llegar al mismo nodo.
+   */
+  const elegirDesdeLaHome = useCallback((departamentoElegido: string) => {
+    setDepartamento(departamentoElegido)
+
+    document
+      .getElementById('catalogo')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
   const [cartOpen, setCartOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [productoAEditar, setProductoAEditar] = useState<Producto | null>(null)
@@ -190,7 +224,7 @@ export default function App() {
           lo mantuviera fuera de vista al cargar. */}
       <Hero />
 
-      <Categorias />
+      <Categorias onSelectDepartamento={elegirDesdeLaHome} />
       <BannerPromo />
 
       <AnimatedSection>
@@ -204,6 +238,8 @@ export default function App() {
           maxPrice={maxPrice}
           onMinPriceChange={setMinPrice}
           onMaxPriceChange={setMaxPrice}
+          departamento={departamento}
+          onDepartamentoChange={setDepartamento}
         />
       </AnimatedSection>
       <CartDrawer
