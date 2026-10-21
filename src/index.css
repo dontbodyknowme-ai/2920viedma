@@ -2,9 +2,18 @@
    AGENTS.md describe JavaScript y TypeScript; en CSS la declaracion no tiene
    sintaxis alternativa y PostCSS falla con "Missed semicolon" si faltan. */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4.
+   - `@import "tailwindcss"` reemplaza los tres `@tailwind base/components/
+     utilities` de la v3. En v4 no existen: un `@tailwind base` a secas no
+     compila y el build muere con un error de PostCSS que no menciona Tailwind.
+   - `@config` le dice donde sigue la configuracion. **La v4 es CSS-first**:
+     sin esto, `tailwind.config.js` no se lee y TODAS las clases de la marca
+     (`bg-marfil`, `text-carbon`, `verde-600`, ...) dejan de existir — y el
+     build pasa igual, porque generar CSS sin un theme no es un error. Es la
+     version de este bug de "un 200 es un 200": el sitio levanta y no tiene
+     ningun estilo. */
+@import 'tailwindcss';
+@config '../tailwind.config.js';
 
 /* La paleta vive en `tailwind.config.js`, que es la fuente unica.
    Este archivo antes tenia un bloque `@layer utilities` que redefinia a mano

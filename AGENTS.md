@@ -48,7 +48,7 @@
 
 | Aspecto | Detalle |
 |---------|---------|
-| **Framework Frontend** | React 18 + Vite 5 + TypeScript (no Next.js) |
+| **Framework Frontend** | React 18 + Vite 8 + TypeScript (no Next.js). Tailwind **v4** (CSS-first: la paleta se lee con `@config` desde `tailwind.config.js`) |
 | **Framework Backend** | Fastify + Node 24 + PostgreSQL + Prisma (spec 004-b **COMPLETA**) |
 | **Routing Frontend** | `react-router-dom` v7; `/admin` es hijo de `AdminLayout` (protege 5 rutas) |
 | **Estado tienda** | `localStorage`: `vinoteca_wines` y `vinoteca_cart` (sin librería global). La clave `vinoteca_wines` **no** se renombró con el modelo: ya está en el navegador de quien visitó la tienda |
@@ -114,7 +114,7 @@
 - **Entorno**: jsdom con stubs para `ResizeObserver`, `IntersectionObserver`, `matchMedia` (lee `innerWidth`, no devuelve `false` fijo), `innerWidth=375`. Todos en `test/andamiaje.ts`.
 - **Montaje**: `montarApp()` en `test/andamiaje.ts` (envuelto en `AuthProvider`, **sin StrictMode**; evita doble sincronización a localStorage)
 - **Helpers**: `pulsar`, `escribir`, `esperarSalidas` (700 ms para `AnimatePresence`)
-- **Cobertura**: 240 tests en 18 archivos. `admin/stock_por_departamento` y `carrito_agregado` interceptan `fetch` y montan `CatalogoAdmin` / `App` enteros
+- **Cobertura**: 250 tests en 18 archivos. `admin/stock_por_departamento` y `carrito_agregado` interceptan `fetch` y montan `CatalogoAdmin` / `App` enteros
 - **Un test de función no cubre la pantalla**: `test/producto.test.ts` mide `subtituloProducto` y `test/tarjeta_producto_sin_bodega.test.ts` mide la tarjeta. Los dos existen porque el segundo es el que agarra la regresión (gotcha 45)
 - **Nota 004-c**: se borraron los tests que dependían de `src/mocks/*` y de `admin_acceso.ts`. Con MSW eliminado no queda nada que probar ahí; la cobertura de API real vive en el backend.
 - **Nota 006**: `tsconfig.json` incluye `test/` **desde la 006**. Antes era `["src"]` solo y el docstring de `test/andamiaje.ts` afirmaba lo contrario — era falso. Al incluirlo aparecieron diez `TS2339` dormidos en `data_table.test.ts`.
@@ -219,3 +219,11 @@ Montan componentes de verdad. El camino no es montando `App` (necesita un servid
 46. **El `upsert` por `id` crea los productos nuevos pero no borra los viejos** (2026-10-21). Cambiar el catálogo de demostración y volver a sembrar deja los productos que se reemplazaron **huérfanos en la base**: no se crean (no están en el catálogo) pero tampoco se borran, y el filtro los muestra al lado de los nuevos. El caso fue reemplazar dos energizantes genéricos por tres de marca.
     La solución es una lista explícita, `PRODUCTOS_RETIRADOS` en `backend/src/demo/catalogo.ts`, y `sembrarCatalogo` la borra con `deleteMany` sobre **esa lista**. El detalle que importa: la lista son **ids que el catálogo de demostración creó alguna vez**, nunca "todo lo que no está en el catálogo" —esa segunda regla se llevaría por delante los productos que cargó el dueño, que es justo lo que el seed jamás debe hacer.
     Y de paso: `sembrarCatalogo` ahora devuelve `retirados` además de `creados` y `actualizados`, así que **el mock de Prisma de los tests necesita `deleteMany`** que devuelva `{ count }`. Sin eso, `retirados` es `undefined` y el log dice "undefined retirados".
+47. **Tailwind v4 es CSS-first: sin `@config` el build pasa y el sitio no tiene estilos** (2026-10-21). La v4 lee la configuración desde el CSS, no desde `tailwind.config.js`. Si el `@config` falta, **el build no falla**: genera el CSS sin theme y sale. El sitio levanta, `/health` da 200, y la página sale **sin una sola clase de la marca** — `bg-marfil`, `text-carbon`, `verde-600` dejan de existir. Es la versión de "un 200 es un 200" de los estilos: **el síntoma no es un error, es que nada se ve**.
+    Por eso la verificación no es "el build pasó" sino **mirar el CSS generado**: `Select-String dist/assets/*.css -Pattern 'marfil|carbon|salvia'`. Y en el navegador, que la página se vea con la paleta.
+    Los tres cambios de la migración van juntos:
+    - `postcss.config.js`: `'@tailwindcss/postcss': {}` en vez de `tailwindcss: {}`. El plugin se movió a su propio paquete; con el viejo, PostCSS mete a mano la lib y falla con un error que **no menciona Tailwind**.
+    - `src/index.css`: `@import 'tailwindcss';` en vez de los tres `@tailwind base/components/utilities` (en v4 no existen) **más** `@config '../tailwind.config.js';`.
+    - `tsconfig.json`: `target`/`lib` a **ES2022**. `Array.prototype.at` es ES2022 y `test/admin/data_table.test.ts` la usa: con ES2020 el `tsc` falla con TS2550.
+    Y `@vitejs/plugin-react@4` no soporta `vite@8` (su peer es `vite ^4 || ^5 || ^6 || ^7`): hace falta la v6, que además pide `@types/node` >= 24, y `vitest@5` también. Con los tres abajo, `npm install` resuelve; con uno solo, falla con ERESOLVE.
+    `__dirname` en `vite.config.ts` quedó obsoleto con Vite 8: va `import.meta.dirname` (existe desde Node 20.11 y el repo pide 22.19).
