@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { AnimatedSection } from './animated_section'
 import type { Producto } from '../types/producto'
+import { subtituloProducto, tieneAnada } from '../utils/producto'
 
 /**
  * Botellas destacadas: las 3 mas caras del catalogo.
@@ -94,10 +95,16 @@ export const BotellasDestacadas = ({ wines, onSelectWine }: BotellasDestacadasPr
                   <span className='font-serif text-base font-bold text-carbon transition-colors group-hover:text-verde-600'>
                     {wine.name}
                   </span>
-                  <span className='text-sm text-neutral-600'>{wine.winery}</span>
-                  <span className='mt-auto pt-3 text-xs uppercase tracking-widest text-neutral-500'>
-                    {wine.vintage}
-                  </span>
+                  {/* Lo que hay, no lo que falta: sin bodega ni anada no se
+                      escribe una linea vacia. Ver `utils/producto.ts`. */}
+                  {subtituloProducto(wine) !== null && (
+                    <span className='text-sm text-neutral-600'>{subtituloProducto(wine)}</span>
+                  )}
+                  {tieneAnada(wine.vintage) && (
+                    <span className='mt-auto pt-3 text-xs uppercase tracking-widest text-neutral-500'>
+                      {wine.vintage}
+                    </span>
+                  )}
                 </span>
               </button>
             </motion.li>

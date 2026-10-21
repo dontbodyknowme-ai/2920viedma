@@ -1,5 +1,6 @@
 ﻿import { motion } from 'framer-motion'
 import { Producto } from '../types/producto'
+import { subtituloProducto, tieneAnada } from '../utils/producto'
 
 interface ProductCardProps {
   producto: Producto
@@ -14,6 +15,11 @@ export const ProductCard = ({ producto, onAddToCart, onSelectProducto, onEditPro
     currency: 'ARS',
     maximumFractionDigits: 0
   }).format(producto.price)
+
+  // Lo que hay, no lo que falta. Una gaseosa o un energizante no tienen bodega
+  // ni anada, y escribirlos igual dejaba un " • " suelto y un badge con la
+  // forma de un ano vacio. Ver la nota de `utils/producto.ts`.
+  const subtitulo = subtituloProducto(producto)
 
   return (
     <motion.div
@@ -37,16 +43,20 @@ export const ProductCard = ({ producto, onAddToCart, onSelectProducto, onEditPro
         <div className='absolute top-3 left-3 bg-verde-800/80 backdrop-blur-md border border-verde-500/30 text-blanco text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
           {producto.category}
         </div>
-        <div className='absolute top-3 right-3 bg-blanco/80 backdrop-blur-md text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>
-          {producto.vintage}
-        </div>
+        {tieneAnada(producto.vintage) && (
+          <div className='absolute top-3 right-3 bg-blanco/80 backdrop-blur-md text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>
+            {producto.vintage}
+          </div>
+        )}
       </div>
 
       <div className='p-5 flex-1 flex flex-col justify-between'>
         <div>
-          <p className='text-verde-salvia/90 text-xs font-semibold uppercase tracking-widest mb-1'>
-            {producto.winery} • {producto.varietal}
-          </p>
+          {subtitulo !== null && (
+            <p className='text-verde-salvia/90 text-xs font-semibold uppercase tracking-widest mb-1'>
+              {subtitulo}
+            </p>
+          )}
           <h3 
             onClick={() => onSelectProducto(producto)}
             className='text-carbon font-serif text-xl font-bold line-clamp-1 cursor-pointer hover:text-verde-600 transition-colors mb-2'

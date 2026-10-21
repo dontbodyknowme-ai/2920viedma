@@ -61,6 +61,24 @@ const CATALOGO = join(AQUI, '..', 'src', 'demo', 'catalogo.ts')
  * un producto nuevo insertado en el medio moveria la foto de un producto al
  * informe del otro, y el script informaria como rota una foto que esta bien.
  */
+
+/**
+ * Las dos formas de escribir una foto, y como se arma la URL de cada una.
+ *
+ * `U('1506377247377-...')` es Unsplash: se le antepone el host y el `?auto=format`.
+ * `W('0/06/Archivo.jpg/960px-Archivo.jpg')` es Wikimedia Commons: la ruta ya
+ * viene completa y solo hay que anteponer el host de thumbnails.
+ *
+ * Y una tercera forma, pegada: `imageUrl: 'https://...'`, que se usa tal cual.
+ *
+ * El helper se lee del texto porque **la forma de la URL dice de donde sale**:
+ * si el `W` se pierde, la ruta de Wikimedia se reconstruiria con el prefijo de
+ * Unsplash y daria una imagen de otra cosa —o un 404— sin que nadie entienda
+ * por que.
+ */
+const URL_DE_UNSPLASH = 'https://images.unsplash.com/photo-'
+const URL_DE_WIKIMEDIA = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/'
+
 const productosDelCatalogo = (fuente) => {
   const bloques = fuente.split(/\n  \{/).slice(1)
   const productos = []
@@ -68,16 +86,22 @@ const productosDelCatalogo = (fuente) => {
   for (const bloque of bloques) {
     const id = /id:\s*'([^']+)'/.exec(bloque)?.[1]
     const nombre = /name:\s*'([^']+)'/.exec(bloque)?.[1]
-    // Acepta las dos formas: `imageUrl: 'https://...'` y `imageUrl: U('1506377')`.
-    // El catalogo usa la segunda, y es la que conviene: obliga a que **todas** las
-    // fotos compartan el mismo prefijo y el mismo `q`. Pegadas a mano, una queda
+    // Acepta las tres formas: `imageUrl: 'https://...'`, `imageUrl: U('1506377')`
+    // y `imageUrl: W('0/06/Archivo.jpg/960px-Archivo.jpg')`. El catalogo usa las
+    // dos ultimas, y son las que conviene: obligan a que **todas** las fotos
+    // compartan el mismo prefijo y el mismo `q`. Pegadas a mano, una queda
     // con otro `q` y no se nota, o con otro ancho y se descarga el doble.
-    const crudo = /imageUrl:\s*(?:U\(\s*)?'([^']+)'/.exec(bloque)?.[1]
+    const encontrado = /imageUrl:\s*(?:(U|W)\(\s*)?'([^']+)'/.exec(bloque)
+    const helper = encontrado?.[1]
+    const crudo = encontrado?.[2]
 
     if (id !== undefined && crudo !== undefined) {
-      const url = crudo.startsWith('http')
-        ? crudo
-        : `https://images.unsplash.com/photo-${crudo}?auto=format&fit=crop&q=80&w=800`
+      const url =
+        helper === 'U'
+          ? `${URL_DE_UNSPLASH}${crudo}?auto=format&fit=crop&q=80&w=800`
+          : helper === 'W'
+            ? `${URL_DE_WIKIMEDIA}${crudo}`
+            : crudo
 
       productos.push({ id, nombre: nombre ?? id, url })
     }
@@ -86,13 +110,31 @@ const productosDelCatalogo = (fuente) => {
   return productos
 }
 
-/** Una foto, en miniatura. Es para poder mirarla al lado del nombre. */
-const miniaturaDe = (url) => url.replace(/&?w=\d+/, '&w=120').replace(/&?h=\d+/, '')
+/**
+ * Una foto, en miniatura. Es para poder mirarla al lado del nombre.
+ *
+ * Para Unsplash achica el ancho con el `w=`. Para Wikimedia hay que cambiar el
+ * prefijo del thumbnail: la URL es `.../960px-Archivo.jpg` y la miniatura es
+ * `.../250px-Archivo.jpg`. Ojo: el ancho tiene que ser uno de los que
+ * Wikimedia **ya tiene generado** — uno inventado responde **400**, no 404.
+ */
+const miniaturaDe = (url) => {
+  if (url.includes('/wikipedia/commons/thumb/')) {
+    return url.replace(/\/\d+px-/, '/250px-')
+  }
+  return url.replace(/&?w=\d+/, '&w=120').replace(/&?h=\d+/, '')
+}
 
 const comprobar = async (producto) => {
   // `w=64`: alcanza para que la plataforma responda y pesa nada. Poner `w=800`
   // descarga 34 imagenes completas para descubrir que una da 404.
-  const probe = producto.url.replace(/&?w=\d+/, '&w=64')
+  //
+  // En Wikimedia el ancho va en la ruta (`/960px-`), asi que se cambia ahi. El
+  // ancho chico que se usa es el **120px**, que existe para los tres archivos:
+  // uno que Wikimedia todavia no genero responde 400 y parece un archivo roto.
+  const probe = producto.url.includes('/wikipedia/commons/thumb/')
+    ? producto.url.replace(/\/\d+px-/, '/120px-')
+    : producto.url.replace(/&?w=\d+/, '&w=64')
 
   try {
     const respuesta = await fetch(probe, { redirect: 'follow' })

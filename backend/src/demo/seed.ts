@@ -17,6 +17,12 @@
  * un `update` por `id` escribe todos los campos. Para un comando que se corre a
  * mano y a proposito, overwrite es lo esperable: uno decide cuando ejecutarlo.
  *
+ * Lo mismo con los **retirados**: `PRODUCTOS_RETIRADOS` en `catalogo.ts` son los
+ * productos del catalogo de demostracion que ya no existen, y este comando los
+ * borra. Es lo que hace que recargar el catalogo con una version nueva no deje
+ * los productos viejos haciendo ruido en el filtro. Los borrados son **solo** los
+ * de esa lista: nunca un producto que cargo el dueno.
+ *
  * El arranque y este comando **no** comparten criterio a proposito. El del
  * arranque jamas sobreescribe porque se corre solo en cada deploy; este se corre
  * una vez, con una mano en el teclado, y ahi pisar es justo lo pedido.
@@ -27,12 +33,16 @@ import { logger } from '../utils/logger.js'
 import { sembrarCatalogo } from './catalogo.js'
 
 const main = async (): Promise<void> => {
-  const { creados, actualizados } = await sembrarCatalogo(prisma)
+  const { creados, actualizados, retirados } = await sembrarCatalogo(prisma)
 
   const total = await prisma.product.count()
   const activos = await prisma.product.count({ where: { activo: true } })
 
-  logger.info(`Catalogo listo: ${creados} creados, ${actualizados} actualizados.`)
+  logger.info(
+    `Catalogo listo: ${creados} creados, ${actualizados} actualizados` +
+      (retirados > 0 ? `, ${retirados} retirados` : '') +
+      '.'
+  )
   logger.info(`Total en la base: ${total} productos, ${activos} activos.`)
 }
 

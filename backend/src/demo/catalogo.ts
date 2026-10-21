@@ -69,6 +69,59 @@ export interface ProductoDemo {
 const U = (id: string): string =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&q=80&w=800`
 
+/**
+ * Una foto de **Wikimedia Commons**, no de Unsplash.
+ *
+ * ## Por que esta fuente aparte
+ *
+ * Las fotos de arriba alcanzan para un vino, una cerveza o un queso: con que
+ * la imagen sea "de algo de esa clase" ya esta. Las marcas de energizante no
+ * admiten ese margen: el pedido fue **el Monster original, verde con negro**,
+ * y un banco de imagenes generico no tiene la lata **negra con el logo verde**
+ * —tiene la de sabor, la de zero, la de pipeline, y una que muestra un商标
+ * inventado. Poner la lata equivocada es el mismo bug que el de la IPA con
+ * foto de apicultor: carga perfecto y no es el producto.
+ *
+ * En Commons estan las tres, con la lata entera y de frente.
+ *
+ * ## `ruta` es la parte de la URL del thumbnail
+ *
+ * Es `<hash>/<archivo>/<ancho>px-<archivo>`. El ancho tiene que ser uno de los
+ * que Wikimedia **ya tiene generado**: uno inventado responde **400**, no 404,
+ * y el error dice "Bad Request" sin mencionar el ancho.
+ *
+ * `thumb.wikimedia.org` es el alias oficial de thumbnails; `upload.wikimedia.org`
+ * es el mismo CDN con el nombre canonico y tambien sirve.
+ *
+ * ## Licencia: hay que atribuir
+ *
+ * Las tres son **CC BY-SA 4.0**. Para una tienda real eso significa
+ * "credito visible a la persona que tomo la foto". Es un catalogo de
+ * demostracion, asi que la atribucion esta en el comentario de este bloque,
+ * que es donde la va a buscar quien la necesite. Si estas fotos pasan a
+ * produccion, hay que publicar el credito en la pagina del producto.
+ */
+const W = (ruta: string): string =>
+  `https://thumb.wikimedia.org/wikipedia/commons/thumb/${ruta}`
+
+/**
+ * Creditos de las fotos de Wikimedia, para no perderlos de vista.
+ *
+ *   Monster  -> File:Monster Energy drink (cropped).jpg
+ *   Speed    -> File:Speed Can Energy Drink 250ml.jpg
+ *   Red Bull -> File:Red Bull ice.jpg
+ *
+ * Los tres con licencia CC BY-SA 4.0.
+ */
+export const CREDITOS_FOTOS_WIKIMEDIA: Record<string, string> = {
+  'bebida-monster-energy-473ml':
+    'File:Monster Energy drink (cropped).jpg — Wikimedia Commons, CC BY-SA 4.0',
+  'bebida-speed-250ml':
+    'File:Speed Can Energy Drink 250ml.jpg — Wikimedia Commons, CC BY-SA 4.0',
+  'bebida-red-bull-250ml':
+    'File:Red Bull ice.jpg — Wikimedia Commons, CC BY-SA 4.0'
+}
+
 export const CATALOGO: ProductoDemo[] = [
   // --- Vinos --------------------------------------------------------------
   // El unico departamento con **tres** niveles. Los espumantes van en la
@@ -509,9 +562,20 @@ export const CATALOGO: ProductoDemo[] = [
   // --- Energizantes -------------------------------------------------------
   // El grupo "Energizantes" cuelga de Bebidas sin ser ni con alcohol ni sin
   // alcohol. Va en `grupo`, no en `null`: ver la nota de `departamentos.ts`.
+  //
+  // Son las **tres marcas de verdad**, con su foto de verdad. Antes habia dos
+  // productos genericos ("Energizante 250ml" y "Energizante Sin Azucar 250ml")
+  // que no existian en ningun kiosco: eran un placeholder con precio, y la
+  // foto de uno era un grafico de pulgar arriba. Un catalogo que ofrece
+  // "Energizante" en vez de "Monster" no es un catalogo: el kiosco de la
+  // esquina no tiene un producto llamado "Energizante".
+  //
+  // De Monster va **solo la original**: la negra con el logo verde. Las otras
+  // (Ultra, Zero, Pipeline, Mango Loco) son productos distintos, y meterlas
+  // seria inventar un catalogo.
   {
-    id: 'bebida-energizante-250',
-    name: 'Energizante 250ml',
+    id: 'bebida-monster-energy-473ml',
+    name: 'Monster Energy 473ml',
     winery: null,
     varietal: null,
     category: 'Energizantes',
@@ -519,17 +583,37 @@ export const CATALOGO: ProductoDemo[] = [
     grupo: 'Energizantes',
     tipoVino: null,
     vintage: null,
-    price: 3200,
-    description: 'Energizante con cafeína y taurina, en lata de 250 ml.',
-    tastingNotes: 'Amarga, con un final largo de cafeína.',
+    price: 6500,
+    description:
+      'La lata original de Monster: negra con el logo verde de las garras. Cafeina y taurina en 473 ml.',
+    tastingNotes: 'Cítrico intenso y amargo, con un final largo de cafeína.',
     foodPairing: 'No es alimento: es una bebida de tono despierto.',
-    imageUrl: U('1610873167013-2dd675d30ef4'),
-    stock: 75,
+    imageUrl: W('0/06/Monster_Energy_drink_%28cropped%29.jpg/960px-Monster_Energy_drink_%28cropped%29.jpg'),
+    stock: 60,
     activo: true
   },
   {
-    id: 'bebida-energizante-sin-azucar',
-    name: 'Energizante Sin Azúcar 250ml',
+    id: 'bebida-speed-250ml',
+    name: 'Speed 250ml',
+    winery: null,
+    varietal: null,
+    category: 'Energizantes',
+    departamento: 'Bebidas',
+    grupo: 'Energizantes',
+    tipoVino: null,
+    vintage: null,
+    price: 2800,
+    description:
+      'Energizante en botella de 250 ml, con cafeina, taurina y vitamina B. La del kiosco de la esquina.',
+    tastingNotes: 'Dulce y cítrico, con un final herbal de cafeína.',
+    foodPairing: 'No es alimento: es una bebida de tono despierto.',
+    imageUrl: W('4/44/Speed_Can_Energy_Drink_250ml.jpg/960px-Speed_Can_Energy_Drink_250ml.jpg'),
+    stock: 90,
+    activo: true
+  },
+  {
+    id: 'bebida-red-bull-250ml',
+    name: 'Red Bull 250ml',
     winery: null,
     varietal: null,
     category: 'Energizantes',
@@ -538,11 +622,12 @@ export const CATALOGO: ProductoDemo[] = [
     tipoVino: null,
     vintage: null,
     price: 3500,
-    description: 'Energizante con cafeina, sin azucar y con menos calorias.',
-    tastingNotes: 'Cítrico intenso y un final seco, sin el dulzor de la versión común.',
+    description:
+      'La lata clásica de Red Bull, azul y plata, con cafeina y taurina en 250 ml.',
+    tastingNotes: 'Ligera y fresca, con un final seco de cafeína.',
     foodPairing: 'No es alimento: es una bebida de tono despierto.',
-    imageUrl: U('1554866585-cd94860890b7'),
-    stock: 70,
+    imageUrl: W('7/7a/Red_Bull_ice.jpg/960px-Red_Bull_ice.jpg'),
+    stock: 75,
     activo: true
   },
 
@@ -739,11 +824,42 @@ export const CATALOGO: ProductoDemo[] = [
 ]
 
 /**
+ * Productos del catalogo de demostracion que **se retiraron**.
+ *
+ * ## Por que hace falta una lista
+ *
+ * `sembrarCatalogo` hace `upsert` por `id`: crea lo que falta y actualiza lo
+ * que ya esta. Eso resuelve los productos **nuevos** y deja los viejos
+ * haciendo nada, porque no tienen id en el catalogo: no se crean, pero tampoco
+ * se borran.
+ *
+ * El caso concreto: los dos energizantes genericos ("Energizante 250ml" y
+ * "Energizante Sin Azucar 250ml") se reemplazaron por Monster, Speed y Red
+ * Bull. En una base que ya estaba sembrada, los tres nuevos aparecen y los
+ * dos viejos **siguen ahi**, y el filtro de "Energizantes" muestra cinco
+ * productos, dos de los cuales no existen en ningun kiosco.
+ *
+ * ## La lista es explicita y corta
+ *
+ * Solo ids que **este** catalogo creo alguna vez. Nunca un producto que el
+ * dueno cargo desde el panel: esa regla de "el seed no toca lo del negocio" es
+ * la que hace que se pueda correr el seed a mano sin miedo.
+ *
+ * Y se borran con `deleteMany` sobre **esa lista**, no con "los que no estan
+ * en el catalogo": esa segunda regla borraria los productos del negocio, que
+ * es exactamente lo que el seed jamas debe hacer.
+ */
+export const PRODUCTOS_RETIRADOS: string[] = [
+  'bebida-energizante-250',
+  'bebida-energizante-sin-azucar'
+]
+
+/**
  * Siembra el catalogo de demostracion.
  *
  * `upsert` por `id`, asi que es idempotente: correrla dos veces actualiza en
- * vez de duplicar. Devuelve cuantos creo y cuantos actualizo, para que el
- * bootstrap lo pueda loguear.
+ * vez de duplicar. Devuelve cuantos creo, cuantos actualizo y cuantos retiro,
+ * para que el bootstrap lo pueda loguear.
  *
  * **El `prisma` se recibe por parametro y no se crea aca.** Un modulo que
  * instancia su propio `PrismaClient` al importarse no se puede probar sin una
@@ -752,7 +868,7 @@ export const CATALOGO: ProductoDemo[] = [
  */
 export const sembrarCatalogo = async (
   prisma: PrismaClient
-): Promise<{ creados: number; actualizados: number }> => {
+): Promise<{ creados: number; actualizados: number; retirados: number }> => {
   let creados = 0
   let actualizados = 0
 
@@ -769,5 +885,10 @@ export const sembrarCatalogo = async (
     }
   }
 
-  return { creados, actualizados }
+  // Los retirados, y **solo** los retirados. Ver la nota de la lista de arriba.
+  const { count: retirados } = await prisma.product.deleteMany({
+    where: { id: { in: PRODUCTOS_RETIRADOS } }
+  })
+
+  return { creados, actualizados, retirados }
 }

@@ -1,6 +1,7 @@
 ﻿import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Producto } from '../types/producto'
+import { subtituloProducto, tieneAnada } from '../utils/producto'
 
 // RF-37 y constitucion 3: la vista rapida se monta siempre y es este
 // `AnimatePresence`, interno al componente, el que decide cuando hay algo que
@@ -31,6 +32,10 @@ export const VistaRapidaProducto = ({ producto, onClose }: VistaRapidaProductoPr
     window.addEventListener('keydown', alPulsarEscape)
     return () => window.removeEventListener('keydown', alPulsarEscape)
   }, [producto, onClose])
+
+  // Lo que hay, no lo que falta. Un producto que no es vino no tiene bodega ni
+  // anada, y el separador solo (" • ") se ve como un dato roto.
+  const subtitulo = producto !== null ? subtituloProducto(producto) : null
 
   return (
     <AnimatePresence>
@@ -83,17 +88,25 @@ export const VistaRapidaProducto = ({ producto, onClose }: VistaRapidaProductoPr
                     </button>
                   </div>
 
-                  <p className='text-verde-salvia/90 text-xs font-semibold uppercase tracking-widest'>
-                    {producto.winery} • {producto.varietal}
-                  </p>
+                  {/* Lo que hay, no lo que falta: una gaseosa o un energizante no
+                      tienen bodega ni anada, y escribirlas igual dejaba un
+                      " • " suelto y un "Cosecha" sin numero. Ver la nota de
+                      `utils/producto.ts`. */}
+                  {subtitulo !== null && (
+                    <p className='text-verde-salvia/90 text-xs font-semibold uppercase tracking-widest'>
+                      {subtitulo}
+                    </p>
+                  )}
 
                   <div className='flex flex-wrap items-center gap-2'>
                     <span className='bg-verde-800/80 border border-verde-500/30 text-blanco text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold'>
                       {producto.category}
                     </span>
-                    <span className='bg-blanco text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>
-                      Cosecha {producto.vintage}
-                    </span>
+                    {tieneAnada(producto.vintage) && (
+                      <span className='bg-blanco text-verde-salvia text-xs px-2.5 py-1 rounded-full font-serif font-bold border border-verde-salvia/20'>
+                        Cosecha {producto.vintage}
+                      </span>
+                    )}
                   </div>
 
                   <p className='text-carbon text-2xl font-bold font-serif'>

@@ -1,5 +1,6 @@
 ﻿import { motion, AnimatePresence } from 'framer-motion'
 import { CartItem } from '../types/producto'
+import { subtituloProducto } from '../utils/producto'
 
 interface CartDrawerProps {
   isOpen: boolean
@@ -92,9 +93,13 @@ export const CartDrawer = ({
                       <h4 className='font-serif font-bold text-sm text-carbon truncate'>
                         {product.name}
                       </h4>
-                      <p className='text-xs text-verde-salvia/90 mb-2'>
-                        {product.winery}
-                      </p>
+                      {/* Lo que hay, no lo que falta: sin bodega no se escribe
+                          una linea vacia que deja el hueco. Ver `utils/producto.ts`. */}
+                      {subtituloProducto(product) !== null && (
+                        <p className='text-xs text-verde-salvia/90 mb-2'>
+                          {subtituloProducto(product)}
+                        </p>
+                      )}
                       <span className='text-sm font-bold text-carbon'>
                         ${(product.price * quantity).toLocaleString('es-AR')}
                       </span>

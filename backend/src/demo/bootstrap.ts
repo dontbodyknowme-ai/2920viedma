@@ -84,9 +84,10 @@ export const bootstrapCatalogo = async (
   }
 
   try {
-    const { creados, actualizados } = await sembrarCatalogo(prisma)
+    const { creados, actualizados, retirados } = await sembrarCatalogo(prisma)
     logger.info(
-      `Catalogo de demostracion: ${creados} productos creados, ${actualizados} actualizados`
+      `Catalogo de demostracion: ${creados} productos creados, ${actualizados} actualizados` +
+        (retirados > 0 ? `, ${retirados} retirados` : '')
     )
     return { sembrado: true, motivo: 'sembrado', existentes: 0, creados }
   } catch (error) {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { bootstrapCatalogo } from '../../src/demo/bootstrap.js'
-import { CATALOGO, sembrarCatalogo } from '../../src/demo/catalogo.js'
+import { CATALOGO, PRODUCTOS_RETIRADOS, sembrarCatalogo } from '../../src/demo/catalogo.js'
 
 /**
  * El arranque siembra el catalogo **solo si la tabla esta vacia**.
@@ -32,7 +32,8 @@ const prismaFalso = {
     count: vi.fn(),
     findUnique: vi.fn(),
     create: vi.fn(),
-    update: vi.fn()
+    update: vi.fn(),
+    deleteMany: vi.fn()
   }
 }
 
@@ -60,6 +61,10 @@ beforeEach(() => {
   vi.clearAllMocks()
   prismaFalso.product.create.mockResolvedValue({})
   prismaFalso.product.update.mockResolvedValue({})
+  // `deleteMany` devuelve `{ count }`: es el numero de productos que se
+  // retiraron. Sin esto, `retirados` seria `undefined` y el log diria
+  // "undefined retirados".
+  prismaFalso.product.deleteMany.mockResolvedValue({ count: 0 })
 })
 
 describe('bootstrapCatalogo', () => {
@@ -148,6 +153,39 @@ describe('sembrarCatalogo', () => {
     expect(actualizados).toBe(CATALOGO.length)
     expect(prismaFalso.product.create).not.toHaveBeenCalled()
     expect(prismaFalso.product.update).toHaveBeenCalledTimes(CATALOGO.length)
+  })
+
+  it('borra los productos retirados, y solo esos', async () => {
+    // El `upsert` por `id` no borra nada: los productos que se reemplazaron
+    // (los dos energizantes genericos, ahora Monster/Speed/Red Bull) se
+    // quedan en la base y el filtro los muestra al lado de los nuevos.
+    //
+    // Y el "solo esos" es la parte que importa: si en vez de la lista se
+    // borrara "todo lo que no esta en el catalogo", se llevaria por delante los
+    // productos que cargo el dueno, que es justo lo que el seed jamas debe
+    // hacer.
+    prismaFalso.product.findUnique.mockResolvedValue(null)
+    prismaFalso.product.deleteMany.mockResolvedValue({ count: 2 })
+
+    const { retirados } = await sembrarCatalogo(como())
+
+    expect(retirados).toBe(2)
+    expect(prismaFalso.product.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: PRODUCTOS_RETIRADOS } }
+    })
+  })
+
+  it('no borra nada cuando no hay productos retirados', async () => {
+    // El `count` de `deleteMany` es 0 en el caso normal. Lo que se verifica es
+    // que la llamada se hace **igual**, con la lista: es una operacion
+    // idempotente y el `count` sale de la base, no de un `if`.
+    prismaFalso.product.findUnique.mockResolvedValue({ id: 'ya-existe' })
+    prismaFalso.product.deleteMany.mockResolvedValue({ count: 0 })
+
+    const { retirados } = await sembrarCatalogo(como())
+
+    expect(retirados).toBe(0)
+    expect(prismaFalso.product.deleteMany).toHaveBeenCalledTimes(1)
   })
 })
 
