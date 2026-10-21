@@ -176,6 +176,45 @@ export const categoriasDe = (departamento: string): string[] => {
 }
 
 /**
+ * Las categorias que pertenecen a un grupo especifico dentro de un departamento.
+ *
+ * Cuando el usuario ya eligio un grupo, el filtro de categoria solo debe ofrecer
+ * las subcategorias de ESE grupo, no las de todos los grupos del departamento.
+ *
+ * - Si el grupo no tiene subcategorias (ej. "Energizantes"), devuelve array vacio:
+ *   el filtro de categoria se oculta porque el grupo YA ES la hoja.
+ * - Si el grupo tiene subcategorias (ej. "Con alcohol", "Sin alcohol"), devuelve
+ *   solo esas subcategorias.
+ * - Si no hay grupo elegido (grupo === ''), devuelve todas las categorias del
+ *   departamento (comportamiento legacy para compatibilidad).
+ */
+export const categoriasDeGrupo = (departamento: string, grupo: string): string[] => {
+  if (grupo === '') {
+    return categoriasDe(departamento)
+  }
+  const depto = DEPARTAMENTOS.find((d) => d.valor === departamento)
+  if (!depto) return []
+  const grupoEncontrado = depto.grupos.find((g) => g.valor === grupo)
+  if (!grupoEncontrado) return []
+  // Si el grupo no tiene subcategorias, el grupo mismo es la hoja: no hay
+  // filtro de categoria que mostrar.
+  if (grupoEncontrado.categorias.length === 0) return []
+  return grupoEncontrado.categorias.map((c) => c.valor)
+}
+
+/**
+ * Indica si un grupo tiene subcategorias (es decir, si hay que mostrar el
+ * filtro de categoria cuando ese grupo esta seleccionado).
+ */
+export const grupoTieneSubcategorias = (departamento: string, grupo: string): boolean => {
+  if (grupo === '') return true
+  const depto = DEPARTAMENTOS.find((d) => d.valor === departamento)
+  if (!depto) return false
+  const grupoEncontrado = depto.grupos.find((g) => g.valor === grupo)
+  return (grupoEncontrado?.categorias.length ?? 0) > 0
+}
+
+/**
  * El `tipoVino` de cada categoria de producto.
  *
  * Es la unica parte de la taxonomia que esta en codigo y **no** en la base: el

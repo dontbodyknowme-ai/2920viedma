@@ -6,7 +6,8 @@ import { ProductCard } from './carta_de_productos'
 import { filtrarVinos } from '../utils/filtros'
 import {
   DEPARTAMENTOS,
-  categoriasDe,
+  categoriasDeGrupo,
+  grupoTieneSubcategorias,
   gruposDe
 } from '../utils/departamentos'
 import { api } from '../api/client'
@@ -193,7 +194,14 @@ export const ProductCatalog = ({
   // Los grupos y categorias de lo que esta elegido. Se calculan aqui y no en el
   // render del boton porque se usan dos veces (la fila y el contador).
   const gruposVisibles = useMemo(() => gruposDe(departamento), [departamento])
-  const categoriasVisibles = useMemo(() => categoriasDe(departamento), [departamento])
+  const categoriasVisibles = useMemo(
+    () => categoriasDeGrupo(departamento, grupo),
+    [departamento, grupo]
+  )
+  const mostrarFiltroCategoria = useMemo(
+    () => grupoTieneSubcategorias(departamento, grupo),
+    [departamento, grupo]
+  )
 
   return (
     <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
@@ -261,7 +269,7 @@ export const ProductCatalog = ({
           </div>
         )}
 
-        {departamento !== '' && categoriasVisibles.length > 0 && (
+        {departamento !== '' && mostrarFiltroCategoria && categoriasVisibles.length > 0 && (
           <div>
             <p className='mb-3 text-xs font-semibold uppercase tracking-widest text-neutral-500'>
               Tipo de producto
