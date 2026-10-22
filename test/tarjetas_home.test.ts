@@ -95,7 +95,7 @@ const CATALOGO: ProductoPublico[] = [
     id: 's1',
     name: 'Chocolate Amargo',
     category: 'Chocolates',
-    departamento: 'Snack y chocolates',
+    departamento: 'Snack y dulce',
     grupo: null
   })
 ]
@@ -250,7 +250,7 @@ describe('las tarjetas de la home llevan al catalogo', () => {
     // de la lista es el que se toca.
     montaje = await montarTienda()
 
-    pulsarNodo(tarjeta(montaje, 'Snack y chocolates'))
+    pulsarNodo(tarjeta(montaje, 'Snack y dulce'))
     expect(nombresDeLasTarjetas(montaje)).toEqual(['Chocolate Amargo'])
 
     pulsarNodo(tarjeta(montaje, 'Bebidas'))
@@ -298,7 +298,7 @@ describe('las tarjetas de la home llevan al catalogo', () => {
     // nombre de la **tarjeta**; lo que hay que anunciar es la **acción**.
     montaje = await montarTienda()
 
-    for (const etiqueta of ['Bebidas', 'Regalos', 'Listo para comer', 'Snack y chocolates']) {
+    for (const etiqueta of ['Bebidas', 'Regalos', 'Listo para comer', 'Snack y dulce']) {
       const boton = tarjeta(montaje, etiqueta)
 
       expect(boton.getAttribute('aria-label')).toBe(`Ver productos de ${etiqueta}`)

@@ -182,7 +182,7 @@ describe('las pestañas de stock', () => {
       PESTAÑA_TODOS,
       'Stock de bebidas',
       'Stock de listo para comer',
-      'Stock de snack y chocolates',
+      'Stock de snack y dulce',
       'Stock de regalos'
     ])
 
@@ -196,7 +196,7 @@ describe('las pestañas de stock', () => {
     expect(DEPARTAMENTOS.map((d) => d.valor)).toEqual([
       'Bebidas',
       'Listo para comer',
-      'Snack y chocolates',
+      'Snack y dulce',
       'Regalos'
     ])
     // El `String(...)` es para que el guard siga siendo de runtime: con `as

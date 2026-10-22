@@ -23,7 +23,7 @@ const PRESENTACION: Record<string, { icon: LucideIcon; detalle: string }> = {
   Bebidas: { icon: IconoVino, detalle: 'Con y sin alcohol' },
   Regalos: { icon: Gift, detalle: 'Detalles para regalar' },
   'Listo para comer': { icon: Utensils, detalle: 'Opciones preparadas' },
-  'Snack y chocolates': { icon: Candy, detalle: 'Algo rico para disfrutar' }
+  'Snack y dulce': { icon: Candy, detalle: 'Algo rico para disfrutar' }
 }
 
 /**

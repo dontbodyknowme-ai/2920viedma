@@ -223,7 +223,7 @@ describe('el catalogo de demostracion', () => {
       'Bebidas',
       'Regalos',
       'Listo para comer',
-      'Snack y chocolates'
+      'Snack y dulce'
     ])
     expect(escasos((p) => p.departamento)).toEqual([])
   })
