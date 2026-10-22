@@ -10,9 +10,9 @@
  *     ├─ Con alcohol      → Vinos, Cerveza, Aperitivos, Destilados
  *     ├─ Energizantes     → (sin subcategorias: el grupo **es** la hoja)
  *     └─ Sin alcohol      → Gaseosas, Agua saborizada, Jugos
- *   Regalería            → (sin estructura por ahora)
- *   Gastronomía          → (sin estructura por ahora)
- *   Snacks y chocolates  → (sin estructura por ahora)
+ *   Regalos            → (sin estructura por ahora)
+ *   Listo para comer          → (sin estructura por ahora)
+ *   Snack y chocolates  → (sin estructura por ahora)
  *
  * Un producto tiene siempre `departamento` y `categoria`. El `grupo` es el que
  * puede faltar, y solo falta en los departamentos que **no tienen estructura**:
@@ -32,7 +32,7 @@
  *
  * ## Solo Bebidas tiene estructura
  *
- * Regalería, Gastronomía y Snacks y chocolates están vacías a proposito. El
+ * Regalos, Listo para comer y Snack y chocolates están vacías a proposito. El
  * boceto de jerarquia desarrollo **unicamente** como se organiza Bebidas, e
  * inventar subcategorias de las otras seria inventar el catalogo de un negocio
  * que todavia no se existe. Cuando aparezca, se agrega el grupo y sus categorias
@@ -96,12 +96,12 @@ export const DEPARTAMENTOS: DepartamentoDeTienda[] = [
       }
     ]
   },
-  { valor: 'Regalería', etiqueta: 'Regalería', grupos: [] },
-  { valor: 'Gastronomía', etiqueta: 'Gastronomía', grupos: [] },
+  { valor: 'Regalos', etiqueta: 'Regalos', grupos: [] },
+  { valor: 'Listo para comer', etiqueta: 'Listo para comer', grupos: [] },
   {
-    valor: 'Snacks y chocolates',
-    etiqueta: 'Snacks y chocolates',
-    // Sin estructura, como Regalería y Gastronomía. El boceto dibuja la
+    valor: 'Snack y chocolates',
+    etiqueta: 'Snack y chocolates',
+    // Sin estructura, como Regalos y Listo para comer. El boceto dibuja la
     // jerarquía solo de Bebidas, y "chocolates / alfajores / papas chips" es
     // una division que todavía no se decidió: agregarla acá sería inventarla.
     // Cuando se defina, se pone el grupo y sus categorías en esta línea y el

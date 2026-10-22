@@ -118,7 +118,7 @@ export const PRODUCTOS_INICIALES: Producto[] = [
     winery: null,
     varietal: null,
     category: 'Vajilla',
-    departamento: 'Regalería',
+    departamento: 'Regalos',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -129,12 +129,12 @@ export const PRODUCTOS_INICIALES: Producto[] = [
   {
     id: '7',
     name: 'Chocolate Amargo 70% 100g',
-    // `grupo: null` a proposito: el departamento "Snacks y chocolates" todavia no
+    // `grupo: null` a proposito: el departamento "Snack y chocolates" todavia no
     // tiene estructura, asi que el producto cuelga directo de el.
     winery: null,
     varietal: null,
     category: 'Chocolates',
-    departamento: 'Snacks y chocolates',
+    departamento: 'Snack y chocolates',
     grupo: null,
     tipoVino: null,
     vintage: null,

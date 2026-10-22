@@ -22,10 +22,20 @@ export const Navbar = ({ cartCount, onOpenCart, searchQuery, onSearchChange }: N
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50)
+      // Umbral adaptativo: en dispositivos touch usamos 100px, en desktop 50px
+      const threshold = /Mobi|Android/i.test(navigator.userAgent) ? 100 : 50
+      setIsScrolled(window.scrollY > threshold)
+    }
+    const handleTouchStart = () => {
+      // En touch devices, marcar inmediatamente para que el navbar aparezca
+      setIsScrolled(true)
     }
     window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    window.addEventListener('touchstart', handleTouchStart, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('touchstart', handleTouchStart)
+    }
   }, [])
   const handleNavClick = (href: string) => {
     setMobileMenuOpen(false)

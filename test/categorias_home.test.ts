@@ -94,14 +94,14 @@ describe('las tarjetas de la home siguen a la taxonomia', () => {
   it('la tarjeta de descartes se llama como el departamento, no como antes', () => {
     // Este es el caso concreto que casi se va: la taxonomia paso de "Comidas" a
     // "Gastronomia" y la home seguia con "Comidas".
-    const descartes = DEPARTAMENTOS.find((d) => d.valor === 'Gastronomía')
+    const descartes = DEPARTAMENTOS.find((d) => d.valor === 'Listo para comer')
 
-    expect(descartes?.etiqueta).toBe('Gastronomía')
+    expect(descartes?.etiqueta).toBe('Listo para comer')
 
     return montar().then(async () => {
       try {
         expect(titulos()).not.toContain('Comidas')
-        expect(titulos()).toContain('Gastronomía')
+        expect(titulos()).toContain('Listo para comer')
       } finally {
         await desmontar()
       }

@@ -221,9 +221,9 @@ describe('el catalogo de demostracion', () => {
     // uno "porque tenga algo": con dos ya se ve que la tabla funciona.
     expect([...contarPor((p) => p.departamento).keys()]).toEqual([
       'Bebidas',
-      'Regalería',
-      'Gastronomía',
-      'Snacks y chocolates'
+      'Regalos',
+      'Listo para comer',
+      'Snack y chocolates'
     ])
     expect(escasos((p) => p.departamento)).toEqual([])
   })

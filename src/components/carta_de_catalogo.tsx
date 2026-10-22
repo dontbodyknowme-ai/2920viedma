@@ -1,6 +1,7 @@
 ﻿import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search } from 'lucide-react'
+// (el buscador vive en la barra de navegacion; este componente solo recibe el
+// `searchQuery` para filtrar, pero no lo edita)
 import { Producto, ProductoPublico } from '../types/producto'
 import { ProductCard } from './carta_de_productos'
 import { filtrarVinos } from '../utils/filtros'
@@ -43,7 +44,7 @@ import { useAuth } from '../hooks/useAuth'
 
 interface ProductCatalogProps {
   searchQuery: string
-  onSearchChange: (query: string) => void
+  onSearchChange?: (query: string) => void
   onAddToCart: (producto: Producto) => void
   onSelectProducto: (producto: Producto) => void
   onEditProducto: (producto: Producto) => void
@@ -96,7 +97,6 @@ const BotonFiltro = ({
 
 export const ProductCatalog = ({
   searchQuery,
-  onSearchChange,
   onAddToCart,
   onSelectProducto,
   onEditProducto,
@@ -126,7 +126,7 @@ export const ProductCatalog = ({
    * Cambiar el departamento **borra los niveles de abajo**, venga de donde venga.
    *
    * Sin esto: se elige "Bebidas" + "Con alcohol" + "Cerveza", despues se elige
-   * "Regalería" desde la tarjeta de la home, y el filtro queda diciendo "Grupo:
+   * "Regalos" desde la tarjeta de la home, y el filtro queda diciendo "Grupo:
    * todos" y "Tipo de producto: Cerveza" sobre productos de regalería. El
    * resultado es una tabla vacia con un filtro que dice una cosa y muestra otra:
    * el filtro mas confuso que se puede construir.
@@ -320,23 +320,7 @@ export const ProductCatalog = ({
         </div>
       </div>
 
-      {/* Búsqueda */}
-      <div className='mb-10'>
-        <div className='relative'>
-          <Search
-            className='pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400'
-            aria-hidden='true'
-          />
-          <input
-            type='text'
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder='¿Qué necesitás hoy?'
-            aria-label='Buscar productos'
-            className='w-full bg-blanco border border-neutral-300 rounded-xl py-3.5 pl-12 pr-5 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
-          />
-        </div>
-      </div>
+
 
       {/* Contenido: loading, error o grilla */}
       {loading ? (
@@ -369,7 +353,7 @@ export const ProductCatalog = ({
           ) : (
             <motion.div
               layout
-              className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+              className='grid grid-cols-2 gap-6'
             >
               {filteredWines.map((producto) => (
                 <ProductCard

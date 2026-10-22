@@ -631,7 +631,7 @@ export const CATALOGO: ProductoDemo[] = [
     activo: true
   },
 
-  // --- Regalería -----------------------------------------------------------
+  // --- Regalos -----------------------------------------------------------
   // Departamento **sin estructura**: `grupo` es `null` y la categoria es texto
   // libre. Ver la nota de `departamentos.ts` sobre por que no se inventan
   // subcategorias aca.
@@ -641,7 +641,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Regalos',
-    departamento: 'Regalería',
+    departamento: 'Regalos',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -659,7 +659,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Regalos',
-    departamento: 'Regalería',
+    departamento: 'Regalos',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -672,14 +672,14 @@ export const CATALOGO: ProductoDemo[] = [
     activo: true
   },
 
-  // --- Gastronomía --------------------------------------------------------
+  // --- Listo para comer --------------------------------------------------------
   {
     id: 'gastronomia-queso-brie',
     name: 'Queso Brie',
     winery: null,
     varietal: null,
     category: 'Quesos',
-    departamento: 'Gastronomía',
+    departamento: 'Listo para comer',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -697,7 +697,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Quesos',
-    departamento: 'Gastronomía',
+    departamento: 'Listo para comer',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -715,7 +715,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Comidas preparadas',
-    departamento: 'Gastronomía',
+    departamento: 'Listo para comer',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -733,7 +733,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Comidas preparadas',
-    departamento: 'Gastronomía',
+    departamento: 'Listo para comer',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -746,14 +746,14 @@ export const CATALOGO: ProductoDemo[] = [
     activo: true
   },
 
-  // --- Snacks y chocolates -------------------------------------------------
+  // --- Snack y chocolates -------------------------------------------------
   {
     id: 'snacks-chocolate-amargo-70',
     name: 'Chocolate Amargo 70% 100g',
     winery: null,
     varietal: null,
     category: 'Chocolates',
-    departamento: 'Snacks y chocolates',
+    departamento: 'Snack y chocolates',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -773,7 +773,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Chocolates',
-    departamento: 'Snacks y chocolates',
+    departamento: 'Snack y chocolates',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -791,7 +791,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Snacks salados',
-    departamento: 'Snacks y chocolates',
+    departamento: 'Snack y chocolates',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -809,7 +809,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Snacks salados',
-    departamento: 'Snacks y chocolates',
+    departamento: 'Snack y chocolates',
     grupo: null,
     tipoVino: null,
     vintage: null,

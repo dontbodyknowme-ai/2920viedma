@@ -21,9 +21,9 @@ import { DEPARTAMENTOS } from '../utils/departamentos'
  */
 const PRESENTACION: Record<string, { icon: LucideIcon; detalle: string }> = {
   Bebidas: { icon: IconoVino, detalle: 'Con y sin alcohol' },
-  'Regalería': { icon: Gift, detalle: 'Detalles para regalar' },
-  'Gastronomía': { icon: Utensils, detalle: 'Opciones preparadas' },
-  'Snacks y chocolates': { icon: Candy, detalle: 'Algo rico para disfrutar' }
+  Regalos: { icon: Gift, detalle: 'Detalles para regalar' },
+  'Listo para comer': { icon: Utensils, detalle: 'Opciones preparadas' },
+  'Snack y chocolates': { icon: Candy, detalle: 'Algo rico para disfrutar' }
 }
 
 /**

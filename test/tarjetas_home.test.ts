@@ -77,7 +77,7 @@ const producto = (over: Partial<ProductoPublico> & { id: string }): ProductoPubl
 /**
  * Un producto por rama, para que el filtro tenga algo que descartar.
  *
- * Si todos fueran de "Bebidas", tocar "Regalería" vaciaría la grilla y el test
+ * Si todos fueran de "Bebidas", tocar "Regalos" vaciaría la grilla y el test
  * vería "no hay tarjetas" — que también es lo que se vería si el filtro anduviera
  * mal. Con productos en las tres ramas, la diferencia se lee: queda **solo** el
  * del departamento tocado.
@@ -88,14 +88,14 @@ const CATALOGO: ProductoPublico[] = [
     id: 'c1',
     name: 'Set de Copas',
     category: 'Vajilla',
-    departamento: 'Regalería',
+    departamento: 'Regalos',
     grupo: null
   }),
   producto({
     id: 's1',
     name: 'Chocolate Amargo',
     category: 'Chocolates',
-    departamento: 'Snacks y chocolates',
+    departamento: 'Snack y chocolates',
     grupo: null
   })
 ]
@@ -137,7 +137,7 @@ const montarTienda = async (): Promise<Montaje> => {
  * La primera versión de este test usaba la fila "Grupo" como testigo —solo se
  * renderiza cuando hay un departamento elegido— y **falló en tres de los cuatro
  * departamentos**: la fila aparece si `gruposDe(departamento).length > 0`, y
- * Regalería, Gastronomía y Snacks no tienen grupos. O sea que el testigo solo
+ * Regalos, Listo para comer y Snacks no tienen grupos. O sea que el testigo solo
  * servía para Bebidas.
  *
  * El botón de la fila "Departamento" está siempre, y `aria-pressed` dice cuál.
@@ -232,15 +232,15 @@ describe('las tarjetas de la home llevan al catalogo', () => {
     expect(activosDelFiltro(montaje)).toContain('Bebidas')
   })
 
-  it('tocar "Regalería" deja solo los productos de Regalería', async () => {
+  it('tocar "Regalos" deja solo los productos de Regalos', async () => {
     // Esta es la que de verdad importa: que el botón quede marcado no dice que el
     // filtro **filtre**. Si el estado se moviera sin pasar por `filtrarVinos`, el
     // botón se marcaría igual y seguirían las tres tarjetas en pantalla.
     montaje = await montarTienda()
 
-    pulsarNodo(tarjeta(montaje, 'Regalería'))
+    pulsarNodo(tarjeta(montaje, 'Regalos'))
 
-    expect(departamentoActivo(montaje)).toBe('Regalería')
+    expect(departamentoActivo(montaje)).toBe('Regalos')
     expect(nombresDeLasTarjetas(montaje)).toEqual(['Set de Copas'])
   })
 
@@ -250,7 +250,7 @@ describe('las tarjetas de la home llevan al catalogo', () => {
     // de la lista es el que se toca.
     montaje = await montarTienda()
 
-    pulsarNodo(tarjeta(montaje, 'Snacks y chocolates'))
+    pulsarNodo(tarjeta(montaje, 'Snack y chocolates'))
     expect(nombresDeLasTarjetas(montaje)).toEqual(['Chocolate Amargo'])
 
     pulsarNodo(tarjeta(montaje, 'Bebidas'))
@@ -259,7 +259,7 @@ describe('las tarjetas de la home llevan al catalogo', () => {
 
   it('el grupo y la categoria se limpian al cambiar de departamento desde la home', async () => {
     // El bug que se evita: se elige "Bebidas" + "Con alcohol" + "Vinos", después
-    // se toca "Regalería" arriba, y el filtro queda diciendo "Tipo de producto:
+    // se toca "Regalos" arriba, y el filtro queda diciendo "Tipo de producto:
     // Vinos" sobre productos de regalería. Grilla vacía y un filtro que dice una
     // cosa y muestra otra: el filtro más confuso que se puede construir.
     montaje = await montarTienda()
@@ -271,7 +271,7 @@ describe('las tarjetas de la home llevan al catalogo', () => {
     // Ahora se llega desde la home, que es el camino que **no** pasa por el
     // manejador del catálogo: por eso el reset está en un `useEffect` sobre
     // `departamento` y no dentro de `elegirDepartamento`.
-    pulsarNodo(tarjeta(montaje, 'Regalería'))
+    pulsarNodo(tarjeta(montaje, 'Regalos'))
 
     expect(nombresDeLasTarjetas(montaje)).toEqual(['Set de Copas'])
     expect(activosDelFiltro(montaje).filter((t) => t === 'Con alcohol' || t === 'Vinos')).toEqual(
@@ -298,7 +298,7 @@ describe('las tarjetas de la home llevan al catalogo', () => {
     // nombre de la **tarjeta**; lo que hay que anunciar es la **acción**.
     montaje = await montarTienda()
 
-    for (const etiqueta of ['Bebidas', 'Regalería', 'Gastronomía', 'Snacks y chocolates']) {
+    for (const etiqueta of ['Bebidas', 'Regalos', 'Listo para comer', 'Snack y chocolates']) {
       const boton = tarjeta(montaje, etiqueta)
 
       expect(boton.getAttribute('aria-label')).toBe(`Ver productos de ${etiqueta}`)

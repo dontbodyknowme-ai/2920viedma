@@ -48,7 +48,7 @@ export interface Filtros {
  * Deja el texto comparable: minusculas y **sin tildes**.
  *
  * Sin esto, buscar `regaleria` no encuentra nada aunque la etiqueta del filtro
- * diga **"Regalería"**. Y no es un caso raro: en espanol la tilde casi nunca se
+ * diga **"Regalos"**. Y no es un caso raro: en espanol la tilde casi nunca se
  * escribe, ni en un teclado ni en un celular con autocorrector.
  *
  * El sintoma es de los peores que puede tener un buscador: **no hay error, no
