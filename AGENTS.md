@@ -40,7 +40,7 @@
 - TypeScript strict mode (`noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`)
 - Comillas simples, sin puntos y comas
 - Patrones funcionales; componentes puros de React
-- **No hardcodear colores hex en componentes**: viven en `tailwind.config.js` (única excepción: `PALETA` en `herocanvas3d.tsx` para Three.js)
+- **No hardcodear colores hex en componentes**: viven en `tailwind.config.js` (la excepción de `PALETA` en `herocanvas3d.tsx` desapareció con el archivo, borrado en 2026-10-22)
 
 ---
 
@@ -167,7 +167,7 @@ Montan componentes de verdad. El camino no es montando `App` (necesita un servid
 ## Gotchas operativos (verificados, no especulativos)
 
 1. **`npm run lint` lintea `*.ts` y `*.js` en raíz** (incluye `vitest.config.ts`, `tailwind.config.js`)
-2. **`hero.tsx` no renderiza `<HeroCanvas3D />`** (evita WebGL en tests/jsdom)
+2. **`herocanvas3d.tsx` fue BORRADO** (2026-10-22): era la botella 3D del hero y ya era código muerto (nadie lo importaba). Con el archivo salieron de `package.json` las 4 deps de Three.js (`@react-three/fiber`, `@react-three/drei`, `three`, `@types/three`). El gotcha anterior era "hero.tsx no renderiza `<HeroCanvas3D />`"; hoy ni existe.
 3. **`VistaRapidaProducto` se monta SIEMPRE**; su `AnimatePresence` interno decide visibilidad (montar condicionalmente rompe animación de salida)
 4. **`loadWines`/`loadCart` tienen guardas contra `localStorage` corrupto** (`{}` o `[]` vacían catálogo/carrito)
 5. **Escrituras offline fallan explícitamente** (no se encolan; evitaría conflictos sin resolver)

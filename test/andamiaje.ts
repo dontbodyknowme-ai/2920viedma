@@ -34,24 +34,15 @@ import type { CartItem } from '../src/types/producto'
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 
 /**
- * jsdom no tiene WebGL, y `@react-three/fiber` tira
- * "This browser does not support ResizeObserver out of the box" al montar su
- * `<Canvas>`: sin eso el render de `App` revienta y ningun test llega a mirar la
- * logica. Se verificó que ese es el unico choque del entorno.
+ * jsdom no tiene WebGL y `jsdom` queda lejos de un canvas de Three.js. Hacía
+ * falta esa precaucion cuando el hero tenia `<HeroCanvas3D />`; el canvas se
+ * borro y nadie importa `three` hoy, pero el `innerWidth = 375` de abajo
+ * sigue siendo util: los breakpoints de `Framer Motion` y el resto de la UI
+ * corren con la ventana chiquita y preferimos que los tests corran con el
+ * viewport movil (`matchMedia` lo lee), no como un "parche suelto" que un
+ * dia alguien apagaria y habria que descubrir por que.
  *
- * En vez de polifillar `ResizeObserver` (que despues fallaria al pedir un contexto
- * WebGL, y `Environment` de `drei` ademas iria a la red) se usa el camino que la
- * propia app ya tiene para este caso.
- *
- * **Ojo: ese camino ya no existe.** Cuando el hero paso a ser texto se borro el
- * `<Canvas>`, y con el `HeroCanvas3D` dejo de renderizarse **siempre**, no "por
- * debajo de 640 px". El `innerWidth = 375` de abajo **ya no esta previniendo un
- * choque de WebGL**: hoy previene otra cosa, y lo que evita el choque es que
- * `herocanvas3d.tsx` es **codigo muerto** —no lo importa nadie.
- * El `ResizeObserverStub` de mas abajo si sigue siendo necesario, pero por el
- * motivo que dice su propio comentario: Framer Motion lo pide por su cuenta.
- *
- * `window.innerWidth` es de solo lectura en jsdom, asi que se redefine con
+ * `window.innerWidth` es de solo lectura en jsdom, así que se redefine con
  * `defineProperty`. Vitest da un entorno nuevo por archivo, con lo cual el cambio
  * muere con el archivo y no hay que restaurarlo.
  */
@@ -68,13 +59,9 @@ Object.defineProperty(window, 'innerWidth', {
  * `ResizeObserver`. Sin esto, montar `App` tira "This browser does not support
  * ResizeObserver out of the box" y ningun test llega a mirar la logica.
  *
- * Ojo con el comentario de mas arriba: forzar `innerWidth` a 375 evita el
- * `<Canvas>` de three.js, que es un consumidor de `ResizeObserver` distinto.
- * Evitar ese no alcanza, porque Framer Motion sigue pidiendo el observer por su
- * cuenta. Son dos caminos separados y hacen falta los dos.
- *
- * El stub no mide nada: expone la interfaz y nunca notifica. Para estos tests,
- * que verifican estado y no medidas, alcanza. Un polyfill que dispare un
+ * Ojo: el `innerWidth = 375` de arriba hace que Framer Motion vea el viewport
+ * movil, y algunos de esos `motion.div` con `layout` miden con `useMeasure`.
+ * El stub cubre ese caso unico y no mide nada: expone la interfaz y nunca
  * callback en el proximo tick induciria a Framer Motion a recalcular
  * proyecciones de layout en cada `act`, que es justamente lo que T6 de la spec
  * 002 demostro que frena el unmount de `AnimatePresence`.

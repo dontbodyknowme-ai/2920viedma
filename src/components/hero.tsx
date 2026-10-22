@@ -7,8 +7,8 @@
  * solucion practica, a un clic"), un titular grande que nombra el beneficio
  * ("Eso que buscas, te lo llevamos."), un subtitulo que detalla y un CTA.
  *
- * **Sin botella 3D ni tarjetas de producto.** El canvas de Three.js se saco del
- * hero (pesaba ~376 kB de chunk y en movil no se veia por debajo de 640px) y las
+ * **Sin botella 3D ni tarjetas de producto.** El canvas de Three.js se borro
+ * (pesaba ~376 kB de chunk y en movil no se veia por debajo de 640px) y las
  * destacadas pasaron a la seccion de categorias. El hero es texto, que es lo que
  * el boceto pide y lo que carga primero.
  *
