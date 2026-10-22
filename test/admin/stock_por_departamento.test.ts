@@ -181,9 +181,9 @@ describe('las pestañas de stock', () => {
     expect(pestanas(montaje)).toEqual([
       PESTAÑA_TODOS,
       'Stock de bebidas',
-      'Stock de regalos',
       'Stock de listo para comer',
-      'Stock de snack y chocolates'
+      'Stock de snack y chocolates',
+      'Stock de regalos'
     ])
 
     await desmontarAdmin(montaje)
@@ -195,9 +195,9 @@ describe('las pestañas de stock', () => {
     // no matchearia con ningun producto.
     expect(DEPARTAMENTOS.map((d) => d.valor)).toEqual([
       'Bebidas',
-      'Regalos',
       'Listo para comer',
-      'Snack y chocolates'
+      'Snack y chocolates',
+      'Regalos'
     ])
     // El `String(...)` es para que el guard siga siendo de runtime: con `as
     // const`, TypeScript ya prueba que los dos son literales distintos y

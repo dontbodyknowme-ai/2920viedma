@@ -96,7 +96,6 @@ export const DEPARTAMENTOS: DepartamentoDeTienda[] = [
       }
     ]
   },
-  { valor: 'Regalos', etiqueta: 'Regalos', grupos: [] },
   { valor: 'Listo para comer', etiqueta: 'Listo para comer', grupos: [] },
   {
     valor: 'Snack y chocolates',
@@ -107,7 +106,8 @@ export const DEPARTAMENTOS: DepartamentoDeTienda[] = [
     // Cuando se defina, se pone el grupo y sus categorías en esta línea y el
     // catálogo y el formulario los muestran solos.
     grupos: []
-  }
+  },
+  { valor: 'Regalos', etiqueta: 'Regalos', grupos: [] }
 ]
 
 /** El valor de `departamento` que significa "sin filtro". */
