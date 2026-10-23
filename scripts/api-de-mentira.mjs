@@ -19,7 +19,7 @@ const productos = [
   },
   {
     id: 'p3', name: 'Chocolate Amargo', winery: null, varietal: null,
-    category: 'Chocolates', departamento: 'Snack y dulce', grupo: null, tipoVino: null,
+    category: 'Chocolates', departamento: 'Snacks y dulces', grupo: null, tipoVino: null,
     vintage: null, price: 3400, description: 'Cacao al 80 %.',
     tastingNotes: null, foodPairing: null,
     imageUrl: 'https://images.unsplash.com/photo-1606312619070-d48b4c652a52?w=400'

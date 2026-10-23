@@ -68,30 +68,28 @@ export const ProductCard = ({ producto, onAddToCart, onSelectProducto, onEditPro
           </p>
         </div>
 
-        <div className='pt-4 border-t border-neutral-200/80 flex items-center justify-between mt-auto'>
-          <span className='text-carbon text-xl font-bold font-serif'>
+        <div className='pt-4 border-t border-neutral-200/80 flex items-center gap-2 mt-auto'>
+          <span className='text-carbon text-lg font-bold font-serif whitespace-nowrap'>
             {formattedPrice}
           </span>
-          <div className='flex items-center gap-2'>
-            {onEditProducto && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onEditProducto(producto)
-                }}
-                className='bg-neutral-200 hover:bg-neutral-600 text-neutral-600 text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 border border-neutral-600'
-                aria-label={`Editar ${producto.name}`}
-              >
-                Editar
-              </button>
-            )}
+          {onEditProducto && (
             <button
-              onClick={() => onAddToCart(producto)}
-              className='bg-verde-600 hover:bg-verde-600 text-blanco text-xs uppercase tracking-wider font-bold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-verde-900/40 border border-verde-500/20 active:scale-95'
+              onClick={(e) => {
+                e.stopPropagation()
+                onEditProducto(producto)
+              }}
+              className='bg-neutral-200 hover:bg-neutral-600 text-neutral-600 text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 border border-neutral-600 shrink-0'
+              aria-label={`Editar ${producto.name}`}
             >
-              Agregar
+              Editar
             </button>
-          </div>
+          )}
+          <button
+            onClick={() => onAddToCart(producto)}
+            className='flex-1 min-w-0 bg-verde-600 hover:bg-verde-600 text-blanco text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-verde-900/40 border border-verde-500/20 active:scale-95 text-center'
+          >
+            Agregar
+          </button>
         </div>
       </div>
     </motion.div>

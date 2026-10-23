@@ -746,14 +746,14 @@ export const CATALOGO: ProductoDemo[] = [
     activo: true
   },
 
-  // --- Snack y dulce -------------------------------------------------
+  // --- Snacks y dulces -------------------------------------------------
   {
     id: 'snacks-chocolate-amargo-70',
     name: 'Chocolate Amargo 70% 100g',
     winery: null,
     varietal: null,
     category: 'Chocolates',
-    departamento: 'Snack y dulce',
+    departamento: 'Snacks y dulces',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -773,7 +773,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Chocolates',
-    departamento: 'Snack y dulce',
+    departamento: 'Snacks y dulces',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -791,7 +791,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Snacks salados',
-    departamento: 'Snack y dulce',
+    departamento: 'Snacks y dulces',
     grupo: null,
     tipoVino: null,
     vintage: null,
@@ -809,7 +809,7 @@ export const CATALOGO: ProductoDemo[] = [
     winery: null,
     varietal: null,
     category: 'Snacks salados',
-    departamento: 'Snack y dulce',
+    departamento: 'Snacks y dulces',
     grupo: null,
     tipoVino: null,
     vintage: null,

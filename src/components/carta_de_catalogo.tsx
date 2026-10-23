@@ -300,21 +300,21 @@ export const ProductCatalog = ({
         <label className='block text-sm font-medium text-carbon mb-3'>
           Precio (ARS)
         </label>
-        <div className='flex flex-col gap-3'>
+        <div className='flex gap-2'>
           <input
             type='number'
-            placeholder='Mínimo'
+            placeholder='Mín'
             value={minPrice === '' ? '' : minPrice}
             onChange={(e) => onMinPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
-            className='w-full bg-blanco border border-neutral-300 rounded-xl px-4 py-3 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
+            className='w-full bg-blanco border border-neutral-300 rounded-xl px-2 py-2 text-sm text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
             min='0'
           />
           <input
             type='number'
-            placeholder='Máximo'
+            placeholder='Máx'
             value={maxPrice === '' ? '' : maxPrice}
             onChange={(e) => onMaxPriceChange(e.target.value === '' ? '' : parseInt(e.target.value))}
-            className='w-full bg-blanco border border-neutral-300 rounded-xl px-4 py-3 text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
+            className='w-full bg-blanco border border-neutral-300 rounded-xl px-2 py-2 text-sm text-carbon placeholder-neutral-500 focus:outline-none focus:border-verde-salvia focus:ring-1 focus:ring-verde-salvia'
             min='0'
           />
         </div>
@@ -353,7 +353,7 @@ export const ProductCatalog = ({
           ) : (
             <motion.div
               layout
-              className='grid grid-cols-2 gap-6'
+              className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6'
             >
               {filteredWines.map((producto) => (
                 <ProductCard

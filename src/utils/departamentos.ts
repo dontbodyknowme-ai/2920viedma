@@ -12,7 +12,7 @@
  *     └─ Sin alcohol      → Gaseosas, Agua saborizada, Jugos
  *   Regalos            → (sin estructura por ahora)
  *   Listo para comer          → (sin estructura por ahora)
- *   Snack y dulce  → (sin estructura por ahora)
+ *   Snacks y dulces  → (sin estructura por ahora)
  *
  * Un producto tiene siempre `departamento` y `categoria`. El `grupo` es el que
  * puede faltar, y solo falta en los departamentos que **no tienen estructura**:
@@ -32,7 +32,7 @@
  *
  * ## Solo Bebidas tiene estructura
  *
- * Regalos, Listo para comer y Snack y dulce están vacías a proposito. El
+ * Regalos, Listo para comer y Snacks y dulces están vacías a proposito. El
  * boceto de jerarquia desarrollo **unicamente** como se organiza Bebidas, e
  * inventar subcategorias de las otras seria inventar el catalogo de un negocio
  * que todavia no se existe. Cuando aparezca, se agrega el grupo y sus categorias
@@ -98,8 +98,8 @@ export const DEPARTAMENTOS: DepartamentoDeTienda[] = [
   },
   { valor: 'Listo para comer', etiqueta: 'Listo para comer', grupos: [] },
   {
-    valor: 'Snack y dulce',
-    etiqueta: 'Snack y dulce',
+    valor: 'Snacks y dulces',
+    etiqueta: 'Snacks y dulces',
     // Sin estructura, como Regalos y Listo para comer. El boceto dibuja la
     // jerarquía solo de Bebidas, y "chocolates / alfajores / papas chips" es
     // una division que todavía no se decidió: agregarla acá sería inventarla.

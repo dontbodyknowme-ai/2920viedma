@@ -11,8 +11,7 @@ export const Footer = () => {
               {TIENDA.nombre}
             </p>
             <p className='text-neutral-400 text-sm leading-relaxed mb-6'>
-              Seleccion exclusiva de vinos de alta gama para los paladares mas exigentes.
-              Curamos cada etiqueta con pasion y dedicacion.
+              Lo que te falta para la previa, la cena o el regalo, en la puerta de tu casa, asi de simple.
             </p>
             <div className='flex items-center gap-4'>
               <a href='#' className='text-neutral-400 hover:text-gold-500 transition-colors' aria-label='Instagram'>
@@ -58,8 +57,7 @@ export const Footer = () => {
               Ubicación
             </h3>
             <address className='text-neutral-400 text-sm not-italic leading-relaxed'>
-              <p>Av. del Libertador 1234</p>
-              <p>Buenos Aires, Argentina</p>
+              <p>Viedma - Rio Negro. Argentina</p>
               <p className='mt-2'>
                 <a href='tel:+541145678900' className='hover:text-gold-500 transition-colors'>
                   +54 11 4567 8900
