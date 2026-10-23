@@ -68,8 +68,8 @@ export const ProductCard = ({ producto, onAddToCart, onSelectProducto, onEditPro
           </p>
         </div>
 
-        <div className='pt-4 border-t border-neutral-200/80 flex items-center gap-2 mt-auto'>
-          <span className='text-carbon text-lg font-bold font-serif whitespace-nowrap'>
+        <div className='pt-4 border-t border-neutral-200/80 mt-auto flex flex-col gap-3'>
+          <span className='text-carbon text-xl font-bold font-serif'>
             {formattedPrice}
           </span>
           {onEditProducto && (
@@ -78,7 +78,7 @@ export const ProductCard = ({ producto, onAddToCart, onSelectProducto, onEditPro
                 e.stopPropagation()
                 onEditProducto(producto)
               }}
-              className='bg-neutral-200 hover:bg-neutral-600 text-neutral-600 text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 border border-neutral-600 shrink-0'
+              className='w-full bg-neutral-200 hover:bg-neutral-600 text-neutral-600 text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 border border-neutral-600'
               aria-label={`Editar ${producto.name}`}
             >
               Editar
@@ -86,7 +86,7 @@ export const ProductCard = ({ producto, onAddToCart, onSelectProducto, onEditPro
           )}
           <button
             onClick={() => onAddToCart(producto)}
-            className='flex-1 min-w-0 bg-verde-600 hover:bg-verde-600 text-blanco text-xs uppercase tracking-wider font-bold px-3 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-verde-900/40 border border-verde-500/20 active:scale-95 text-center'
+            className='w-full bg-verde-600 hover:bg-verde-500 text-blanco text-sm uppercase tracking-wider font-bold px-4 py-3 rounded-xl transition-all duration-300 shadow-md hover:shadow-verde-900/40 border border-verde-500/20 active:scale-95'
           >
             Agregar
           </button>
