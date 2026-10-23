@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Check } from 'lucide-react'
-import { Producto, CartItem } from './types/producto'
-import { PRODUCTOS_INICIALES } from './datos/productos'
+import { useLocation } from 'react-router-dom'
+import { Wine, CartItem } from './types/vino'
+import { INITIAL_WINES } from './datos/vino'
+import { Checkout } from './pages/checkout'
 import { Navbar } from './components/barra_de_navegacion'
 import { Hero } from './components/hero'
-import { Categorias } from './components/categorias'
-import { BannerPromo } from './components/banner_promo'
 
 import { ProductCatalog } from './components/carta_de_catalogo'
 import { CartDrawer } from './components/carrito_de_compras'
@@ -14,7 +13,7 @@ import { VistaRapidaProducto } from './components/vista_rapida_producto'
 import { Footer } from './components/pie_de_pagina'
 import { AnimatedSection } from './components/animated_section'
 
-const STORAGE_KEY_PRODUCTOS = 'vinoteca_productos'
+const STORAGE_KEY_WINES = 'vinoteca_wines'
 const STORAGE_KEY_CART = 'vinoteca_cart'
 
 // El acceso al panel ya no vive aca. T1 dejo un flag `isAdmin` en
@@ -27,9 +26,9 @@ const STORAGE_KEY_CART = 'vinoteca_cart'
 // el catalogo inicial. Sin estas dos guardas, un `localStorage` con `"{}"` o con
 // `"[]"` deja el catalogo vacio y la pagina muestra un estado de "no hay
 // etiquetas" en lugar del catalogo de la tienda.
-function loadWines(): Producto[] {
+function loadWines(): Wine[] {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_PRODUCTOS)
+    const stored = localStorage.getItem(STORAGE_KEY_WINES)
     if (stored) {
       const parsed = JSON.parse(stored)
       if (Array.isArray(parsed) && parsed.length > 0) return parsed
@@ -37,11 +36,11 @@ function loadWines(): Producto[] {
   } catch {
     // ignore
   }
-  return PRODUCTOS_INICIALES
+  return INITIAL_WINES
 }
 
-function saveWines(productos: Producto[]) {
-  localStorage.setItem(STORAGE_KEY_PRODUCTOS, JSON.stringify(productos))
+function saveWines(wines: Wine[]) {
+  localStorage.setItem(STORAGE_KEY_WINES, JSON.stringify(wines))
 }
 
 // Misma guarda que `loadWines`, por el mismo motivo (RF-34, CE-02): lo guardado
@@ -64,114 +63,58 @@ function saveCart(cart: CartItem[]) {
 }
 
 export default function App() {
-  const [productos, setWines] = useState<Producto[]>(() => loadWines())
+  const ubicacion = useLocation()
+  const [wines, setWines] = useState<Wine[]>(() => loadWines())
   const [cart, setCart] = useState<CartItem[]>(() => loadCart())
   const [searchQuery, setSearchQuery] = useState('')
-  /**
-   * El departamento del filtro del catalogo vive **aca**, no en `ProductCatalog`.
-   *
-   * Porque hay dos lugares que lo mueven: la fila "Departamento" del catalogo y
-   * las tarjetas de "¿Qué estás buscando?" de la home. Con el estado dentro del
-   * catalogo, tocar "Bebidas" arriba no podria llegar: haria falta un evento o un
-   * contexto para avisarle, y la unica forma de que un boton de la home quede
-   * sin efecto es justo la que ya se vio —tarjetas que no hacen nada—.
-   *
-   * Lo de al lado, `searchQuery` y los precios, ya estaban aca por el mismo
-   * motivo: los usa el navbar y el catalogo a la vez.
-   */
-  const [departamento, setDepartamento] = useState('')
-
-  /**
-   * Lo que hace una tarjeta de la home: elige el departamento y **baja al
-   * catalogo**.
-   *
-   * El scroll no es un detalle. Sin el, en una pagina larga el usuario toca
-   * "Bebidas", no ve ningun cambio —el filtro cambio dosmil pixeles mas abajo— y
-   * concluye que el boton no funciona. El sintoma es identico al de una tarjeta
-   * sin `onClick`, y es justo lo que hace que un boton que **si** funciona
-   * parezca roto.
-   *
-   * Por id y no por `ref`: la seccion del catalogo ya lo tiene, y un `ref` seria
-   * una segunda forma de llegar al mismo nodo.
-   */
-  const elegirDesdeLaHome = useCallback((departamentoElegido: string) => {
-    setDepartamento(departamentoElegido)
-
-    document
-      .getElementById('catalogo')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [])
   const [cartOpen, setCartOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
-  const [productoAEditar, setProductoAEditar] = useState<Producto | null>(null)
-  const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null)
+  const [vinoAEditar, setVinoAEditar] = useState<Wine | null>(null)
+  const [selectedWine, setSelectedWine] = useState<Wine | null>(null)
   const [minPrice, setMinPrice] = useState<number | ''>('')
   const [maxPrice, setMaxPrice] = useState<number | ''>('')
-  const [pedidoConfirmado, setPedidoConfirmado] = useState(false)
+  const [selectedVarietals, setSelectedVarietals] = useState<string[]>([])
+  // `pedidoConfirmado` se fue con la 009: era un cartel que salia sin que
+  // hubiera pasado nada — el carrito se vaciaba y se decia "gracias" sin
+  // pedido, sin pago y sin pasarela. Ahora la confirmacion la dice el backend,
+  // despues de que Mercado Pago confirme.
   // El estado `isAdmin` y su toggle se agregan en T9, junto con el boton del
   // navbar que los consume. Declararlos en T1 dejaba el setter sin uso y el
   // `noUnusedLocals` del proyecto lo rechaza: el flag queda persistido por las
   // funciones de arriba y el estado nace cuando hay algo que lo lea.
 
-  /**
-   * El cartel de "se agrego al carrito" (puntos 4 y 8 de la lista de pendientes).
-   *
-   * Son dos los que se fusionaron en uno: el 4 pide "un cartel para cuando se
-   * agrega un producto al carrito" y el 8 lo precisa —"de 3 segundos, que diga
-   * que se agrego"—. Antes de esto la unica confirmacion era el badge del
-   * icono del carrito, que cambia de un numero a otro: si ya habia 2 y agregas
-   * uno, el unico cambio es 2→3, y no dice si paso. Con esto el producto sale
-   * por su nombre.
-   *
-   * **Es un objeto y no el nombre pelado, a proposito.** El `useEffect` de abajo
-   * reinicia los 3 segundos cuando cambia el estado, y React compara las
-   * dependencias con `Object.is`. Con el nombre solo —un `string`— agregar dos
-   * veces el **mismo** producto deja un valor identico: el efecto no vuelve a
-   * dispararse, el `setTimeout` no se renueva y el segundo cartel no dura 3
-   * segundos sino lo que falte del primero. Un objeto nuevo en cada clic tiene
-   * siempre referencia nueva, y eso reinicia el reloj solo.
-   */
-  const [agregado, setAgregado] = useState<{ nombre: string } | null>(null)
-
   useEffect(() => {
-    saveWines(productos)
-  }, [productos])
+    saveWines(wines)
+  }, [wines])
 
   useEffect(() => {
     saveCart(cart)
   }, [cart])
 
-  useEffect(() => {
-    if (agregado === null) return
-    const t = setTimeout(() => setAgregado(null), 3000)
-    return () => clearTimeout(t)
-  }, [agregado])
-
-  const agregarAlCarrito = useCallback((producto: Producto) => {
-    setAgregado({ nombre: producto.name })
+  const agregarAlCarrito = useCallback((wine: Wine) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === producto.id)
+      const existing = prev.find((item) => item.product.id === wine.id)
       if (existing) {
         return prev.map((item) =>
-          item.product.id === producto.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.product.id === wine.id ? { ...item, quantity: item.quantity + 1 } : item
         )
       }
-      return [...prev, { product: producto, quantity: 1 }]
+      return [...prev, { product: wine, quantity: 1 }]
     })
   }, [])
 
-  const actualizarCantidad = useCallback((productoId: string, delta: number) => {
+  const actualizarCantidad = useCallback((wineId: string, delta: number) => {
     setCart((prev) =>
       prev
         .map((item) =>
-          item.product.id === productoId ? { ...item, quantity: item.quantity + delta } : item
+          item.product.id === wineId ? { ...item, quantity: item.quantity + delta } : item
         )
         .filter((item) => item.quantity > 0)
     )
   }, [])
 
-  const eliminarDelCarrito = useCallback((productoId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productoId))
+  const eliminarDelCarrito = useCallback((wineId: string) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== wineId))
   }, [])
 
   // RF-27: mensaje de pedido confirmado y carrito vacio, sin recargar la
@@ -180,66 +123,76 @@ export default function App() {
   // encontrar el mensaje.
   const finalizarCompra = useCallback(() => {
     if (cart.length === 0) return
-    setCart([])
-    setCartOpen(false)
-    // Los dos avisos son `fixed bottom-6`: sin esto, agregar y confirmar en los
-    // 3 segundos siguientes al agregar deja los dos textos encimados en el mismo
-    // lugar. El de "se agrego" ya cumplio su funcion en ese caso.
-    setAgregado(null)
-    setPedidoConfirmado(true)
+    // Antes vaciaba el carrito y mostraba un cartel de "Pedido confirmado" sin
+    // que hubiera pasado nada. **No se vacia aca**: si el comprador cancela en
+    // Mercado Pago, su carrito tiene que seguir ahi (D-D de la 009).
+    window.location.assign('/checkout')
   }, [cart.length])
 
-  const agregarWine = useCallback((producto: Producto) => {
-    setWines((prev) => [...prev, producto])
+  const agregarWine = useCallback((wine: Wine) => {
+    setWines((prev) => [...prev, wine])
   }, [])
 
-  const actualizarWine = useCallback((producto: Producto) => {
+  const actualizarWine = useCallback((wine: Wine) => {
     setWines((previo) =>
-      previo.map((w) => (w.id === producto.id ? producto : w))
+      previo.map((w) => (w.id === wine.id ? wine : w))
     )
   }, [])
 
-  const editarWine = useCallback((producto: Producto) => {
-    setProductoAEditar(producto)
+  const editarWine = useCallback((wine: Wine) => {
+    setVinoAEditar(wine)
     setAdminOpen(true)
   }, [])
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0)
 
+  // El checkout vive en `App` y no en una pagina aparte porque **el carrito esta
+  // aca**: en `localStorage` y en este estado, sin contexto. Si `Checkout` fuera
+  // su propia ruta con su propio componente, el formulario no tendria que
+  // mandar.
+  //
+  // Y decide por la URL, no por una prop: la URL es la unica fuente, y una prop
+  // que puede no coincidir con el `pathname` es una prop que un dia coincide
+  // menos.
+  if (ubicacion.pathname === '/checkout') {
+    return (
+      <Checkout
+        items={cart}
+        alConfirmar={() => {
+          // El carrito se vacia **solo** con el pago aprobado. Si el comprador
+          // cancela en Mercado Pago, su carrito sigue ahi (D-D de la 009).
+          setCart([])
+          setCartOpen(false)
+        }}
+      />
+    )
+  }
+
   return (
     <>
-      {/* El buscador va adentro del Navbar (una sola barra, no dos), pero el
-          estado sigue siendo de la app: es el mismo `searchQuery` que filtra
-          el catalogo de mas abajo, asi que los dos inputs quedan sincronizados
-          sin props duplicadas. */}
       <Navbar
         cartCount={cartCount}
         onOpenCart={() => setCartOpen(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
-
       {/* El hero no lleva `AnimatedSection`: es la primera pantalla y tiene su
           propia animacion de entrada. Envolverlo haria que el reveal por scroll
           lo mantuviera fuera de vista al cargar. */}
-      <Hero />
-
-      <Categorias onSelectDepartamento={elegirDesdeLaHome} />
-      <BannerPromo />
+      <Hero wines={wines} onSelectWine={setSelectedWine} />
 
       <AnimatedSection>
         <ProductCatalog
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
           onAddToCart={agregarAlCarrito}
-          onSelectProducto={setProductoSeleccionado}
-          onEditProducto={editarWine}
+          onSelectWine={setSelectedWine}
+          onEditWine={editarWine}
           minPrice={minPrice}
           maxPrice={maxPrice}
+          selectedVarietals={selectedVarietals}
           onMinPriceChange={setMinPrice}
           onMaxPriceChange={setMaxPrice}
-          departamento={departamento}
-          onDepartamentoChange={setDepartamento}
+          onVarietalsChange={setSelectedVarietals}
         />
       </AnimatedSection>
       <CartDrawer
@@ -254,45 +207,23 @@ export default function App() {
         isOpen={adminOpen}
         onClose={() => {
           setAdminOpen(false)
-          setProductoAEditar(null)
+          setVinoAEditar(null)
         }}
         onAddWine={agregarWine}
         onUpdateWine={actualizarWine}
-        productoToEdit={productoAEditar}
+        wineToEdit={vinoAEditar}
       />
       <AnimatedSection>
         <Footer />
       </AnimatedSection>
       {/* RF-35 a RF-37: la vista rapida se monta SIEMPRE y es su `AnimatePresence`
           interno el que decide si hay algo que mostrar. Montarla con
-          `productoSeleccionado !== null` la desmontaria de golpe al cerrar y la animacion
+          `selectedWine !== null` la desmontaria de golpe al cerrar y la animacion
           de salida no correria. */}
       <VistaRapidaProducto
-        producto={productoSeleccionado}
-        onClose={() => setProductoSeleccionado(null)}
+        wine={selectedWine}
+        onClose={() => setSelectedWine(null)}
       />
-      {/* El aviso de "se agrego al carrito". Va con `role='status'` y no con
-          `alert` por el mismo motivo que el de "Pedido confirmado" (ver RF-27):
-          `alert` bloquea la ejecucion. El nombre va en un `<span>` para que se
-          pueda distinguir de la frase que lo acompana leyendo `textContent`. */}
-      {agregado !== null && (
-        <p
-          role='status'
-          className='pointer-events-none fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-verde-600/30 bg-blanco/95 px-6 py-4 text-center text-sm font-semibold text-carbon shadow-2xl'
-        >
-          <Check className='h-5 w-5 shrink-0 text-verde-600' aria-hidden='true' />
-          <span className='text-verde-600'>{agregado.nombre}</span>
-          <span>se agregó al carrito</span>
-        </p>
-      )}
-      {pedidoConfirmado && (
-        <p
-          role='status'
-          className='pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-verde-salvia/40 bg-blanco/95 px-6 py-4 text-center text-sm font-semibold tracking-wider text-verde-salvia shadow-2xl'
-        >
-          Pedido confirmado. Gracias por tu compra.
-        </p>
-      )}
     </>
   )
 }

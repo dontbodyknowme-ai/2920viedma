@@ -47,41 +47,6 @@ const origenesCors = z
     { message: 'cada origen tiene que ser una URL http(s) completa, separados por coma' }
   )
 
-/**
- * Un booleano de entorno que **no adivina**.
- *
- * Lo de siempre seria `valor !== 'false'`: cualquier otra cosa es `true`. O sea,
- * `SEED_CATALOGO=flashe`, `SEED_CATALOGO=si` o un espacio que se coló desde el
- * panel de despliegue pasan por `true` sin decir nada. Es el gotcha 27 de otra
- * vez —"una variable con el valor equivocado no rompe nada, apaga cosas"— pero
- * al reves: aqui no apaga nada, **prende** el seed en una base de produccion.
- *
- * Con un valor asi, cualquier cosa rara avisa por `stderr` en vez de pasar
- * inadvertido. No se tira el proceso: es una variable de cortesia y tumbar la app
- * por una mayuscula de mas seria peor que avisar.
- */
-const booleanoEnv = (defecto: boolean) =>
-  z
-    .string()
-    .optional()
-    .transform((valor, ctx) => {
-      if (valor === undefined || valor.trim() === '') return defecto
-
-      const normalizado = valor.trim().toLowerCase()
-      if (['1', 'true', 'yes', 'si', 'sí', 'on'].includes(normalizado)) return true
-      if (['0', 'false', 'no', 'off'].includes(normalizado)) return false
-
-      process.stderr.write(
-        `\nAVISO: se esperaba true/false y vino "${valor}". Se usa ${defecto}.\n` +
-          'Valores validos: true, false, 1, 0, yes, no, on, off.\n\n'
-      )
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `no es un booleano ("${valor}")`
-      })
-      return z.NEVER
-    })
-
 const esquema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -107,20 +72,42 @@ const esquema = z.object({
   // URL **pública** del bucket, distinta de `STORAGE_ENDPOINT` (que es el
   // endpoint de la API S3 y no se puede abrir en un navegador).
   // Cloudflare R2: https://pub-<cuenta>.r2.dev  (o un dominio propio)
-  // La devuelve `POST /api/upload` y es la que queda guardada en el producto.
-  // No se firma: una URL firmada caduca en una hora y el producto la tiene guardada
+  // La devuelve `POST /api/upload` y es la que queda guardada en el vino.
+  // No se firma: una URL firmada caduca en una hora y el vino la tiene guardada
   // para siempre, o sea que la imagen se rompia al dia siguiente.
   STORAGE_PUBLIC_URL: z.string().url(),
   PUBLIC_API_URL: z.string().url(),
+
   /**
-   * Sembrar el catalogo de demostracion al arrancar, **solo si la tabla esta
-   * vacia**. Ver `src/demo/bootstrap.ts`.
+   * Secreto de la webhook de Mercado Pago (spec 009, T4).
    *
-   * Con `false`, un negocio que carga su catalogo por otro lado no tiene que
-   * acordarse de apagar nada: simplemente no siembra. Y con el valor por defecto
-   * en `true`, la app queda servible en el primer deploy sin pasos manuales.
+   * **Opcional a proposito**, y esta es una excepcion al "todo sensible se
+   * valida": sin el, el checkout igual no funciona —no hay Preference— asi que
+   * la app levanta y avisa por `stderr` en vez de negarse a arrancar. Un deploy
+   * sin la variable deberia dejar ver **todo lo demas** funcionando y despues
+   * fallar solo en el pago, no tirar abajo el catalogo entero.
+   *
+   * El webhook **valida la firma contra esto**. Si se aceptara la notificacion
+   * sin validar, cualquiera que descubra la URL podria poner `aprobado` en un
+   * pedido que no se pago — que es un alta de pedido gratis, no un bug de
+   * permisos.
    */
-  SEED_CATALOGO: booleanoEnv(true)
+  MERCADO_PAGO_WEBHOOK_SECRET: z.string().min(1).optional(),
+
+  /**
+   * Token de la cuenta de Mercado Pago (spec 009, T3).
+   *
+   * Opcional por lo mismo que el secreto de la webhook: sin el, `POST /api/orders`
+   * responde 500 con un mensaje que lo dice, y el catalogo y el panel igual
+   * funcionan.
+   *
+   * **Opcional y ademas validado**, lo cual suena contradictorio pero no lo es:
+   * que no sea obligatoria evita que un deploy sin Mercado Pago no levante;
+   * declararla evita que sea una variable suelta que nadie encuentra cuando hay
+   * que ponerla. Una variable que el codigo lee y el esquema no conoce es una
+   * variable que no aparece en `.env.example` y a la que nadie llega.
+   */
+  MERCADO_PAGO_ACCESS_TOKEN: z.string().min(1).optional()
 })
 
 /**
@@ -171,6 +158,27 @@ if (!resultado.success) {
 }
 
 export const env = resultado.data
+
+/**
+ * Aviso por `NODE_ENV` mal puesto.
+ *
+ * `NODE_ENV` decide el comportamiento de varias cosas **sin fallar** cuando no
+ * es el esperado:
+ *
+ *   - la cookie de refresh sale `SameSite=Lax` sin `Secure`, y la sesion muere
+ *     en cada recarga de pagina
+ *   - `CORS_ORIGIN` deja de ser obligatoria y cae al default de localhost
+ *   - `CORS_ORIGIN` vacia no rompe el arranque (la schema la rechaza, pero solo
+ *     si la variable existe)
+ *
+ * Los tres son fallos silenciosos: la app levanta, el healthcheck da 200 y el
+ * unico sintoma esta del lado del navegador. Paso de verdad: `NODE_ENV` sin
+ * poner en Render dejo la sesion del panel rota y no habia forma de saberlo
+ * desde los logs del servidor.
+ *
+ * `PUBLIC_API_URL` con `https://` es la senal de que esto **no** es desarrollo
+ * local: siTL;DR: pasame lo que sigue del proyecto y seguimos<tool_call>
+<invoke name="edit"><path>C:\Vinoteca\Vinoteca-1\backend\src\config\env.ts</path><newString>export const env = resultado.data
 
 /**
  * Aviso por `NODE_ENV` mal puesto.
