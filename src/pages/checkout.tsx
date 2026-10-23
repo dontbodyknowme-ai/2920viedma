@@ -9,7 +9,7 @@ import {
   leerResumen,
   resultadoDeLaUrl
 } from '../types/checkout'
-import type { CartItem } from '../types/vino'
+import type { CartItem } from '../types/producto'
 
 /**
  * La pagina del checkout (spec 009, T6 y T7).

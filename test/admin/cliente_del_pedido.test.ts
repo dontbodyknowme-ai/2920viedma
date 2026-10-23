@@ -33,8 +33,8 @@ const pedido = (over: Partial<Order> = {}): Order => ({
   customer: { id: 'cus_1', name: 'María González', email: 'maria@example.com' },
   items: [
     {
-      wineId: 'clx1',
-      wineName: 'Gran Reserva Malbec',
+      productoId: 'clx1',
+      productoNombre: 'Gran Reserva Malbec',
       imageUrl: 'https://ejemplo.test/v.webp',
       quantity: 2,
       price: 7500

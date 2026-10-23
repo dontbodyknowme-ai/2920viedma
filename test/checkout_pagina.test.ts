@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import {
   CLAVE_CARRITO,
-  CLAVE_VINOS,
+  CLAVE_PRODUCTOS,
   abrirCarrito,
   desmontar,
   escribir,
@@ -14,7 +14,7 @@ import {
   type Montaje
 } from './andamiaje'
 import { CLAVE_PEDIDO, guardarResumen } from '../src/types/checkout'
-import type { Wine } from '../src/types/vino'
+import type { Producto } from '../src/types/producto'
 
 /**
  * La pagina del checkout, **montada** (spec 009, T6 y T7).
@@ -35,12 +35,15 @@ import type { Wine } from '../src/types/vino'
  * justamente la afirmacion de D-F: **esta pagina no consulta nada**.
  */
 
-const VINO: Wine = {
+const VINO: Producto = {
   id: 'clx111111111',
   name: 'Gran Reserva Malbec',
   winery: 'Bodega Andes',
   varietal: 'Malbec',
-  category: 'Tinto',
+  category: 'Vinos',
+  departamento: 'Bebidas',
+  grupo: 'Con alcohol',
+  tipoVino: 'Tinto',
   vintage: 2020,
   price: 7500,
   description: 'Un Malbec de altura.',
@@ -73,7 +76,7 @@ let asignar: ReturnType<typeof vi.fn>
 beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
-  localStorage.setItem(CLAVE_VINOS, JSON.stringify([VINO]))
+  localStorage.setItem(CLAVE_PRODUCTOS, JSON.stringify([VINO]))
   localStorage.setItem(CLAVE_CARRITO, JSON.stringify(CARRITO))
 
   llamado = null
