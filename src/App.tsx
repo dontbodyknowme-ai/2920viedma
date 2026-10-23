@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Check } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { Producto, CartItem } from './types/producto'
@@ -101,6 +101,19 @@ export default function App() {
    * siempre referencia nueva, y eso reinicia el reloj solo.
    */
   const [agregado, setAgregado] = useState<{ nombre: string } | null>(null)
+  const queryPrevio = useRef('')
+
+  // Buscar desde el navbar y quedarse mirando el hero es como buscar y no
+  // encontrar: la grilla filtrada esta dos pantallas abajo y el cambio no se
+  // ve. El primer caracter del termino baja al catalogo; seguir escribiendo no
+  // re-baja (sino cada tecla resetearia el scroll mientras se esta leyendo).
+  useEffect(() => {
+    if (queryPrevio.current === '' && searchQuery !== '') {
+      document.getElementById('catalogo')?.scrollIntoView?.({ behavior: 'smooth' })
+    }
+    queryPrevio.current = searchQuery
+  }, [searchQuery])
+
 
   useEffect(() => {
     saveWines(productos)
