@@ -18,7 +18,7 @@ import type { FastifyInstance } from 'fastify'
  */
 
 const prismaFalso = vi.hoisted(() => ({
-  wine: { findMany: vi.fn() },
+  product: { findMany: vi.fn() },
   customer: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
   order: { create: vi.fn(), update: vi.fn() },
   orderTimeline: { create: vi.fn() },
@@ -76,7 +76,7 @@ beforeEach(() => {
   pagos = new ProveedorPagosFalso()
   configurarProveedor(pagos)
 
-  prismaFalso.wine.findMany.mockResolvedValue([
+  prismaFalso.product.findMany.mockResolvedValue([
     { id: CUID_VINO, name: 'Gran Reserva Malbec', price: PRECIO_EN_BASE, stock: 10 }
   ])
   prismaFalso.customer.findUnique.mockResolvedValue(null)
@@ -154,7 +154,7 @@ describe('el total lo decide el backend', () => {
     const items = prismaFalso.order.create.mock.calls[0][0].data.items.create
 
     expect(items).toEqual([
-      { wineId: CUID_VINO, quantity: 2, price: PRECIO_EN_BASE }
+      { productoId: CUID_VINO, quantity: 2, price: PRECIO_EN_BASE }
     ])
   })
 
@@ -163,14 +163,14 @@ describe('el total lo decide el backend', () => {
 
     // Si alguna vez el handler deja de leer `Wine.price`, esto falla: la consulta
     // es la unica fuente del numero.
-    expect(prismaFalso.wine.findMany).toHaveBeenCalledWith(
+    expect(prismaFalso.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ select: expect.objectContaining({ price: true }) })
     )
   })
 
   it('multiplica bien varios items', async () => {
     const otro = 'clx222222222'
-    prismaFalso.wine.findMany.mockResolvedValue([
+    prismaFalso.product.findMany.mockResolvedValue([
       { id: CUID_VINO, name: 'A', price: 1000, stock: 5 },
       { id: otro, name: 'B', price: 2500, stock: 5 }
     ])
@@ -349,7 +349,7 @@ describe('D-9: un comprador que vuelve es el mismo', () => {
 
 describe('vinos que no existen', () => {
   it('un vino inexistente es 400, no un pedido a medias', async () => {
-    prismaFalso.wine.findMany.mockResolvedValue([])
+    prismaFalso.product.findMany.mockResolvedValue([])
 
     const res = await comprar(cuerpo([{ vinoId: 'clx999999999', cantidad: 1 }]))
 
@@ -362,13 +362,13 @@ describe('vinos que no existen', () => {
     // comprar un vino que el panel no muestra.
     await comprar(cuerpo())
 
-    expect(prismaFalso.wine.findMany).toHaveBeenCalledWith(
+    expect(prismaFalso.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ activo: true }) })
     )
   })
 
   it('si un vino de dos falta, dice cual', async () => {
-    prismaFalso.wine.findMany.mockResolvedValue([
+    prismaFalso.product.findMany.mockResolvedValue([
       { id: CUID_VINO, name: 'A', price: 1000, stock: 5 }
     ])
 

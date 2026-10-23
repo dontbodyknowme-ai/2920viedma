@@ -237,7 +237,7 @@ export const crearPedido = async (
 
   const ids = [...new Set(entrada.items.map((item) => item.vinoId))]
 
-  const vinos = await prisma.wine.findMany({
+  const vinos = await prisma.product.findMany({
     where: { id: { in: ids }, activo: true },
     select: { id: true, name: true, price: true, stock: true }
   })
@@ -293,7 +293,7 @@ export const crearPedido = async (
       shippingAddress: { direccion: entrada.direccion },
       items: {
         create: lineas.map((linea) => ({
-          wineId: linea.vinoId,
+          productoId: linea.vinoId,
           quantity: linea.cantidad,
           // El precio congelado **de la base**, no el que mandaba el cliente y no
           // el de hoy: es el que se cobró.

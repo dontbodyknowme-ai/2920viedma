@@ -17,7 +17,7 @@ const prismaFalso = vi.hoisted(() => ({
   order: { findUnique: vi.fn(), updateMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   orderTimeline: { create: vi.fn() },
   customer: { update: vi.fn() },
-  wine: { findMany: vi.fn() },
+  product: { findMany: vi.fn() },
   user: { findUnique: vi.fn() },
   $queryRaw: vi.fn(),
   $on: vi.fn(),
