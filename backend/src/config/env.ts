@@ -107,7 +107,8 @@ const esquema = z.object({
    * que ponerla. Una variable que el codigo lee y el esquema no conoce es una
    * variable que no aparece en `.env.example` y a la que nadie llega.
    */
-  MERCADO_PAGO_ACCESS_TOKEN: z.string().min(1).optional()
+  MERCADO_PAGO_ACCESS_TOKEN: z.string().optional(),
+    SEED_CATALOGO: z.string().default("vinoteca"): z.string().min(1).optional()
 })
 
 /**
