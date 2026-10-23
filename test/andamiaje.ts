@@ -18,10 +18,9 @@
 
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { MemoryRouter } from 'react-router-dom'
 import App from '../src/App'
 import { AuthProvider } from '../src/hooks/useAuth'
-import type { CartItem } from '../src/types/vino'
+import type { CartItem } from '../src/types/producto'
 
 /**
  * CA-40, primera mitad: sin esta bandera React avisa "The current testing
@@ -35,18 +34,15 @@ import type { CartItem } from '../src/types/vino'
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 
 /**
- * jsdom no tiene WebGL, y `@react-three/fiber` tira
- * "This browser does not support ResizeObserver out of the box" al montar su
- * `<Canvas>`: sin eso el render de `App` revienta y ningun test llega a mirar la
- * logica. Se verificó que ese es el unico choque del entorno.
+ * jsdom no tiene WebGL y `jsdom` queda lejos de un canvas de Three.js. Hacía
+ * falta esa precaucion cuando el hero tenia `<HeroCanvas3D />`; el canvas se
+ * borro y nadie importa `three` hoy, pero el `innerWidth = 375` de abajo
+ * sigue siendo util: los breakpoints de `Framer Motion` y el resto de la UI
+ * corren con la ventana chiquita y preferimos que los tests corran con el
+ * viewport movil (`matchMedia` lo lee), no como un "parche suelto" que un
+ * dia alguien apagaria y habria que descubrir por que.
  *
- * En vez de polifillar `ResizeObserver` (que despues fallaria al pedir un contexto
- * WebGL, y `Environment` de `drei` ademas iria a la red) se usa el camino que la
- * propia app ya tiene para este caso: `hero.tsx` no renderiza `<HeroCanvas3D />`
- * por debajo de 640 px (RNF-09, D-15). O sea que la app se monta por su rama real
- * de movil y el test no depende de ningun mock.
- *
- * `window.innerWidth` es de solo lectura en jsdom, asi que se redefine con
+ * `window.innerWidth` es de solo lectura en jsdom, así que se redefine con
  * `defineProperty`. Vitest da un entorno nuevo por archivo, con lo cual el cambio
  * muere con el archivo y no hay que restaurarlo.
  */
@@ -63,13 +59,9 @@ Object.defineProperty(window, 'innerWidth', {
  * `ResizeObserver`. Sin esto, montar `App` tira "This browser does not support
  * ResizeObserver out of the box" y ningun test llega a mirar la logica.
  *
- * Ojo con el comentario de mas arriba: forzar `innerWidth` a 375 evita el
- * `<Canvas>` de three.js, que es un consumidor de `ResizeObserver` distinto.
- * Evitar ese no alcanza, porque Framer Motion sigue pidiendo el observer por su
- * cuenta. Son dos caminos separados y hacen falta los dos.
- *
- * El stub no mide nada: expone la interfaz y nunca notifica. Para estos tests,
- * que verifican estado y no medidas, alcanza. Un polyfill que dispare un
+ * Ojo: el `innerWidth = 375` de arriba hace que Framer Motion vea el viewport
+ * movil, y algunos de esos `motion.div` con `layout` miden con `useMeasure`.
+ * El stub cubre ese caso unico y no mide nada: expone la interfaz y nunca
  * callback en el proximo tick induciria a Framer Motion a recalcular
  * proyecciones de layout en cada `act`, que es justamente lo que T6 de la spec
  * 002 demostro que frena el unmount de `AnimatePresence`.
@@ -155,77 +147,7 @@ Object.defineProperty(window, 'matchMedia', {
   writable: true
 })
 
-/**
- * `localStorage` **no existe** en los tests, y no es culpa de jsdom.
- *
- * Node 24+ trae su propio `localStorage` experimental y lo cuelga en
- * `globalThis` **antes** de que jsdom arme su entorno, asi que el de jsdom
- * queda tapado. El propio Node avisa:
- *
- *   ExperimentalWarning: localStorage is not available because
- *   --localstorage-file was not provided.
- *
- * O sea que `localStorage.getItem(...)` es un `TypeError` —leer `undefined`— y no
- * un `null` como en un navegador. Cualquier test que toque el almacenamiento de
- * la app revienta con un error que no habla de almacenamiento.
- *
- * Y la app **si** lo usa: el catalogo y el carrito viven en `localStorage` (la
- * 004-b movio la sesion del panel a un token en memoria, pero el carrito de la
- * tienda se quedo). O sea que esto no es un detalle del entorno: es una cosa que
- * los tests de la tienda necesitan y no podian tocar.
- *
- * El stub es un `Storage` en memoria: guarda, devuelve y se limpia entre tests
- * como haria un navegador recien abierto.
- *
- * Un cierre y no una clase con campos `#`: el `tsconfig` tiene `target: ES2020`
- * y los campos privados son ES2022. Con `private` de TypeScript tampoco —esa
- * palabra solo promete algo que el compilador no para nada— asi que el mapa
- * vive en la funcion y se accede por la interfaz `Storage`.
- */
-if (!(globalThis.localStorage as Storage | undefined)) {
-  const crearAlmacenamiento = (): Storage => {
-    const datos = new Map<string, string>()
-
-    return {
-      get length(): number {
-        return datos.size
-      },
-      clear: () => datos.clear(),
-      getItem: (clave) => datos.get(clave) ?? null,
-      key: (indice) => [...datos.keys()][indice] ?? null,
-      removeItem: (clave) => {
-        datos.delete(clave)
-      },
-      setItem: (clave, valor) => {
-        datos.set(clave, String(valor))
-      }
-    }
-  }
-
-  const instancia = crearAlmacenamiento()
-
-  // En **los dos**: `globalThis` y `window`. Un componente puede tocar cualquiera
-  // de los dos y si son objetos distintos la mitad de los tests pasa y la otra
-  // mitad ve el `undefined` de Node.
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: instancia,
-    configurable: true,
-    writable: true
-  })
-
-  Object.defineProperty(window, 'localStorage', {
-    value: instancia,
-    configurable: true,
-    writable: true
-  })
-}
-
-/**
- * `sessionStorage` **si** existe en este entorno, a diferencia del anterior. No
- * se toca: si alguna vez Node lo tapa tambien, el chequeo es el mismo.
- */
-
-export const CLAVE_VINOS = 'vinoteca_wines'
+export const CLAVE_PRODUCTOS = 'vinoteca_wines'
 export const CLAVE_CARRITO = 'vinoteca_cart'
 
 /** La clase con la que `carta_de_catalogo.tsx` marca el boton de categoria activo. */
@@ -246,45 +168,24 @@ export interface Montaje {
  * `.test.tsx` pasaria inadvertido y dejaria la suite en verde sin correr estos
  * tests. En un `.ts` la sintaxis JSX no compila.
  *
+ * **Va envuelto en `AuthProvider`, igual que `main.tsx`.** Esto no estaba y hacia
+ * que `montarApp` tirara "useAuth debe usarse dentro de AuthProvider" en el
+ * primer render: `Navbar` y `carta_de_catalogo.tsx` leen `useAuth()`. No se
+ * ROMPIO al agregar el provider —este helper no lo estaba usando nadie, asi que
+ * nadie lo ejecutaba— pero un andamiaje que revienta al primer uso es peor que
+ * uno que no existe.
+ *
  * Sin `StrictMode` a proposito (D-P, R14): el doble montaje de efectos es
  * comportamiento de desarrollo, y con el montaria dos veces cada sincronizacion a
  * `localStorage`.
- *
- * ## Los dos providers, no solo el Router (spec 009, T6)
- *
- * `App` llama `useLocation()` para decidir si esta en la tienda o en el
- * checkout. Sin un Router arriba, eso **tira**: "useLocation() may be used only
- * in the context of a `<Router>`". O sea que el router es lo que hace que
- * `montarApp()` siga sirviendo para los tests de la tienda, y `rutaInicial` es lo
- * que deja probar el checkout sin abrir un navegador.
- *
- * Y el `AuthProvider` esta por el mismo motivo, con una diferencia: la barra de
- * navegacion y el catalogo llaman `useAuth()`, asi que **cualquier** test que
- * termine en la tienda —por ejemplo el de "Volver a la tienda" del checkout—
- * reventaba con "useAuth debe usarse dentro de AuthProvider".
- *
- * Montar lo mismo que `main.tsx` es lo correcto: un test que monta la app
- * recortando providers mide un arbol que en produccion no existe. El
- * `AuthProvider` pide `/api/auth/me` al montar y, con el `fetch` interceptado,
- * cae en el `catch` de `me()` y queda deslogueado —que es exactamente lo que
- * esta una persona sin sesion.
- *
- * `MemoryRouter` y no `BrowserRouter`: no toca `window.history`, asi que un test
- * no deja la URL cambiada para el siguiente.
  */
-export const montarApp = (rutaInicial = '/'): Montaje => {
+export const montarApp = (): Montaje => {
   const contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   const root = createRoot(contenedor)
 
   act(() => {
-    root.render(
-      createElement(
-        AuthProvider,
-        null,
-        createElement(MemoryRouter, { initialEntries: [rutaInicial] }, createElement(App))
-      )
-    )
+    root.render(createElement(AuthProvider, null, createElement(App)))
   })
 
   return { contenedor, root }
@@ -358,7 +259,7 @@ export const pulsarPorTexto = (montaje: Montaje, wanted: string, indice = 0): vo
   pulsarNodo(elegido)
 }
 
-/** Nombre del vino de cada tarjeta del catalogo, en orden. */
+/** Nombre del producto de cada tarjeta del catalogo, en orden. */
 export const nombresDeLasTarjetas = (montaje: Montaje): string[] =>
   nodos(montaje, 'section#catalogo h3').map((tarjeta) => tarjeta.textContent ?? '')
 
@@ -372,7 +273,7 @@ export const categoriaActiva = (montaje: Montaje): string | null => {
   return activa?.textContent ?? null
 }
 
-/** Nombre del vino de cada linea del carrito. `aside h4` solo existe ahi. */
+/** Nombre del producto de cada linea del carrito. `aside h4` solo existe ahi. */
 export const nombresDeLasLineas = (montaje: Montaje): string[] =>
   nodos(montaje, 'aside h4').map((linea) => linea.textContent ?? '')
 

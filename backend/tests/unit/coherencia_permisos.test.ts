@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
@@ -58,21 +58,7 @@ const leerRequireRole = (): Map<string, Set<Rol>> => {
   })
 
   for (const mod of modulos) {
-    const archivo = join(RAIZ, 'backend', 'src', 'modules', mod.name, 'routes.ts')
-
-    /**
-     * No todos los directorios de `modules/` tienen `routes.ts`: `pagos/` es un
-     * proveedor, no un modulo HTTP, y la webhook vive en `orders/routes.ts` —que
-     * es donde pertenece, porque actualiza pedidos.
-     *
-     * Sin este `continue`, agregar un proveedor rompe el test de coherencia con
-     * un `ENOENT` que no dice nada de permisos. La lista de endpoints sale del
-     * archivo `routes.ts` de cada modulo; un modulo sin routes no expone
-     * endpoints, asi que no aporta ninguno.
-     */
-    if (!existsSync(archivo)) continue
-
-    const fuente = readFileSync(archivo, 'utf8')
+    const fuente = readFileSync(join(RAIZ, 'backend', 'src', 'modules', mod.name, 'routes.ts'), 'utf8')
 
     const cortes = [...fuente.matchAll(METODOS)]
 

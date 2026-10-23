@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Search } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { TIENDA } from '../utils/tienda'
 
 const NAV_LINKS = [
   { href: '#hero', label: 'Inicio' },
-  { href: '#catalogo', label: 'Catálogo' },
-  { href: '#contacto', label: 'Contacto' }
+  { href: '#catalogo', label: 'Productos' }
 ]
 
 interface NavbarProps {
@@ -16,29 +15,38 @@ interface NavbarProps {
   onSearchChange: (query: string) => void
 }
 
-export const Navbar = ({
-  cartCount,
-  onOpenCart,
-  searchQuery,
-  onSearchChange
-}: NavbarProps) => {
-  const { user, isLoading, isAuthenticated, logout, hasRole } = useAuth()
+export const Navbar = ({ cartCount, onOpenCart, searchQuery, onSearchChange }: NavbarProps) => {
+  const { user, isLoading, isAuthenticated, logout } = useAuth()
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50)
+      // Umbral adaptativo: en dispositivos touch usamos 100px, en desktop 50px
+      const threshold = /Mobi|Android/i.test(navigator.userAgent) ? 100 : 50
+      setIsScrolled(window.scrollY > threshold)
+    }
+    const handleTouchStart = () => {
+      // En touch devices, marcar inmediatamente para que el navbar aparezca
+      setIsScrolled(true)
     }
     window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    window.addEventListener('touchstart', handleTouchStart, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('touchstart', handleTouchStart)
+    }
   }, [])
-
   const handleNavClick = (href: string) => {
     setMobileMenuOpen(false)
     const target = document.querySelector(href)
     if (target) {
-      const headerOffset = 80
+      // El offset se **mide**, no se hardcodea. Antes valia 80 px porque el
+      // header era una sola fila; ahora lleva el buscador adentro y en movil
+      // pasa la misma fila a la segunda, asi que un numero fijo dejaba el
+      // destino —la seccion de productos— tapado debajo del header.
+      const header = document.querySelector('header')
+      const headerOffset = header ? header.getBoundingClientRect().height : 80
       const elementPosition = target.getBoundingClientRect().top
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset
       window.scrollTo({
@@ -54,75 +62,93 @@ export const Navbar = ({
 
   return (
     <>
+      {/*
+        El navbar se oculta arriba de la pagina y aparece al scrollear
+        (punto 1 de la lista de pendientes). En desktop nunca se oculta: los
+        overrides `md:` de abajo se lo impiden, porque ahi hay alto de sobra y una
+        barra que desaparece y vuelve molesta al usar el raton.
+
+        **Se colapsa con `max-h-0`, no con `translate`.** El header es `sticky`,
+        o sea que participa del flujo: si solo se lo traslada `-100%`, deja el
+        hueco de su alto arriba de todo y el hero arranca 134 px mas abajo, con
+        un rectangulo vacio en medio de la pantalla. `max-h-0` + `overflow-hidden`
+        lo saca de la vista sin dejar nada.
+
+        **Y nada de animacion de entrada con Framer Motion en el header.** Esta
+        clase de componente era `initial={{ y: -100 }} animate={{ y: 0 }}`, que
+        escribe un `transform` inline. Un `transform` inline gana contra las
+        clases de Tailwind, asi que cualquier `-translate-y-full` de aca abajo no
+        haria nada y el navbar quedaria siempre visible sin que se entendiera el
+        por que. Por eso el header no lleva `initial`/`animate`: el movimiento lo
+        maneja el CSS, que es lo unico que controla las clases.
+      */}
       <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.6 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`sticky top-0 z-50 overflow-hidden backdrop-blur-md bg-blanco/90 transition-[max-height,padding,box-shadow,opacity] duration-300 ${
           isScrolled
-            ? 'bg-charcoal-900/90 backdrop-blur-md shadow-lg border-b border-wine-900/50 py-3'
-            : 'bg-transparent py-5'
+            ? 'max-h-40 border-b border-neutral-200 py-3 shadow-lg md:max-h-24'
+            : 'max-h-0 border-b border-transparent py-0 opacity-0 md:max-h-24 md:border-neutral-200 md:py-4 md:opacity-100'
         }`}
       >
-        <div className='max-w-7xl mx-auto px-6 flex items-center justify-between'>
-          <a href='#' className='flex items-center gap-2'>
-            <img
-              src='/logo-2920.svg'
-              alt={TIENDA.nombre}
-              className='h-10 w-auto'
-            />
+        {/* Un solo contenedor con `flex-wrap` y **un solo input**, no dos
+            copias con distinto breakpoint. En movil el buscador lleva `w-full`,
+            que lo obliga a su propia fila; el `order-4` lo pone despues del
+            logo y de los botones, que se quedan arriba. En desktop vuelven los
+            tres a una sola fila, con el buscador entre el logo y los links. */}
+        <div className='max-w-7xl mx-auto px-6 flex flex-wrap items-center gap-x-6 gap-y-3'>
+          <a href='#hero' className='order-1 flex flex-col leading-tight'>
+            <span className='font-serif text-2xl font-bold text-verde-600'>2920</span>
+            <span className='text-xs text-neutral-500'>Todo más cerca</span>
           </a>
 
-          <nav className='flex-1 max-w-md mx-8 hidden md:block'>
+          {/* El buscador vivia en un bloque aparte entre el header y el hero
+              (`src/components/buscador.tsx`, que se borro). Ahora es parte del
+              navbar, asi que viaja con el `searchQuery` de la app igual que
+              antes: escribir aca filtra el catalogo de mas abajo. */}
+          <div className='order-4 w-full md:order-2 md:w-auto md:flex-1 md:max-w-sm'>
+            <div className='relative'>
+              <Search
+                className='pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400'
+                aria-hidden='true'
+              />
+              <input
+                type='text'
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder='¿Qué necesitás hoy?'
+                aria-label='Buscar productos'
+                className='w-full rounded-xl border border-neutral-200 bg-marfil/70 py-2.5 pl-11 pr-4 text-sm text-carbon placeholder-neutral-400 transition-colors focus:border-verde-salvia focus:bg-blanco focus:outline-none focus:ring-2 focus:ring-verde-salvia/20'
+              />
+            </div>
+          </div>
+
+          <nav className='order-2 hidden md:block md:order-3'>
             <ul className='flex items-center justify-center gap-8'>
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
                   <button
                     onClick={() => handleNavClick(link.href)}
-                    className='text-cream-200 hover:text-gold-500 text-xs uppercase tracking-widest font-semibold transition-colors relative py-2'
+                    className='text-neutral-600 hover:text-verde-600 text-xs uppercase tracking-widest font-semibold transition-colors relative py-2'
                   >
                     {link.label}
-                    <span className='absolute bottom-0 left-0 w-0 h-0.5 bg-gold-500 transition-all duration-300' />
+                    <span className='absolute bottom-0 left-0 w-0 h-0.5 bg-verde-salvia transition-all duration-300' />
                   </button>
                 </li>
               ))}
             </ul>
           </nav>
 
-          <div className='flex-1 max-w-md mx-8 hidden md:block'>
-            <input
-              type='text'
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder='Buscar por etiqueta, cepa o bodega...'
-              className='w-full bg-charcoal-800/80 text-cream-100 placeholder-neutral-500 px-4 py-2 rounded-full border border-neutral-700/50 focus:outline-none focus:border-gold-500 text-sm transition-colors'
-            />
-          </div>
-
-          <div className='flex items-center gap-4'>
-            {/* Botón "Panel Admin" solo para admin/gestor */}
-            {isAuthenticated && (hasRole('admin') || hasRole('gestor')) && (
-              <button
-                onClick={() => window.location.href = '/admin'}
-                className='text-xs uppercase tracking-widest text-cream-200 hover:text-gold-500 px-3 py-2 rounded-lg border border-neutral-700 hover:border-gold-500 transition-colors hidden sm:block'
-              >
-                Panel Admin
-              </button>
-            )}
-
-            {/* Botón Cargar Vino solo para admin/gestor (legacy) */}
-            {isAuthenticated && (hasRole('admin') || hasRole('gestor')) && (
-              <button
-                onClick={() => window.location.href = '/admin/catalogo'}
-                className='text-xs uppercase tracking-widest text-cream-200 hover:text-gold-500 px-3 py-2 rounded-lg border border-neutral-700 hover:border-gold-500 transition-colors hidden sm:block'
-              >
-                + Cargar Vino
-              </button>
-            )}
+          <div className='order-3 ml-auto flex items-center gap-4 md:order-4 md:ml-0'>
+            {/* Aca no hay ningun enlace al panel, y es a proposito (gotcha 6 de
+                AGENTS.md): al panel se entra escribiendo `/admin` en la barra de
+                direcciones. Un boton en la tienda publica es una promesa de que
+                la sesion del panel existe; el que no la tiene recibe un `403` al
+                llegar. Los tres botones que hubo aca —"Panel Admin", "+ Cargar
+                Vino" de escritorio y "+ Cargar Vino" en el drawer de movil— se
+                fueron, y con ellos el `hasRole` que este componente ya no usa. */}
 
             <button
               onClick={onOpenCart}
-              className='relative p-2 text-cream-100 hover:text-gold-500 transition-colors'
+              className='relative p-2 text-carbon hover:text-verde-600 transition-colors'
               aria-label='Carrito de compras'
             >
               <svg
@@ -142,7 +168,7 @@ export const Navbar = ({
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className='absolute -top-1 -right-1 bg-wine-500 text-cream-100 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center'
+                  className='absolute -top-1 -right-1 bg-verde-500 text-blanco text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center'
                 >
                   {cartCount}
                 </motion.span>
@@ -151,14 +177,14 @@ export const Navbar = ({
 
             {/* Auth: User menu only for authenticated users */}
             {isLoading ? (
-              <div className='w-8 h-8 border-2 border-gold-500/30 border-t-gold-500 rounded-full animate-spin' />
+              <div className='w-8 h-8 border-2 border-verde-salvia/30 border-t-verde-salvia rounded-full animate-spin' />
             ) : isAuthenticated ? (
               <div className='relative'>
                 <button
-                  className='flex items-center gap-2 p-2 text-cream-100 hover:text-gold-500 transition-colors'
+                  className='flex items-center gap-2 p-2 text-carbon hover:text-verde-600 transition-colors'
                   aria-label='Menú de usuario'
                 >
-                  <div className='w-8 h-8 bg-wine-700 rounded-full flex items-center justify-center text-sm font-semibold text-cream-100'>
+                  <div className='w-8 h-8 bg-verde-600 rounded-full flex items-center justify-center text-sm font-semibold text-blanco'>
                     {user?.name?.[0]?.toUpperCase() || 'U'}
                   </div>
                   <span className='hidden sm:block text-sm font-medium'>{user?.name}</span>
@@ -170,7 +196,7 @@ export const Navbar = ({
 
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className='md:hidden p-2 text-cream-100 hover:text-gold-500 transition-colors'
+              className='md:hidden p-2 text-carbon hover:text-verde-600 transition-colors'
               aria-label='Abrir menú de navegación'
               aria-expanded={mobileMenuOpen}
             >
@@ -200,51 +226,30 @@ export const Navbar = ({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className='fixed top-0 right-0 bottom-0 w-full max-w-sm bg-charcoal-900 border-l border-wine-900/50 text-cream-100 z-50 flex flex-col shadow-2xl md:hidden'
+              className='fixed top-0 right-0 bottom-0 w-full max-w-sm bg-blanco border-l border-verde-800/50 text-carbon z-50 flex flex-col shadow-2xl md:hidden'
               role='dialog'
               aria-label='Menú de navegación'
             >
-              <div className='p-6 border-b border-neutral-800 flex items-center justify-between'>
-                {/* El drawer mobile abria con el titulo "Navegacion" y **sin
-                    nombre de tienda**, mientras la barra de escritorio muestra el
-                    logo. O sea que en el movil no se decia de que tienda era el
-                    menu que se estaba abriendo.
-
-                    El nombre sale de `TIENDA.nombre` y no de un texto aca: es el
-                    mismo que muestra Configuracion, y asi un rebranding no
-                    puede olvidarse este archivo —que es exactamente lo que paso
-                    con el nombre viejo. El logo va con `alt` y no como texto
-                    porque si la imagen no carga, el `alt` es lo que queda. */}
-                <div className='flex items-center gap-2.5'>
-                  <img
-                    src='/logo-2920.svg'
-                    alt={TIENDA.nombre}
-                    className='h-8 w-auto'
-                  />
-                  <span className='font-serif text-lg font-bold tracking-tight text-cream-100'>
-                    {TIENDA.nombre}
-                  </span>
-                </div>
-
+              <div className='p-6 border-b border-neutral-200 flex items-center justify-between'>
+                <h2 className='text-xl font-serif font-bold text-carbon'>
+                  Navegación
+                </h2>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className='text-neutral-400 hover:text-cream-100 p-2 rounded-lg hover:bg-neutral-800 transition-colors'
+                  className='text-neutral-600 hover:text-carbon p-2 rounded-lg hover:bg-neutral-200 transition-colors'
                   aria-label='Cerrar menú'
                 >
                   ✕
                 </button>
               </div>
 
-              <nav className='flex-1 p-6' aria-label='Navegación'>
-                <h2 className='mb-4 text-[10px] uppercase tracking-widest text-neutral-500'>
-                  Navegación
-                </h2>
+              <nav className='flex-1 p-6'>
                 <ul className='flex flex-col gap-4'>
                   {NAV_LINKS.map((link) => (
                     <li key={link.href}>
                       <button
                         onClick={() => handleNavClick(link.href)}
-                        className='text-cream-200 hover:text-gold-500 text-lg font-semibold py-3 text-left border-b border-neutral-800 transition-colors'
+                        className='text-neutral-600 hover:text-verde-600 text-lg font-semibold py-3 text-left border-b border-neutral-200 transition-colors'
                       >
                         {link.label}
                       </button>
@@ -253,22 +258,18 @@ export const Navbar = ({
                 </ul>
               </nav>
 
-              <div className='p-6 border-t border-neutral-800 bg-charcoal-950/80 space-y-3'>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false)
-                    window.location.href = '/admin/catalogo'
-                  }}
-                  className='w-full bg-wine-700 hover:bg-wine-500 text-cream-100 py-3 rounded-xl font-semibold tracking-wider uppercase transition-all duration-300 border border-wine-500/30'
-                >
-                  + Cargar Vino
-                </button>
+              <div className='p-6 border-t border-neutral-200 bg-marfil/80 space-y-3'>
+                {/* El "+ Cargar Vino" que estuvo aqui se fue con los de escritorio:
+                    el panel se entra escribiendo `/admin`. Este bloque queda con
+                    "Cerrar sesion" y nada mas, y para quien no tiene sesion no
+                    queda nada —por eso el `hidden` de abajo, que antes tapaba el
+                    hueco que dejaba el boton. */}
 
                 {isAuthenticated ? (
                   <>
                     <button
                       onClick={handleLogout}
-                      className='w-full bg-neutral-800 hover:bg-neutral-700 text-cream-100 py-3 rounded-xl font-semibold tracking-wider uppercase transition-all duration-300 border border-neutral-700'
+                      className='w-full bg-blanco hover:bg-neutral-200 text-carbon py-3 rounded-xl font-semibold tracking-wider uppercase transition-all duration-300 border border-neutral-300'
                     >
                       Cerrar sesión
                     </button>
