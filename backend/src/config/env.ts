@@ -108,7 +108,7 @@ const esquema = z.object({
    * variable que no aparece en `.env.example` y a la que nadie llega.
    */
   MERCADO_PAGO_ACCESS_TOKEN: z.string().optional(),
-    SEED_CATALOGO: z.string().default("vinoteca"): z.string().min(1).optional()
+  SEED_CATALOGO: z.string().default('vinoteca')
 })
 
 /**
