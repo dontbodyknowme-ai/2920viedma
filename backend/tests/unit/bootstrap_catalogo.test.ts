@@ -215,16 +215,10 @@ describe('sembrarCatalogo', () => {
  * tests.
  */
 describe('el catalogo de demostracion', () => {
-  it('cubre los cuatro departamentos, y ninguno con un solo producto', () => {
-    // Una pestana de stock con un producto parece que se perdio algo al sembrar,
-    // y no hay forma de distinguirlo de un fallo real. El minimo es dos, y no
-    // uno "porque tenga algo": con dos ya se ve que la tabla funciona.
-    expect([...contarPor((p) => p.departamento).keys()]).toEqual([
-      'Bebidas',
-      'Regalos',
-      'Listo para comer',
-      'Snacks y dulces'
-    ])
+  it('cubre el departamento de Bebidas, y no tiene un solo producto', () => {
+    // El catalogo ahora es solo vinos, asi que el unico departamento es Bebidas.
+    // Con cuatro vinos, el filtro por departamento tiene algo que mostrar.
+    expect([...contarPor((p) => p.departamento).keys()]).toEqual(['Bebidas'])
     expect(escasos((p) => p.departamento)).toEqual([])
   })
 
@@ -279,14 +273,16 @@ describe('el catalogo de demostracion', () => {
     expect([...new Set(conColor.map((p) => p.category))]).toEqual(['Vinos'])
   })
 
-  it('todo lo que es vino de verdad tiene bodega, anada y color', () => {
+  it('todo lo que es vino de verdad tiene bodega y color', () => {
     // El contrapeso del anterior: si se corrige deixando el color vacio en
-    // todas partes, el test de arriba pasa con cero vinos. Un vino sin bodega,
-    // sin anada o sin color no es un vino: es un producto mal cargado.
+    // todas partes, el test de arriba pasa con cero vinos. Un vino sin bodega
+    // o sin color no es un vino: es un producto mal cargado.
+    // La anada queda fuera: esta "sin confirmar" (null) hasta que el dueno
+    // la verifique por botella.
     const incompletos = CATALOGO.filter(
       (p) =>
         p.category === 'Vinos' &&
-        (p.winery === null || p.vintage === null || p.tipoVino === null)
+        (p.winery === null || p.tipoVino === null)
     ).map((p) => p.id)
 
     expect(incompletos).toEqual([])
@@ -313,11 +309,12 @@ describe('el catalogo de demostracion', () => {
     expect(sinCategoria).toEqual([])
   })
 
-  it('tiene productos agotados e inactivos, para que los filtros del panel tengan que filtrar', () => {
-    // El filtro por estado del panel (RF de 004-a) necesita algo que filtrar. Sin
-    // un producto sin stock y uno desactivado, la columna no se puede demostrar:
-    // un filtro que no saca nada se ve igual que uno que funciona.
+  it('tiene productos agotados, para que el filtro de stock del panel tenga que filtrar', () => {
+    // El filtro por stock del panel necesita algo que filtrar. Sin un producto
+    // sin stock, la columna no se puede demostrar: un filtro que no saca nada
+    // se ve igual que uno que funciona.
+    // Los productos inactivos los gestiona el dueno desde el panel; el seed no
+    // fuerza ninguno.
     expect(CATALOGO.filter((p) => p.stock === 0).length).toBeGreaterThan(0)
-    expect(CATALOGO.filter((p) => !p.activo).length).toBeGreaterThan(0)
   })
 })

@@ -38,6 +38,7 @@ const sinFiltros: Filtros = {
   departamento: '',
   grupo: '',
   category: '',
+  winery: '',
   minPrice: '',
   maxPrice: '',
   searchQuery: ''

@@ -108,6 +108,16 @@ const esquema = z.object({
    * variable que no aparece en `.env.example` y a la que nadie llega.
    */
   MERCADO_PAGO_ACCESS_TOKEN: z.string().optional(), // desactivado para deploy
+
+  // Modo de pago: 'transferencia' o 'mercadopago'
+  PAGO_MODO: z.enum(['transferencia', 'mercadopago']).default('transferencia'),
+  // Datos para transferencia bancaria
+  TRANSFERENCIA_TITULAR: z.string().default(''),
+  TRANSFERENCIA_ALIAS: z.string().default(''),
+  TRANSFERENCIA_CBU: z.string().default(''),
+  TRANSFERENCIA_BANCO: z.string().default(''),
+  TRANSFERENCIA_CONCEPTO: z.string().default('Pedido {orderId}'),
+
   SEED_CATALOGO: z
     .string()
     .default('true')
@@ -216,3 +226,4 @@ if (env.NODE_ENV !== 'production' && env.PUBLIC_API_URL.startsWith('https://')) 
     ].join('\n')
   )
 }
+

@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
+import { CheckCircle2, Loader2, XCircle, Copy, ArrowLeft } from 'lucide-react'
 import { FormularioCheckout, type DatosDelFormulario } from '../components/checkout/formulario'
 import { crearPedido, mensajeDeErrorDeCheckout } from '../api/checkout'
 import {
   borrarResumen,
   guardarResumen,
   leerResumen,
-  resultadoDeLaUrl
+  resultadoDeLaUrl,
+  type InstruccionesTransferencia
 } from '../types/checkout'
 import type { CartItem } from '../types/producto'
 
@@ -39,6 +40,8 @@ export const Checkout = ({ items, alConfirmar }: CheckoutProps) => {
 
   const [enviando, setEnviando] = useState(false)
   const [errorServidor, setErrorServidor] = useState('')
+  const [instrucciones, setInstrucciones] = useState<InstruccionesTransferencia | null>(null)
+  const [orderId, setOrderId] = useState<string>('')
 
   // Se lee **una vez**, al montar. Y se borra despues: el resumen es de esta
   // compra, y dejarlo da al siguiente que abra la pestana en el mismo
@@ -57,6 +60,20 @@ export const Checkout = ({ items, alConfirmar }: CheckoutProps) => {
         }}
         alReintentar={() => {
           borrarResumen()
+          navegar('/')
+        }}
+      />
+    )
+  }
+
+  if (instrucciones !== null) {
+    return (
+      <InstruccionesTransferenciaPage
+        instrucciones={instrucciones}
+        orderId={orderId}
+        alFinalizar={() => {
+          borrarResumen()
+          alConfirmar()
           navegar('/')
         }}
       />
@@ -82,9 +99,21 @@ export const Checkout = ({ items, alConfirmar }: CheckoutProps) => {
 
       guardarResumen({ orderId: pedido.orderId, total: pedido.total, items: [] })
 
+      if (pedido.modo === 'transferencia' && pedido.instrucciones) {
+        setOrderId(pedido.orderId)
+        setInstrucciones(pedido.instrucciones)
+        setEnviando(false)
+        return
+      }
+
       // Se va a Mercado Pago con `location.assign` y **no** con `navigate`: es
       // una pagina de otro origen, y un router de SPA no puede(topicar)arla.
-      window.location.assign(pedido.initPoint)
+      if (pedido.initPoint) {
+        window.location.assign(pedido.initPoint)
+      } else {
+        setErrorServidor('No se pudo obtener el link de pago')
+        setEnviando(false)
+      }
     } catch (error: unknown) {
       setErrorServidor(mensajeDeErrorDeCheckout(error))
       setEnviando(false)
@@ -108,6 +137,148 @@ export const Checkout = ({ items, alConfirmar }: CheckoutProps) => {
     </main>
   )
 }
+
+interface InstruccionesProps {
+  instrucciones: InstruccionesTransferencia
+  orderId: string
+  alFinalizar: () => void
+}
+
+const copiar = async (texto: string) => {
+  try {
+    await navigator.clipboard.writeText(texto)
+  } catch {
+    // ignorar
+  }
+}
+
+const InstruccionesTransferenciaPage = ({ instrucciones, orderId, alFinalizar }: InstruccionesProps) => {
+  const [copiado, setCopiado] = useState<string | null>(null)
+
+  const copiarDato = async (clave: string, texto: string) => {
+    await copiar(texto)
+    setCopiado(clave)
+    setTimeout(() => setCopiado(null), 1500)
+  }
+
+  return (
+    <main className='min-h-screen bg-charcoal-950 px-4 py-10 text-cream-100'>
+      <div className='mx-auto max-w-lg'>
+        <button
+          onClick={alFinalizar}
+          className='mb-6 flex items-center gap-2 text-sm text-neutral-400 hover:text-cream-100'
+        >
+          <ArrowLeft className='h-4 w-4' />
+          Volver a la tienda
+        </button>
+
+        <div className='mb-6 text-center'>
+          <CheckCircle2 className='mx-auto mb-4 h-14 w-14 text-emerald-400' />
+          <h1 className='mb-2 font-serif text-3xl font-bold'>¡Pedido generado!</h1>
+          <p className='text-neutral-400'>
+            Realizá la transferencia con los datos que te dejamos abajo
+          </p>
+        </div>
+
+        <div className='mb-6 rounded-2xl border border-neutral-800 bg-charcoal-900 p-6'>
+          <div className='mb-4 flex items-center justify-between'>
+            <div>
+              <p className='text-xs uppercase tracking-widest text-neutral-500'>Pedido</p>
+              <p className='mt-1 font-mono text-lg text-cream-100'>{orderId}</p>
+            </div>
+            <div className='text-right'>
+              <p className='text-xs uppercase tracking-widest text-neutral-500'>Total a transferir</p>
+              <p className='mt-1 text-2xl font-semibold text-gold-400'>
+                ${instrucciones.monto.toLocaleString('es-AR')}
+              </p>
+            </div>
+          </div>
+
+          <div className='space-y-3'>
+            {instrucciones.titular && (
+              <DatoTransferencia
+                etiqueta='Titular'
+                valor={instrucciones.titular}
+                copiado={copiado === 'titular'}
+                onCopiar={() => copiarDato('titular', instrucciones.titular)}
+              />
+            )}
+            {instrucciones.banco && (
+              <DatoTransferencia
+                etiqueta='Banco'
+                valor={instrucciones.banco}
+                copiado={copiado === 'banco'}
+                onCopiar={() => copiarDato('banco', instrucciones.banco)}
+              />
+            )}
+            {instrucciones.alias && (
+              <DatoTransferencia
+                etiqueta='Alias'
+                valor={instrucciones.alias}
+                copiado={copiado === 'alias'}
+                onCopiar={() => copiarDato('alias', instrucciones.alias)}
+              />
+            )}
+            {instrucciones.cbu && (
+              <DatoTransferencia
+                etiqueta='CBU/CVU'
+                valor={instrucciones.cbu}
+                copiado={copiado === 'cbu'}
+                onCopiar={() => copiarDato('cbu', instrucciones.cbu)}
+              />
+            )}
+            {instrucciones.referencia && (
+              <DatoTransferencia
+                etiqueta='Referencia / Concepto'
+                valor={instrucciones.referencia}
+                copiado={copiado === 'ref'}
+                onCopiar={() => copiarDato('ref', instrucciones.referencia)}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className='mb-6 rounded-xl border border-gold-500/30 bg-gold-900/10 p-4 text-sm text-cream-100'>
+          <p className='font-medium text-gold-400'>Importante</p>
+          <p className='mt-1 text-neutral-300'>
+            Una vez realizada la transferencia, enviá el comprobante por WhatsApp o mail con el número de pedido{' '}
+            <span className='font-mono'>{orderId}</span>. Cuando confirmemos el pago, tu pedido pasará a preparación.
+          </p>
+        </div>
+
+        <button
+          onClick={alFinalizar}
+          className='w-full rounded-xl bg-wine-700 py-3.5 text-sm font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500'
+        >
+          Entendido, volver a la tienda
+        </button>
+      </div>
+    </main>
+  )
+}
+
+interface DatoProps {
+  etiqueta: string
+  valor: string
+  copiado: boolean
+  onCopiar: () => void
+}
+
+const DatoTransferencia = ({ etiqueta, valor, copiado, onCopiar }: DatoProps) => (
+  <div className='flex items-center justify-between rounded-xl border border-neutral-700/60 bg-charcoal-800 px-4 py-3'>
+    <div>
+      <p className='text-xs uppercase tracking-widest text-neutral-500'>{etiqueta}</p>
+      <p className='mt-1 break-all font-mono text-sm text-cream-100'>{valor}</p>
+    </div>
+    <button
+      onClick={onCopiar}
+      className='ml-4 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-neutral-300 hover:bg-charcoal-700 hover:text-cream-100'
+    >
+      <Copy className='h-3.5 w-3.5' />
+      {copiado ? 'Copiado' : 'Copiar'}
+    </button>
+  </div>
+)
 
 interface ResultadoProps {
   resultado: 'aprobado' | 'fallido' | 'pendiente'

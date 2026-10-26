@@ -43,6 +43,7 @@
 | **API real (frontend)** | Cliente HTTP propio en `src/api/client.ts`: intercepta 401 → refresh rotativo → reintenta una vez |
 | **API real (backend)** | Fastify REST en `http://localhost:3000` (spec 004-b completa) |
 | **Datos mock** | Generados con PRNG sembrado (`scripts/generar-mocks.mjs`) para consistencia |
+| **Catálogo (actual)** | Solo vinos (4 reales de Rutini Wines y La Rural). El kiosco anterior (cervezas, snacks, etc.) se retiró. Los productos viejos se borran vía `PRODUCTOS_RETIRADOS` al sembrar. Precios placeholder (1000) y stock 0: se cargan desde el panel |
 | **Matriz de permisos (006)** | Dashboard **solo admin**; Catálogo/Clientes/Configuración admin+gestor; **Pedidos los tres**. El backend la aplica con `requireRole`; el frontend la *muestra* |
 | **Gráficos** | Recharts con `import()` diferido (chunk aparte de ~376 kB) |
 | **Tablas** | TanStack Table modo manual (`manualPagination/Sorting/Filtering`) |

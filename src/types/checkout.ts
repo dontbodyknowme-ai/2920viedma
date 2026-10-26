@@ -17,14 +17,27 @@ export interface ItemDelCheckout {
   cantidad: number
 }
 
+export interface InstruccionesTransferencia {
+  titular: string
+  alias: string
+  cbu: string
+  banco: string
+  monto: number
+  referencia: string
+}
+
 /** Lo que el backend devuelve al crear el pedido. */
 export interface PedidoCreado {
+  modo?: 'transferencia' | 'mercadopago'
   orderId: string
-  preferenceId: string
+  /** Solo cuando modo es mercado pago */
+  preferenceId?: string
   /** La URL de Mercado Pago. Se usa tal cual: armarla a mano es fragile. */
-  initPoint: string
+  initPoint?: string
   /** Pesos enteros. Es **el** numero, el mismo que guardo el backend. */
   total: number
+  /** Solo cuando modo es transferencia */
+  instrucciones?: InstruccionesTransferencia
 }
 
 /** Lo que pide el backend, sin precios. */

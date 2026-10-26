@@ -120,6 +120,7 @@ export const ProductCatalog = ({
   const [error, setError] = useState<string | null>(null)
   const [grupo, setGrupo] = useState('')
   const [categoria, setCategoria] = useState<Producto['category'] | ''>('')
+  const [winery, setWinery] = useState('')
   const { hasRole } = useAuth()
 
   /**
@@ -138,6 +139,7 @@ export const ProductCatalog = ({
   useEffect(() => {
     setGrupo('')
     setCategoria('')
+    setWinery('')
   }, [departamento])
 
   /**
@@ -179,6 +181,7 @@ export const ProductCatalog = ({
     departamento,
     grupo,
     category: categoria,
+    winery,
     minPrice,
     maxPrice,
     searchQuery
@@ -186,7 +189,7 @@ export const ProductCatalog = ({
 
   const filteredWines = useMemo(
     () => filtrarVinos(productos, filtros),
-    [productos, departamento, grupo, categoria, minPrice, maxPrice, searchQuery]
+    [productos, departamento, grupo, categoria, winery, minPrice, maxPrice, searchQuery]
   )
 
   const isAdminOrGestor = hasRole('admin') || hasRole('gestor')
@@ -202,6 +205,20 @@ export const ProductCatalog = ({
     () => grupoTieneSubcategorias(departamento, grupo),
     [departamento, grupo]
   )
+
+  // Bodegas unicas entre los productos filtrados por departamento/grupo/categoria.
+  // Se calculan sobre los productos cargados para que el filtro ofrezca solo
+  // bodegas que tienen productos en la seleccion actual.
+  const bodegasVisibles = useMemo(() => {
+    const base = productos.filter((p) => {
+      if (departamento !== '' && p.departamento !== departamento) return false
+      if (grupo !== '' && p.grupo !== grupo) return false
+      if (categoria !== '' && p.category !== categoria) return false
+      return p.winery !== null && p.winery !== ''
+    })
+    const unicas = [...new Set(base.map((p) => p.winery as string))]
+    return unicas.sort()
+  }, [productos, departamento, grupo, categoria])
 
   return (
     <section id='catalogo' className='py-20 px-6 max-w-7xl mx-auto'>
@@ -295,6 +312,28 @@ export const ProductCatalog = ({
         )}
       </div>
 
+      {bodegasVisibles.length > 1 && (
+        <div>
+          <p className='mb-3 text-xs font-semibold uppercase tracking-widest text-neutral-500'>
+            Bodega
+          </p>
+          <div className='flex flex-wrap gap-2'>
+            <BotonFiltro activo={winery === ''} onClick={() => setWinery('')}>
+              Todas
+            </BotonFiltro>
+            {bodegasVisibles.map((bodegaActual) => (
+              <BotonFiltro
+                key={bodegaActual}
+                activo={winery === bodegaActual}
+                onClick={() => setWinery(bodegaActual)}
+              >
+                {bodegaActual}
+              </BotonFiltro>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Precio */}
       <div className='mb-8'>
         <label className='block text-sm font-medium text-carbon mb-3'>
@@ -322,10 +361,27 @@ export const ProductCatalog = ({
 
 
 
-      {/* Contenido: loading, error o grilla */}
+      {/* Contenido: loading (skeletons), error o grilla */}
       {loading ? (
-        <div className='flex items-center justify-center py-20'>
-          <div className='w-12 h-12 border-4 border-verde-salvia border-t-transparent rounded-full animate-spin' />
+        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6'>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className='bg-blanco/60 rounded-2xl border border-neutral-200 overflow-hidden flex flex-col shadow-lg animate-pulse'
+            >
+              <div className='h-64 bg-neutral-200' />
+              <div className='p-5 flex-1 flex flex-col gap-3'>
+                <div className='h-3 w-1/3 bg-neutral-200 rounded' />
+                <div className='h-5 w-3/4 bg-neutral-200 rounded' />
+                <div className='h-3 w-full bg-neutral-200 rounded' />
+                <div className='h-3 w-5/6 bg-neutral-200 rounded' />
+                <div className='pt-4 border-t border-neutral-200/80 mt-auto flex flex-col gap-3'>
+                  <div className='h-6 w-1/2 bg-neutral-200 rounded' />
+                  <div className='h-10 w-full bg-neutral-200 rounded-xl' />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : error ? (
         <div className='text-center py-20'>

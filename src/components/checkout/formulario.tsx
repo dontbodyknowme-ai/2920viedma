@@ -187,11 +187,11 @@ export const FormularioCheckout = ({
         disabled={!habilitado}
         className='w-full rounded-xl bg-wine-700 py-3.5 text-sm font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500 disabled:cursor-not-allowed disabled:opacity-40'
       >
-        {enviando ? 'Creando el pedido...' : 'Continuar al pago'}
+        {enviando ? 'Creando el pedido...' : 'Finalizar pedido'}
       </button>
 
       <p className='text-center text-xs text-neutral-500'>
-        Pagas en Mercado Pago. No hace falta crear cuenta ni guardar contrasena.
+        Pago por transferencia bancaria. No hace falta crear cuenta ni guardar contrasena.
       </p>
     </form>
   )

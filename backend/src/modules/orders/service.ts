@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client'
 import { orderCreateSchema, type OrderCreateInput } from '../../shared/schemas.js'
 import { AppError } from '../../utils/errors.js'
 import { obtenerProveedor } from '../pagos/proveedor.js'
+import { env } from '../../config/env.js'
 
 /**
  * Crear un pedido desde el checkout (spec 009, T3).
@@ -15,10 +16,19 @@ import { obtenerProveedor } from '../pagos/proveedor.js'
 const ES_UNIQUE = 'P2002'
 
 export interface ResultadoCheckout {
+  modo?: 'transferencia' | 'mercadopago'
   orderId: string
-  preferenceId: string
-  initPoint: string
   total: number
+  preferenceId?: string
+  initPoint?: string
+  instrucciones?: {
+    titular: string
+    alias: string
+    cbu: string
+    banco: string
+    monto: number
+    referencia: string
+  }
 }
 
 /** El origen publico del frontend, para armar las `back_urls`. */
@@ -304,6 +314,23 @@ export const crearPedido = async (
     select: { id: true }
   })
 
+  if (env.PAGO_MODO === 'transferencia') {
+    const concepto = (env.TRANSFERENCIA_CONCEPTO || 'Pedido {orderId}').replace('{orderId}', pedido.id)
+    return {
+      modo: 'transferencia',
+      orderId: pedido.id,
+      total,
+      instrucciones: {
+        titular: env.TRANSFERENCIA_TITULAR,
+        alias: env.TRANSFERENCIA_ALIAS,
+        cbu: env.TRANSFERENCIA_CBU,
+        banco: env.TRANSFERENCIA_BANCO,
+        monto: total,
+        referencia: concepto
+      }
+    }
+  }
+
   const origen = origenPublico()
   const preference = await obtenerProveedor().crearPreference({
     pagador: {
@@ -330,6 +357,7 @@ export const crearPedido = async (
   })
 
   return {
+    modo: 'mercadopago',
     orderId: pedido.id,
     preferenceId: preference.id,
     initPoint: preference.initPoint,

@@ -39,6 +39,8 @@ export interface Filtros {
   grupo: string
   /** La hoja elegida: Vinos, Cerveza, Gaseosas. `''` es "todas". */
   category: Producto['category'] | ''
+  /** La bodega elegida. `''` es "todas". */
+  winery: string
   minPrice: number | ''
   maxPrice: number | ''
   searchQuery: string
@@ -109,6 +111,9 @@ export const filtrarVinos = (productos: Producto[], filtros: Filtros): Producto[
     const matchesCategory =
       filtros.category === '' || wine.category === filtros.category
 
+    const matchesWinery =
+      filtros.winery === '' || wine.winery === filtros.winery
+
     const matchesPrice =
       (min === null || wine.price >= min) && (max === null || wine.price <= max)
 
@@ -128,6 +133,7 @@ export const filtrarVinos = (productos: Producto[], filtros: Filtros): Producto[
       matchesDepartamento &&
       matchesGrupo &&
       matchesCategory &&
+      matchesWinery &&
       matchesPrice &&
       matchesSearch
     )

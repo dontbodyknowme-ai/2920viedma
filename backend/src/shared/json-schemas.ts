@@ -212,10 +212,12 @@ export const jsonSchemas = {
         201: {
           type: 'object',
           properties: {
+            modo: { type: 'string' },
             orderId: { type: 'string' },
             preferenceId: { type: 'string' },
             initPoint: { type: 'string' },
-            total: { type: 'number' }
+            total: { type: 'number' },
+            instrucciones: { type: 'object', additionalProperties: true }
           },
           additionalProperties: true
         },
