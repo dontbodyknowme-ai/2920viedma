@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, Loader2, XCircle, Copy, ArrowLeft } from 'lucide-react'
 import { FormularioCheckout, type DatosDelFormulario } from '../components/checkout/formulario'
@@ -17,9 +17,9 @@ import type { CartItem } from '../types/producto'
  *
  * Son **tres estados en la misma pagina**, y por que:
  *
- * - **formulario** — el visitante lleno el carrito y pulsa "Finalizar Pedido"
- * - **pagando** — se creo el pedido y estamos mandando a Mercado Pago
- * - **confirmacion / error** — el comprador volvio de Mercado Pago
+ * - **formulario** â€” el visitante lleno el carrito y pulsa "Finalizar Pedido"
+ * - **pagando** â€” se creo el pedido y estamos mandando a Mercado Pago
+ * - **confirmacion / error** â€” el comprador volvio de Mercado Pago
  *
  * Que sea una sola pagina y no tres rutas importa porque **al volver de Mercado
  * Pago el comprador llega por query param** (`?pago=aprobado`) y no tiene el
@@ -99,7 +99,7 @@ export const Checkout = ({ items, alConfirmar }: CheckoutProps) => {
 
       guardarResumen({ orderId: pedido.orderId, total: pedido.total, items: [] })
 
-      if (pedido.modo === 'transferencia' && pedido.instrucciones) {
+      if ((pedido.modo === 'transferencia' || pedido.modo === 'nave' || pedido.modo === 'naranja_x') && pedido.instrucciones) {
         setOrderId(pedido.orderId)
         setInstrucciones(pedido.instrucciones)
         setEnviando(false)
@@ -155,11 +155,17 @@ const copiar = async (texto: string) => {
 const InstruccionesTransferenciaPage = ({ instrucciones, orderId, alFinalizar }: InstruccionesProps) => {
   const [copiado, setCopiado] = useState<string | null>(null)
 
-  const copiarDato = async (clave: string, texto: string) => {
+  const copiarDato = async (clave: string, texto?: string) => {
+    if (!texto) return
     await copiar(texto)
     setCopiado(clave)
     setTimeout(() => setCopiado(null), 1500)
   }
+
+  const esNave = !!(instrucciones.codigo || instrucciones.qrUrl || instrucciones.linkCobro) && !instrucciones.alias && !instrucciones.cbu
+  const esNaranjaX = !!(instrucciones.codigo || instrucciones.qrUrl || instrucciones.linkCobro) && !esNave
+  const esQr = esNave || esNaranjaX
+  void esQr
 
   return (
     <main className='min-h-screen bg-charcoal-950 px-4 py-10 text-cream-100'>
@@ -174,9 +180,9 @@ const InstruccionesTransferenciaPage = ({ instrucciones, orderId, alFinalizar }:
 
         <div className='mb-6 text-center'>
           <CheckCircle2 className='mx-auto mb-4 h-14 w-14 text-emerald-400' />
-          <h1 className='mb-2 font-serif text-3xl font-bold'>¡Pedido generado!</h1>
+          <h1 className='mb-2 font-serif text-3xl font-bold'>Â¡Pedido generado!</h1>
           <p className='text-neutral-400'>
-            Realizá la transferencia con los datos que te dejamos abajo
+            RealizÃ¡ la transferencia con los datos que te dejamos abajo
           </p>
         </div>
 
@@ -241,8 +247,8 @@ const InstruccionesTransferenciaPage = ({ instrucciones, orderId, alFinalizar }:
         <div className='mb-6 rounded-xl border border-gold-500/30 bg-gold-900/10 p-4 text-sm text-cream-100'>
           <p className='font-medium text-gold-400'>Importante</p>
           <p className='mt-1 text-neutral-300'>
-            Una vez realizada la transferencia, enviá el comprobante por WhatsApp o mail con el número de pedido{' '}
-            <span className='font-mono'>{orderId}</span>. Cuando confirmemos el pago, tu pedido pasará a preparación.
+            Una vez realizada la transferencia, enviÃ¡ el comprobante por WhatsApp o mail con el nÃºmero de pedido{' '}
+            <span className='font-mono'>{orderId}</span>. Cuando confirmemos el pago, tu pedido pasarÃ¡ a preparaciÃ³n.
           </p>
         </div>
 
@@ -303,8 +309,8 @@ interface ResultadoProps {
  * ## Y si el resumen no esta
  *
  * Puede pasar: el comprador abrio la tienda en otra pestana, o borro el
- * almacenamiento. La pagina **no inventa un total** —un "$0" o un total al
- * azar seria una mentira que el comprador lleva al mostrador—: avisa que no lo
+ * almacenamiento. La pagina **no inventa un total** â€”un "$0" o un total al
+ * azar seria una mentira que el comprador lleva al mostradorâ€”: avisa que no lo
  * encontro y lo manda a la tienda.
  */
 const ResultadoDelPago = ({ resultado, resumen, alVolver, alReintentar }: ResultadoProps) => {
@@ -346,7 +352,7 @@ const ResultadoDelPago = ({ resultado, resumen, alVolver, alReintentar }: Result
               sesion, asi que te loanamos por email.
             </p>
             <p className='mt-3 text-sm text-neutral-300'>
-              Si ya lo habias pagado desde este navegador, recargá la pagina y el
+              Si ya lo habias pagado desde este navegador, recargÃ¡ la pagina y el
               detalle vuelve a aparecer.
             </p>
           </>
@@ -410,3 +416,4 @@ const Aviso = ({ icono, titulo, texto, accion }: AvisoProps) => (
     </div>
   </main>
 )
+

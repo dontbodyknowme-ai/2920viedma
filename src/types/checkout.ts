@@ -31,7 +31,7 @@ export interface InstruccionesTransferencia {
 
 /** Lo que el backend devuelve al crear el pedido. */
 export interface PedidoCreado {
-  modo?: 'transferencia' | 'mercadopago' | 'nave'
+  modo?: 'transferencia' | 'mercadopago' | 'nave' | 'naranja_x'
   orderId: string
   /** Solo cuando modo es mercado pago */
   preferenceId?: string
@@ -39,7 +39,7 @@ export interface PedidoCreado {
   initPoint?: string
   /** Pesos enteros. Es **el** numero, el mismo que guardo el backend. */
   total: number
-  /** Solo cuando modo es transferencia o nave */
+  /** Solo cuando modo es transferencia, nave o naranja_x */
   instrucciones?: InstruccionesTransferencia
 }
 
