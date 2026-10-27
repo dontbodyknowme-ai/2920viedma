@@ -109,14 +109,18 @@ const esquema = z.object({
    */
   MERCADO_PAGO_ACCESS_TOKEN: z.string().optional(), // desactivado para deploy
 
-  // Modo de pago: 'transferencia' o 'mercadopago'
-  PAGO_MODO: z.enum(['transferencia', 'mercadopago']).default('transferencia'),
+  // Modo de pago: 'transferencia' | 'mercadopago' | 'nave'
+  PAGO_MODO: z.enum(['transferencia', 'mercadopago', 'nave']).default('transferencia'),
   // Datos para transferencia bancaria
   TRANSFERENCIA_TITULAR: z.string().default(''),
   TRANSFERENCIA_ALIAS: z.string().default(''),
   TRANSFERENCIA_CBU: z.string().default(''),
   TRANSFERENCIA_BANCO: z.string().default(''),
   TRANSFERENCIA_CONCEPTO: z.string().default('Pedido {orderId}'),
+  // NAVE (Banco Galicia)
+  NAVE_CODIGO_COBRO: z.string().default(''),
+  NAVE_QR_URL: z.string().url().optional().or(z.literal('')),
+  NAVE_LINK_COBRO: z.string().url().optional().or(z.literal('')),
 
   SEED_CATALOGO: z
     .string()

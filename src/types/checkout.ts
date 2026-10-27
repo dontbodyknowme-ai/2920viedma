@@ -18,17 +18,20 @@ export interface ItemDelCheckout {
 }
 
 export interface InstruccionesTransferencia {
-  titular: string
-  alias: string
-  cbu: string
-  banco: string
+  titular?: string
+  alias?: string
+  cbu?: string
+  banco?: string
   monto: number
   referencia: string
+  codigo?: string
+  qrUrl?: string
+  linkCobro?: string
 }
 
 /** Lo que el backend devuelve al crear el pedido. */
 export interface PedidoCreado {
-  modo?: 'transferencia' | 'mercadopago'
+  modo?: 'transferencia' | 'mercadopago' | 'nave'
   orderId: string
   /** Solo cuando modo es mercado pago */
   preferenceId?: string
@@ -36,7 +39,7 @@ export interface PedidoCreado {
   initPoint?: string
   /** Pesos enteros. Es **el** numero, el mismo que guardo el backend. */
   total: number
-  /** Solo cuando modo es transferencia */
+  /** Solo cuando modo es transferencia o nave */
   instrucciones?: InstruccionesTransferencia
 }
 

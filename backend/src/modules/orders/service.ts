@@ -16,18 +16,21 @@ import { env } from '../../config/env.js'
 const ES_UNIQUE = 'P2002'
 
 export interface ResultadoCheckout {
-  modo?: 'transferencia' | 'mercadopago'
+  modo?: 'transferencia' | 'mercadopago' | 'nave'
   orderId: string
   total: number
   preferenceId?: string
   initPoint?: string
   instrucciones?: {
-    titular: string
-    alias: string
-    cbu: string
-    banco: string
+    titular?: string
+    alias?: string
+    cbu?: string
+    banco?: string
     monto: number
     referencia: string
+    codigo?: string
+    qrUrl?: string
+    linkCobro?: string
   }
 }
 
@@ -327,6 +330,25 @@ export const crearPedido = async (
         banco: env.TRANSFERENCIA_BANCO,
         monto: total,
         referencia: concepto
+      }
+    }
+  }
+
+  if (env.PAGO_MODO === 'nave') {
+    const concepto = (env.TRANSFERENCIA_CONCEPTO || 'Pedido {orderId}').replace('{orderId}', pedido.id)
+    const codigo = env.NAVE_CODIGO_COBRO || ''
+    const qrUrl = env.NAVE_QR_URL || ''
+    const linkCobro = env.NAVE_LINK_COBRO || ''
+    return {
+      modo: 'nave',
+      orderId: pedido.id,
+      total,
+      instrucciones: {
+        monto: total,
+        referencia: concepto,
+        codigo,
+        qrUrl,
+        linkCobro
       }
     }
   }
