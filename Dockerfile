@@ -1,12 +1,9 @@
 # ---- Build stage ----
 #
 # **Este Dockerfile vive en la raiz del repo, no en `backend/`.** Es a proposito:
-# Railway y Koyeb toman el **contexto de build** del "Root Directory", que es un
-# ajuste del panel. Ninguno de los dos permite declararlo en el archivo de
-# configuracion (el schema de `railway.json` solo tiene `dockerfilePath`), asi
-# que con el Dockerfile en `backend/` el contexto tinha que estar puesto a mano
-# en la UI. Y ahi paso lo que paso: el ajuste se reseteo al renombrar el servicio
-# y al recargar el repo, tres veces, cada vez en silencio.
+# El contexto de build vive en la raiz del repo, no en `backend/`. Esta en la
+# raiz a proposito para que el deploy (Koyeb/Render) no dependa de un ajuste
+# de "Root Directory" en el panel.
 #
 # Un contexto en la raiz sin querer trae `package.json`, `tsconfig.json` y `src/`
 # **del frontend**, que existen en los dos lados. El build los copia sin
@@ -123,8 +120,7 @@ COPY --from=builder /app/dist ./dist
 USER node
 
 # Las migraciones se aplican **antes de arrancar**, en el CMD y no en un
-# predeploy: Koyeb no tiene hook de predeploy y `railway.json` ya no esta (se
-# migro de plataforma). Ver `backend/package.json` -> `start`.
+# predeploy: Koyeb no tiene hook de predeploy. Ver `backend/package.json` -> `start`.
 #
 # Se corre en cada arranque, no solo en el deploy, y eso es deliberado. La
 # alternativa era acordarse de correr `npm run db:deploy` a mano antes de cada

@@ -28,7 +28,7 @@ build
 
 # Config de deploy y docs: no hacen falta para construir el backend.
 /vercel.json
-/railway.json
+
 /docs
 /specs
 
