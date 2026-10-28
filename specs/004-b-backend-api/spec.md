@@ -1,6 +1,6 @@
 # Spec 004-b — Backend API Real
 
-**Estado:** `borrador`
+**Estado:** `implementada` — el backend está en producción y con la suite en verde (352 tests). El encabezado decía `borrador`: quedó desactualizado; los checkboxes de `task.md` nunca se marcaron.
 **Spec:** `004-b`
 **Creada:** 2026-10-08
 **Gobernada por:** `docs/CONSTITUCION.md`

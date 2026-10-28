@@ -1,6 +1,6 @@
 # Spec 002 — Que la aplicación compile y arranque
 
-**Estado:** `aprobada`
+**Estado:** `implementada` (76/77 tareas marcadas; la restante, ver `task.md`)
 **Spec:** `002`
 **Aprobada por:** el usuario, de forma explícita, el **2026-10-06**
 **Historial de estados:**

@@ -1,6 +1,6 @@
 # Spec 005 — Deploy a producción
 
-> **Estado:** borrador para revisión
+> **Estado:** `implementada` (64/67 tareas marcadas; el deploy corre en Render/Vercel/Neon)
 > **Fecha:** 2026-10-11
 > **Rama:** `spec-005`
 > **Predecesora:** 004-c (integración) + 004-d (verificación end-to-end)

@@ -1,6 +1,6 @@
 # Spec 004 — Back-Office UI (Panel de Administración)
 
-**Estado:** `aprobada`
+**Estado:** `implementada` (86/90 tareas marcadas; el panel funciona contra la API real)
 **Spec:** `004-a`
 **Creada:** 2026-10-08
 **Aprobada por:** el usuario, de forma explícita, el **2026-10-08**

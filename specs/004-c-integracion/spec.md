@@ -1,6 +1,6 @@
 # Spec 004-c — Integración Frontend ↔ Backend
 
-**Estado:** `aprobada`
+**Estado:** `implementada` — el panel habla con la API real (login, refresh rotativo, CRUD). Los checkboxes de `task.md` nunca se marcaron.
 **Spec:** `004-c`
 **Creada:** 2026-10-10
 **Gobernada por:** `docs/CONSTITUCION.md`

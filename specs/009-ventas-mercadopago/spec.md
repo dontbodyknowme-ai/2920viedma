@@ -1,6 +1,6 @@
 # Spec 009 — Ventas con Mercado Pago
 
-**Estado:** `implementada, sin mergear` (rama `spec-009`, 18 commits adelante de `main`)
+**Estado:** `implementada y mergeada a main` (5/7 tareas marcadas; las 2 restantes dependen de credenciales reales y de la webhook en producción)
 **Spec:** `009`
 **Creada:** 2026-10-15
 **Gobernada por:** `docs/CONSTITUCION.md`

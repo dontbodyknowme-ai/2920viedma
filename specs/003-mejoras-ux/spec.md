@@ -1,6 +1,6 @@
 # Spec 003 — Mejoras de UX y funcionalidad
 
-**Estado:** `aprobada`
+**Estado:** `implementada (parcial)` — 18/46 tareas marcadas; las restantes quedaron sin marcar o absorbidas por `004-a` / `004-c`. No hubo trabajo pendiente bloqueante.
 **Spec:** `003`
 **Creada:** 2026-10-08
 **Aprobada por:** el usuario, de forma explícita, el **2026-10-08**
