@@ -4,7 +4,7 @@
 |---|---|
 | **Estado** | borrador |
 | **Fecha** | 2026-10-27 |
-| **Proyecto** | Tienda online existente (catálogo y carrito funcionando, deploy en Vercel) |
+| **Proyecto** | Tienda online existente (catálogo y carrito funcionando; frontend en Vercel y API en Render) |
 | **Documentos relacionados** | `plan.md` (diseño técnico) · `task.md` (tareas) |
 
 > **Convención:** `[A CONFIRMAR]` marca algo que depende de la documentación oficial de Nave o de una decisión pendiente. No implementar esos puntos "a ojo": aislarlos en el código y resolverlos cuando llegue la doc.
@@ -19,7 +19,7 @@ La experiencia replica la **estructura y los patrones** del checkout de Mercado 
 
 ## 2. Contexto
 
-**Ya existe:** frontend, backend y servidor en Vercel; catálogo; carrito; formulario donde el comprador completa sus datos.
+**Ya existe:** frontend en Vercel (React + Vite), API en Render (Fastify + Prisma) y base en Neon; catálogo; carrito; formulario donde el comprador completa sus datos.
 
 **Falta:** cobro (integración con Nave), estados de pedido, confirmación al comprador y al dueño. El login queda para una etapa posterior y opcional.
 
@@ -79,7 +79,7 @@ La experiencia replica la **estructura y los patrones** del checkout de Mercado 
 ### US-4 — Que se me avise de cada venta (P1, dueño)
 *Como dueño quiero saber qué pedidos se pagaron y que el dinero corresponda a cada orden.*
 
-- **Dado** una orden que pasa a `PAID`, **entonces** recibo un mail con el detalle del pedido y los datos del comprador.
+- **Dado** una orden que pasa a `aprobado`, **entonces** recibo un mail con el detalle del pedido y los datos del comprador.
 - **Dado** un pago aprobado sobre una orden ya pagada, **entonces** queda registrado como **duplicado** para reembolsarlo.
 
 ### US-5 — Volver a comprar más rápido (P2)
@@ -97,19 +97,19 @@ La experiencia replica la **estructura y los patrones** del checkout de Mercado 
 | FR-004 | Campos mínimos: nombre, mail, teléfono. Dirección solo si el pedido tiene envío `[A CONFIRMAR tipo de producto]`. |
 | FR-005 | El total se calcula **siempre en el servidor** con los precios de la base de datos. Nunca se confía en montos enviados por el navegador. |
 | FR-006 | Opciones de pago: "Billetera o app del banco" (QR / dinero en cuenta) y "Tarjeta de crédito o débito". Una queda preseleccionada. Si Nave no permite preseleccionar el medio, el bloque pasa a ser informativo (lista de medios aceptados). |
-| FR-007 | "Confirmar compra" crea la orden (`PENDING`) y un intento de pago en Nave, y redirige al checkout de Nave. |
+| FR-007 | "Confirmar compra" crea la orden (`pendiente`) y un intento de pago en Nave, y redirige al checkout de Nave. |
 | FR-008 | El botón se deshabilita al primer toque. El servidor además evita órdenes duplicadas. |
-| FR-009 | `/pedido/[token]` usa un token aleatorio no adivinable (no el ID secuencial). |
+| FR-009 | `/pedido/:token` usa un token aleatorio no adivinable (no el ID secuencial). |
 | FR-010 | El estado de pago se confirma **solo** por webhook o por consulta directa a Nave. Volver de Nave **nunca** prueba el pago. |
 | FR-011 | El procesamiento del webhook es idempotente: la misma notificación repetida no duplica descuentos de stock ni mails. |
-| FR-012 | Existe una reconciliación que consulta a Nave las órdenes `PENDING` antiguas, y se dispara también cuando el comprador abre su pedido. |
+| FR-012 | Existe una reconciliación que consulta a Nave las órdenes `pendiente` antiguas, y se dispara también cuando el comprador abre su pedido. |
 | FR-013 | La página de pedido muestra 4 estados: aprobado, procesando, rechazado, vencido. Cada uno con un botón de siguiente paso. |
 | FR-014 | "Reintentar pago" crea un intento nuevo para la misma orden. |
-| FR-015 | Al pasar a `PAID` se envía mail de confirmación al comprador y aviso al dueño. |
+| FR-015 | Al pasar a `aprobado` se envía mail de confirmación al comprador y aviso al dueño. |
 | FR-016 | Los datos del comprador se guardan en el navegador para autocompletar la próxima compra (el comprador puede borrarlos). |
-| FR-017 | Un pago aprobado sobre una orden ya `PAID` se registra como duplicado. |
+| FR-017 | Un pago aprobado sobre una orden ya `aprobado` se registra como duplicado. |
 | FR-018 | Existe un modo simulado (`NAVE_MODE=mock`) que permite probar todos los estados sin credenciales. |
-| FR-019 | Todo acceso a Nave está aislado en un único módulo (`lib/nave`) con interfaz clara. |
+| FR-019 | Todo acceso a Nave está aislado en un único módulo (`backend/src/modules/pagos/nave/`) con interfaz clara. |
 | FR-020 | Se guarda un registro de cada notificación recibida de Nave. |
 
 ## 7. Requisitos no funcionales
@@ -124,7 +124,7 @@ La experiencia replica la **estructura y los patrones** del checkout de Mercado 
 - **Accesibilidad:** inputs de 16 px o más, botones de 44–48 px o más, contraste WCAG AA, navegable por teclado, etiquetas visibles en los campos.
 - **Mobile first:** diseño pensado para celular, con barra inferior fija.
 - **Idioma y moneda:** español rioplatense, pesos argentinos (ARS).
-- **Observabilidad:** log estructurado de cada cambio de estado. Alerta si una orden queda `PENDING` más de 1 hora.
+- **Observabilidad:** log estructurado de cada cambio de estado. Alerta si una orden queda `pendiente` más de 1 hora.
 - **Compatibilidad:** navegadores recientes en Android e iOS y desktop.
 
 ## 8. Entidades
@@ -136,15 +136,16 @@ La experiencia replica la **estructura y los patrones** del checkout de Mercado 
 
 ## 9. Estados
 
-**Orden:** `PENDING` → `PAID` · `PENDING` → `EXPIRED` · `PENDING` → `FAILED` (si no quedan intentos posibles).
-Solo `PENDING` puede pasar a `PAID`. `PAID` es final.
+**Orden:** `pendiente` → `aprobado` · `pendiente` → `expirado` · `pendiente` → `rechazado` (si no quedan intentos posibles).
+Solo `pendiente` puede pasar a `aprobado`. `aprobado` es final.
 
-**Intento de pago:** `CREATED` → `APPROVED` · `REJECTED` · `EXPIRED` · `CANCELLED`.
+**Intento de pago:** `no_iniciado` → `pendiente` → `aprobado` · `rechazado` · `expirado`.
+Se reusa el enum `EstadoPago` del proyecto (no se inventa un estado paralelo). Si el comprador abandona, el intento queda `pendiente` hasta expirar.
 La correspondencia entre estados de Nave y estos estados es `[A CONFIRMAR con la doc]`.
 
 ## 10. Casos borde
 
-- El comprador cierra la pestaña en Nave y vuelve más tarde: puede reabrir `/pedido/[token]` y reintentar.
+- El comprador cierra la pestaña en Nave y vuelve más tarde: puede reabrir `/pedido/:token` y reintentar.
 - El comprador paga pero nunca vuelve a la tienda: el webhook o la reconciliación confirman igual.
 - El webhook llega duplicado, tarde, o nunca llega.
 - Dos intentos de la misma orden: el comprador paga ambos.
@@ -156,7 +157,7 @@ La correspondencia entre estados de Nave y estos estados es `[A CONFIRMAR con la
 ## 11. Criterios de éxito
 
 - **SC-01:** un comprador nuevo llega del carrito a la pantalla de pago de Nave en **3 pantallas o menos** y en menos de 2 minutos.
-- **SC-02:** **0** órdenes pagadas sin pasar a `PAID` pasados 10 minutos (por webhook o reconciliación).
+- **SC-02:** **0** órdenes pagadas sin pasar a `aprobado` pasados 10 minutos (por webhook o reconciliación).
 - **SC-03:** **0** descuentos de stock o mails duplicados por un mismo pago.
 - **SC-04:** la compra completa se puede hacer desde un celular sin zoom ni scroll horizontal.
 - **SC-05:** accesibilidad del checkout con puntaje de 90 o más en Lighthouse.
@@ -177,7 +178,7 @@ La correspondencia entre estados de Nave y estos estados es `[A CONFIRMAR con la
 10. Usuarios y tarjetas de prueba en sandbox. ¿Cuánto dura el link de pago y es configurable?
 
 ### Para vos
-- Stack del backend, base de datos, proveedor de mails y plan de Vercel (Hobby o Pro).
+- Proveedor de mails (hoy no hay) y si se suma E2E con Playwright. El resto del stack ya está decidido en `plan.md` §2.
 - ¿Productos físicos con envío o retiro, o digitales?
 - Capturas de las pantallas de Mercado Libre que querés tomar como referencia.
 - ¿Hace falta facturación electrónica por cada venta?
@@ -194,6 +195,6 @@ La correspondencia entre estados de Nave y estos estados es `[A CONFIRMAR con la
 | Nave no permite preseleccionar medio | Doble elección (tu página + Nave) | Dejar el bloque de pago informativo con un solo botón |
 | QR en celular incómodo para el público | Abandono en móvil | Preguntar por deep link; plan B: sumar otro medio (ej. Mercado Pago) |
 | Webhook que no llega | Pagos sin confirmar | Reconciliación + consulta al abrir el pedido |
-| Previews de Vercel protegidos | Webhooks rechazados en pruebas | Probar en dominio de producción con credenciales sandbox, o usar bypass |
-| Crons limitados en plan Hobby | Reconciliación lenta | Consulta al abrir el pedido + barrido diario, o plan Pro |
-| Documentación de Nave incompleta | Retrasos | Mock desde el día 1 y módulo `lib/nave` aislado |
+| Render free se duerme | El webhook tarda en despertar | Reintentos de Nave + reconciliación posterior |
+| Barrido de reconciliación sin cronjob | Pagos sin confirmar | Cron in-process + consulta al abrir el pedido |
+| Documentación de Nave incompleta | Retrasos | Mock desde el día 1 y módulo `backend/src/modules/pagos/nave/` aislado |
