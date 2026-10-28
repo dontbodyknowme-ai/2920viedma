@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest } from 'fastify'
-import { productoImportSchema } from '../../shared/schemas.js'
+import { productoImportSchema, productoCreateSchema, productoUpdateSchema } from '../../shared/schemas.js'
 import { jsonSchemas } from '../../shared/json-schemas.js'
 import { requireRole } from '../auth/middleware.js'
 import Papa from 'papaparse'
@@ -107,7 +107,8 @@ export const productsRoutes = async (fastify: FastifyInstance): Promise<void> =>
       schema: jsonSchemas.products.create
     },
     async (request, reply) => {
-      const producto = await prisma.product.create({ data: request.body as any })
+      const data = productoCreateSchema.parse(request.body)
+       const producto = await prisma.product.create({ data })
       return reply.status(201).send(producto)
     }
   )
@@ -120,9 +121,10 @@ export const productsRoutes = async (fastify: FastifyInstance): Promise<void> =>
     },
     async (request) => {
       const { id } = request.params as any
+      const data = productoUpdateSchema.parse(request.body)
       const producto = await prisma.product.update({
         where: { id },
-        data: request.body as any
+        data
       })
       return producto
     }

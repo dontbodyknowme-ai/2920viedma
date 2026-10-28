@@ -266,7 +266,7 @@ const TELEFONO_SIN_SEPARADORES = /^(\+54|54)?9?\d{9,12}$/
 const checkoutItemSchema = z
   .object({
     vinoId: z.string().cuid(),
-    cantidad: z.number().int().positive()
+    cantidad: z.number().int().positive().max(100, 'La cantidad no puede superar 100 unidades')
   })
   // `.strict()` y no la opcion `{ unknownKeys: 'strip' }` a proposito: con
   // `strip`, un `precioUnitario` de mas se borra en silencio y el cliente cree
@@ -316,7 +316,7 @@ export const orderCreateSchema = z
       .email('El email no es valido')
       .max(254, 'El email es demasiado largo'),
     direccion: z.string().trim().min(1, 'La direccion es obligatoria').max(300),
-    items: z.array(checkoutItemSchema).min(1, 'El carrito esta vacio')
+    items: z.array(checkoutItemSchema).min(1, 'El carrito esta vacio').max(20, 'El carrito no puede tener mas de 20 items')
   })
   .strict('El pedido no admite campos extra')
 

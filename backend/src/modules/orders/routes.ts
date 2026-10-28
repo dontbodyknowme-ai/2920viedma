@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify'
 import { jsonSchemas } from '../../shared/json-schemas.js'
 import { requireRole } from '../auth/middleware.js'
 import { orderCreateSchema } from '../../shared/schemas.js'
+import { env } from '../../config/env.js'
 import { crearPedido, aplicarPago } from './service.js'
 import { verificarFirmaWebhook } from './firma.js'
 
@@ -94,7 +95,16 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
    */
   fastify.post(
     '/api/orders',
-    { schema: jsonSchemas.orders.create },
+    {
+      config: {
+        rateLimit: {
+          max: env.ORDER_RATE_MAX,
+          timeWindow: env.RATE_LIMIT_WINDOW,
+          keyGenerator: (request) => request.ip
+        }
+      },
+      schema: jsonSchemas.orders.create
+    },
     async (request, reply) => {
       const cuerpo = orderCreateSchema.safeParse(request.body)
 
@@ -257,7 +267,11 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
         return reply.status(404).send({ code: 'NOT_FOUND', message: 'Pedido no encontrado' })
       }
 
-      if (body.status && order.status === body.status) {
+      // No-op solo si el unico campo es `status` y no cambio. Si vienen otros
+      // campos (direccion, nombre del cliente), se aplican aunque el estado sea
+      // el mismo.
+      const soloStatus = Object.keys(body).every((k) => k === 'status')
+      if (soloStatus && body.status && order.status === body.status) {
         const full = await prisma.order.findUnique({
           where: { id },
           include: {
@@ -269,14 +283,23 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
         return full!
       }
 
+      const dataPedido: Record<string, unknown> = {}
+      if (body.status) dataPedido.status = body.status
+      if (body.shippingAddress !== undefined) dataPedido.shippingAddress = body.shippingAddress
+
       await prisma.$transaction([
-        prisma.order.update({
-          where: { id },
-          data: { status: body.status }
-        }),
-        ...(body.status ? [prisma.orderTimeline.create({
-          data: { orderId: id, status: body.status, author: user.name }
-        })] : [])
+        prisma.order.update({ where: { id }, data: dataPedido }),
+        ...(body.status && body.status !== order.status
+          ? [prisma.orderTimeline.create({
+              data: { orderId: id, status: body.status, author: user.name }
+            })]
+          : []),
+        ...(body.customerName !== undefined
+          ? [prisma.customer.update({
+              where: { id: order.customerId },
+              data: { name: body.customerName }
+            })]
+          : [])
       ])
 
       const full = await prisma.order.findUnique({

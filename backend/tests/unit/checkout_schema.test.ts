@@ -215,6 +215,15 @@ describe('los items', () => {
   it('acepta varios items', () => {
     expect(ok({ items: [{ vinoId: CUID, cantidad: 1 }, { vinoId: CUID, cantidad: 3 }] }).success).toBe(true)
   })
+
+  it('rechaza una cantidad mayor a 100', () => {
+    expect(ok({ items: [{ vinoId: CUID, cantidad: 101 }] }).success).toBe(false)
+  })
+
+  it('rechaza mas de 20 items', () => {
+    const items = Array.from({ length: 21 }, () => ({ vinoId: CUID, cantidad: 1 }))
+    expect(ok({ items }).success).toBe(false)
+  })
 })
 
 describe('el mensaje de error dice qué falta', () => {

@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { jsonSchemas } from '../../shared/json-schemas.js'
 import { authService } from './service.js'
 import { env } from '../../config/env.js'
-import { UnauthorizedError } from '../../utils/errors.js'
+import { UnauthorizedError, ForbiddenError } from '../../utils/errors.js'
 import { authenticate } from './middleware.js'
 
 /**
@@ -35,8 +35,27 @@ const opcionesCookie = () => ({
   secure: env.NODE_ENV === 'production',
   sameSite: (env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
   maxAge: env.REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000,
-  path: '/'
+  // La cookie solo viaja a los endpoints de auth, no a toda la API: reduce la
+  // superficie de robo (logs, proxies) y es lo que exige el navegador para
+  // que el clearCookie del logout encuentre la cookie que borrar.
+  path: '/api/auth'
 })
+
+/**
+ * Verifica el origen de los requests que usan la cookie de refresh.
+ *
+ * Con `SameSite=None` (produccion, cross-site) un sitio malicioso puede
+ * disparar un fetch con credenciales; si el `Origin` esta presente y no es uno
+ * de los permitidos, se rechaza. Si no viene `Origin` (scripts, tests), se
+ * permite: los navegadores siempre lo mandan en un POST cross-origin.
+ */
+const verificarOrigen = async (request: FastifyRequest): Promise<void> => {
+  const origin = request.headers.origin
+  if (origin === undefined) return
+  if (!env.CORS_ORIGIN.includes(origin)) {
+    throw new ForbiddenError()
+  }
+}
 
 export const authRoutes = async (fastify: FastifyInstance): Promise<void> => {
   fastify.post(
@@ -63,6 +82,7 @@ export const authRoutes = async (fastify: FastifyInstance): Promise<void> => {
   fastify.post(
     '/api/auth/refresh',
     {
+      preHandler: verificarOrigen,
       schema: jsonSchemas.refresh
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -83,6 +103,7 @@ export const authRoutes = async (fastify: FastifyInstance): Promise<void> => {
   fastify.post(
     '/api/auth/logout',
     {
+      preHandler: verificarOrigen,
       schema: jsonSchemas.logout
     },
     async (request: FastifyRequest, reply: FastifyReply) => {

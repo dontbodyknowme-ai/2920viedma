@@ -31,7 +31,14 @@ export interface TablaCsv {
  * que es el escape que define RFC 4180.
  */
 export const escaparCsv = (valor: unknown): string => {
-  const texto = valor === null || valor === undefined ? '' : String(valor)
+  let texto = valor === null || valor === undefined ? '' : String(valor)
+
+  // CSV injection: Excel/LibreOffice tratan una celda que empieza con = + - @
+  // (o tab/CR) como una formula y la ejecutan al abrir el archivo. Neutralizar
+  // prefijando con una comilla simple, que Excel interpreta como "texto literal".
+  if (/^[=+\-@\t\r]/.test(texto)) {
+    texto = `'${texto}`
+  }
 
   const necesitaComillas =
     texto.includes(',') ||

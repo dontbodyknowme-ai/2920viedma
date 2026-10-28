@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest } from 'fastify'
 import { requireRole } from '../auth/middleware.js'
 import { randomUUID } from 'node:crypto'
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
 import sharp from 'sharp'
 import { env } from '../../config/env.js'
 import { PayloadTooLargeError, UnsupportedMediaTypeError } from '../../utils/errors.js'
@@ -99,14 +99,16 @@ export const uploadRoutes = async (fastify: FastifyInstance): Promise<void> => {
       const { id } = request.params as any
       const key = `wines/${id}.webp`
 
+      // `DeleteObject` es idempotente: no falla si la clave no existe, asi que
+      // el `catch` de abajo nunca se disparaba y se devolvia 204 para un id
+      // inventado. Se verifica antes con `HeadObject`, que si falla si no esta.
       try {
-        await s3.send(new DeleteObjectCommand({
-          Bucket: env.STORAGE_BUCKET,
-          Key: key
-        }))
+        await s3.send(new HeadObjectCommand({ Bucket: env.STORAGE_BUCKET, Key: key }))
       } catch {
         return reply.status(404).send({ code: 'NOT_FOUND', message: 'Archivo no encontrado' })
       }
+
+      await s3.send(new DeleteObjectCommand({ Bucket: env.STORAGE_BUCKET, Key: key }))
 
       return reply.status(204).send()
     }

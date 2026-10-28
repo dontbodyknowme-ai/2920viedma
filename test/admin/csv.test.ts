@@ -35,6 +35,17 @@ describe('escaparCsv', () => {
     expect(escaparCsv(null)).toBe('')
     expect(escaparCsv(undefined)).toBe('')
   })
+
+  it('neutraliza formulas de planilla (CSV injection)', () => {
+    // Una celda que empieza con = + - @ se ejecuta como formula en Excel.
+    // Se prefija con una comilla simple para que se lea como texto.
+    // Contiene comillas dobles, asi que ademas se entrecomilla (y se duplican
+    // las comillas internas, como define RFC 4180).
+    expect(escaparCsv('=HYPERLINK("http://evil","x")')).toBe("\"'=HYPERLINK(\"\"http://evil\"\",\"\"x\"\")\"")
+    expect(escaparCsv('+1+1')).toBe("'+1+1")
+    expect(escaparCsv('-1+1')).toBe("'-1+1")
+    expect(escaparCsv('@SUM(A1:A2)')).toBe("'@SUM(A1:A2)")
+  })
 })
 
 describe('aTextoCsv', () => {

@@ -93,6 +93,10 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     // evento dos veces, en dos formatos. El error handler escribe al del
     // proyecto.
     logger: false,
+    // Render (y toda PaaS) termina TLS en un proxy inverso. Sin esto,
+    // request.ip es la IP del socket (la del proxy para todos), y el rate-limit
+    // y los logs de auditoria quedan compartidos entre todos los visitantes.
+    trustProxy: true,
     ajv: { customOptions: { strict: false } }
   })
 

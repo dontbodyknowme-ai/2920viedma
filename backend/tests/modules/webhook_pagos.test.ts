@@ -76,9 +76,15 @@ afterEach(() => {
 })
 
 /** Una notificacion **bien firmada**, con el estado que se le pida. */
-const notificar = async (estadoRemoto: string, opciones: { firmar?: boolean } = {}) => {
-  const ts = '1730000000'
-  pagos.estados[PAGO_ID] = { id: PAGO_ID, estado: estadoRemoto, monto: 15000, fechaAprobacion: null }
+const notificar = async (estadoRemoto: string, opciones: { firmar?: boolean; monto?: number } = {}) => {
+  const ts = String(Math.floor(Date.now() / 1000))
+  pagos.estados[PAGO_ID] = {
+    id: PAGO_ID,
+    estado: estadoRemoto,
+    monto: opciones.monto ?? 15000,
+    fechaAprobacion: null,
+    externalReference: 'ord_1'
+  }
 
   const headers: Record<string, string> = { 'content-type': 'application/json' }
 
@@ -111,8 +117,8 @@ describe('la firma', () => {
   })
 
   it('una firma de otro secreto es 401', async () => {
-    const ts = '1730000000'
-    pagos.estados[PAGO_ID] = { id: PAGO_ID, estado: 'approved', monto: 1, fechaAprobacion: null }
+    const ts = String(Math.floor(Date.now() / 1000))
+    pagos.estados[PAGO_ID] = { id: PAGO_ID, estado: 'approved', monto: 1, fechaAprobacion: null, externalReference: 'ord_1' }
 
     const res = await app.inject({
       method: 'POST',
@@ -131,8 +137,8 @@ describe('la firma', () => {
   it('una firma de OTRO id es 401', async () => {
     // La firma cubre el `data.id`. Si alguien cambia el id en el camino para
     // apuntar a otro pedido, la firma deja de coincidir: es lo que la protege.
-    const ts = '1730000000'
-    pagos.estados['111'] = { id: '111', estado: 'approved', monto: 1, fechaAprobacion: null }
+    const ts = String(Math.floor(Date.now() / 1000))
+    pagos.estados['111'] = { id: '111', estado: 'approved', monto: 1, fechaAprobacion: null, externalReference: 'ord_1' }
 
     const res = await app.inject({
       method: 'POST',
@@ -147,6 +153,25 @@ describe('la firma', () => {
     })
 
     expect(res.statusCode).toBe(401)
+  })
+
+  it('una firma con ts viejo (replay) es 401', async () => {
+    const tsViejo = String(Math.floor(Date.now() / 1000) - 3600)
+    pagos.estados[PAGO_ID] = { id: PAGO_ID, estado: 'approved', monto: 15000, fechaAprobacion: null, externalReference: 'ord_1' }
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/orders/webhook',
+      headers: {
+        'content-type': 'application/json',
+        'x-signature': firmarWebhook({ id: PAGO_ID, requestId: REQUEST_ID, ts: tsViejo }, SECRETO),
+        'x-request-id': REQUEST_ID
+      },
+      payload: { data: { id: PAGO_ID } }
+    })
+
+    expect(res.statusCode).toBe(401)
+    expect(prismaFalso.order.updateMany).not.toHaveBeenCalled()
   })
 
   it('sin secreto configurado es 503, no 401', async () => {
@@ -266,12 +291,12 @@ describe('idempotencia', () => {
     // Mercado Pago reintenta. El error tipico es sumar dos veces. Se comprueba
     // con `updateMany` devolviendo `count: 0` en la segunda, que es lo que hace
     // Postgres cuando la condicion `pagoEstado <> destino` ya no se cumple.
-    pagos.estados[PAGO_ID] = { id: PAGO_ID, estado: 'approved', monto: 15000, fechaAprobacion: null }
+    pagos.estados[PAGO_ID] = { id: PAGO_ID, estado: 'approved', monto: 15000, fechaAprobacion: null, externalReference: 'ord_1' }
     prismaFalso.order.updateMany
       .mockResolvedValueOnce({ count: 1 })
       .mockResolvedValueOnce({ count: 0 })
 
-    const ts = '1730000000'
+    const ts = String(Math.floor(Date.now() / 1000))
     const headers = {
       'content-type': 'application/json',
       'x-signature': firmarWebhook({ id: PAGO_ID, requestId: REQUEST_ID, ts }, SECRETO),
@@ -296,9 +321,42 @@ describe('idempotencia', () => {
     await notificar('approved')
 
     expect(prismaFalso.order.updateMany).toHaveBeenCalledWith({
-      where: { id: 'ord_1', pagoEstado: { not: 'aprobado' } },
+      where: { id: 'ord_1', pagoEstado: { in: ['no_iniciado', 'pendiente', 'expirado'] } },
       data: { pagoEstado: 'aprobado' }
     })
+  })
+
+  it('un pago aprobado con monto menor al total NO se aplica', async () => {
+    const res = await notificar('approved', { monto: 100 })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().applied).toBe(false)
+    expect(res.json().estado).toBe('monto_insuficiente')
+    expect(prismaFalso.order.updateMany).not.toHaveBeenCalled()
+    expect(prismaFalso.customer.update).not.toHaveBeenCalled()
+  })
+
+  it('un pedido ya aprobado no vuelve a pendiente por un replay viejo', async () => {
+    // Estados terminales no se abandonan: un replay con `pendiente` despues de
+    // `aprobado` no degrada el pedido (y el cron no lo expira despues).
+    prismaFalso.order.findUnique.mockResolvedValue({
+      id: 'ord_1',
+      customerId: 'cus_1',
+      total: 15000,
+      pagoEstado: 'aprobado'
+    })
+
+    const res = await notificar('pending')
+
+    expect(res.statusCode).toBe(200)
+    // Los estados terminales no se abandonan: el `where` no incluye 'aprobado',
+    // asi que aunque el updateMany se ejecute, no matchea ninguna fila.
+    expect(prismaFalso.order.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ pagoEstado: { in: ['no_iniciado', 'pendiente'] } })
+      })
+    )
+    expect(prismaFalso.customer.update).not.toHaveBeenCalled()
   })
 
   it('un pago que no es nuestro se responde 200 sin tocar nada', async () => {

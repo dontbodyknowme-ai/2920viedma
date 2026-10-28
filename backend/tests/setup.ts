@@ -36,6 +36,10 @@ process.env.RATE_LIMIT_WINDOW ??= '1 minute'
 // con 429 y el test falla por el motivo equivocado. El throttling se verifica
 // a mano contra el server; lo que importa aca es el status de la respuesta.
 process.env.LOGIN_RATE_MAX ??= '1000'
+// Igual que el login: el checkout publico tiene su propio limite y con el
+// valor real de 10/min los tests de integracion cortan con 429 por ser todos
+// de la misma IP (app.inject). El throttling se verifica a mano.
+process.env.ORDER_RATE_MAX ??= '1000'
 process.env.UPLOAD_MAX_BYTES ??= String(5 * 1024 * 1024)
 process.env.STORAGE_ENDPOINT ??= 'http://localhost:9000'
 process.env.STORAGE_REGION ??= 'us-east-1'
@@ -47,6 +51,10 @@ process.env.STORAGE_SECRET_KEY ??= 'test-secret-key'
 // todos los tests del backend morian al importar `env.ts`.
 process.env.STORAGE_PUBLIC_URL ??= 'http://localhost:9000/wine-images'
 process.env.PUBLIC_API_URL ??= 'http://localhost:3000'
+// El checkout se prueba contra la pasarela (ProveedorPagosFalso), asi que el
+// modo tiene que ser 'mercadopago': en 'transferencia'/'nave' no se crea
+// Preference y los tests de la Preference fallan por el motivo equivocado.
+process.env.PAGO_MODO ??= 'mercadopago'
 
 const hasTestDb = !!process.env.DATABASE_URL_TEST
 

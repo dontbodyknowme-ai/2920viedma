@@ -98,6 +98,8 @@ export interface EstadoPagoRemoto {
   estado: string
   monto: number
   fechaAprobacion: string | null
+  /** Id del pedido nuestro, que viaja en `external_reference` de la Preference. */
+  externalReference: string | null
 }
 
 /**
@@ -200,13 +202,15 @@ export const proveedorMercadoPago = (accessToken: string, baseUrl?: string): Pro
         status: string
         transaction_amount: number
         date_approved: string | null
+        external_reference: string | null
       }>(`/v1/payments/${encodeURIComponent(pagoId)}`, 'GET')
 
       return {
         id: String(respuesta.id),
         estado: respuesta.status,
         monto: respuesta.transaction_amount,
-        fechaAprobacion: respuesta.date_approved
+        fechaAprobacion: respuesta.date_approved,
+        externalReference: respuesta.external_reference
       }
     }
   }

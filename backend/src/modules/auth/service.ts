@@ -8,6 +8,12 @@ import type { PublicUser, AuthTokens } from '../../shared/types.js'
 
 const prisma = new PrismaClient()
 
+// Hash dummy (de una contrasena aleatoria). Se usa para igualar el tiempo de
+// respuesta del login cuando el email no existe: sin esto, `bcrypt.compare` solo
+// corre si el usuario existe y el tiempo de respuesta revela que emails estan
+// registrados (oraculo de timing).
+const DUMMY_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+
 const hashToken = (token: string): string =>
   createHash('sha256').update(token).digest('hex')
 
@@ -66,7 +72,13 @@ export const authService = {
 
   async login(email: string, password: string): Promise<AuthTokens> {
     const user = await prisma.user.findUnique({ where: { email } })
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    if (!user) {
+      // Se compara igual aunque el usuario no exista, para que el tiempo de
+      // respuesta no revele que emails estan registrados.
+      await bcrypt.compare(password, DUMMY_HASH)
+      throw new UnauthorizedError('INVALID_CREDENTIALS')
+    }
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
       throw new UnauthorizedError('INVALID_CREDENTIALS')
     }
     return issueTokens(user)

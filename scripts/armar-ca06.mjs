@@ -11,7 +11,7 @@
  * No imprime el accessToken en ningun momento.
  */
 
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -19,9 +19,20 @@ const API = process.argv[2] ?? 'https://vinoteca-cava.onrender.com'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const RUTA_ESTADO = resolve(AQUI, '..', 'specs', '005-deploy', 'ca06.json')
+const RUTA_ENV = resolve(AQUI, '..', 'backend', '.env')
+
+const leerEnv = (clave) => {
+  try {
+    const texto = readFileSync(RUTA_ENV, 'utf8')
+    const linea = texto.split(/\r?\n/).find((l) => l.trim().startsWith(`${clave}=`))
+    return linea ? linea.slice(clave.length + 1).trim() : ''
+  } catch {
+    return ''
+  }
+}
 
 const USUARIO = 'admin@vinoteca.local'
-const CLAVE = 'admin123'
+const CLAVE = leerEnv('SEED_ADMIN_PASSWORD')
 
 // PNG de 1x1. El backend lo convierte a WebP con sharp, asi que el formato de
 // entrada no importa: lo que se verifica es que la URL devuelta sirva la

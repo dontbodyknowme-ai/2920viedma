@@ -41,8 +41,11 @@ export const registerPlugins = fp(async (fastify) => {
     }
   })
 
-  await fastify.register(swagger, {
-    openapi: {
+  // En produccion no se sirve la documentacion: le regala a un atacante el mapa
+  // completo de la API (rutas, schemas, parametros, esquemas de seguridad).
+  if (env.NODE_ENV !== 'production') {
+    await fastify.register(swagger, {
+      openapi: {
       info: {
         title: 'Vinoteca Backend API',
         version: '1.0.0',
@@ -80,6 +83,7 @@ export const registerPlugins = fp(async (fastify) => {
     routePrefix: '/api/docs/',
     uiConfig: { docExpansion: 'list' }
   })
+  }
 })
 
 export { env }

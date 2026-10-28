@@ -81,6 +81,14 @@ export const verificarFirmaWebhook = (
 
   if (firma === null || requestId === undefined || requestId === '') return false
 
+  // Ventana de frescura: una firma valida pero vieja se puede reenviar
+  // (replay). Mercado Pago manda `ts` en segundos; toleramos 5 minutos de
+  // desfase de reloj entre el servidor y la pasarela.
+  const tsSegundos = Number(firma.ts)
+  if (!Number.isFinite(tsSegundos)) return false
+  const ahora = Date.now()
+  if (Math.abs(Math.floor(ahora / 1000) - tsSegundos) > 300) return false
+
   const esperado = createHmac('sha256', secreto)
     .update(plantillaDelManifest({ id, requestId, ts: firma.ts }))
     .digest('hex')

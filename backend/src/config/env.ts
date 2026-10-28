@@ -77,6 +77,13 @@ const esquema = z.object({
   // para siempre, o sea que la imagen se rompia al dia siguiente.
   STORAGE_PUBLIC_URL: z.string().url(),
   PUBLIC_API_URL: z.string().url(),
+  // URL **publica** del frontend (la tienda). La usa Mercado Pago para las
+  // `back_urls`: el comprador vuelve a la tienda, no a la API. Opcional a
+  // proposito: sin ella, se cae a PUBLIC_API_URL (comportamiento anterior) para
+  // no romper deploys viejos, pero en produccion hay que ponerla.
+  FRONTEND_ORIGIN: z.string().url().optional(),
+  // Rate-limit especifico del checkout publico (anti-spam de pedidos falsos).
+  ORDER_RATE_MAX: z.coerce.number().int().positive().default(10),
 
   /**
    * Secreto de la webhook de Mercado Pago (spec 009, T4).
@@ -193,25 +200,6 @@ export const env = resultado.data
  * unico sintoma esta del lado del navegador. Paso de verdad: `NODE_ENV` sin
  * poner en Render dejo la sesion del panel rota y no habia forma de saberlo
  * desde los logs del servidor.
- *
- * `PUBLIC_API_URL` con `https://` es la senal de que esto **no** es desarrollo
- * local: siTL;DR: pasame lo que sigue del proyecto y seguimos<tool_call>
-<invoke name="edit"><path>C:\Vinoteca\Vinoteca-1\backend\src\config\env.ts</path><newString>export const env = resultado.data
-
-/**
- * Aviso por `NODE_ENV` mal puesto.
- *
- * `NODE_ENV` decide el comportamiento de varias cosas **sin fallar** cuando no
- * es el esperado:
- *
- *   - la cookie de refresh sale `SameSite=Lax` y sin `Secure`, asi que la
- *     sesion muere en cada recarga de pagina
- *   - `CORS_ORIGIN` deja de ser obligatoria y cae al default de localhost
- *
- * Los dos son fallos silenciosos: la app levanta, `/health` da 200 y el unico
- * sintoma esta del lado del navegador. Paso de verdad: `NODE_ENV` sin poner en
- * Render dejo la sesion del panel rota y no habia forma de saberlo desde los
- * logs del servidor.
  *
  * `PUBLIC_API_URL` con `https://` es la senal de que esto **no** es desarrollo
  * local. Si lo es, el aviso se equivoca; preferible eso a no avisar nunca.

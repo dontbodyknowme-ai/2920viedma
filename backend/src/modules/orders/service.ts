@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient, EstadoPago } from '@prisma/client'
 import { orderCreateSchema, type OrderCreateInput } from '../../shared/schemas.js'
 import { AppError } from '../../utils/errors.js'
 import { obtenerProveedor } from '../pagos/proveedor.js'
@@ -35,7 +35,8 @@ export interface ResultadoCheckout {
 }
 
 /** El origen publico del frontend, para armar las `back_urls`. */
-const origenPublico = (): string => process.env.PUBLIC_API_URL ?? ''
+const origenPublico = (): string =>
+  env.FRONTEND_ORIGIN ?? env.PUBLIC_API_URL ?? ''
 
 /**
  * Resuelve el `Customer` del comprador (D-9).
@@ -195,9 +196,15 @@ export const aplicarPago = async (
     return { aplicado: false, estado: remoto.estado }
   }
 
-  // 2. El pedido, por `pagoId`. Es la llave que puso el checkout.
+  // 2. El pedido, por `external_reference` (el id del pedido que mandamos en la
+  // Preference). **No** por `pagoId`: la webhook recibe el id del **pago**, y
+  // ese no es la Preference. Es la llave correcta para cruzar los dos mundos.
+  if (remoto.externalReference === null || remoto.externalReference === '') {
+    return { aplicado: false, estado: remoto.estado }
+  }
+
   const pedido = await prisma.order.findUnique({
-    where: { pagoId },
+    where: { id: remoto.externalReference },
     select: { id: true, customerId: true, total: true, pagoEstado: true }
   })
 
@@ -207,9 +214,21 @@ export const aplicarPago = async (
     return { aplicado: false, estado: remoto.estado }
   }
 
-  // 3. La transicion, atomica.
+  // 2b. El monto. Un `approved` con menos dinero del total no acredita nada:
+  // el pedido queda para revision en vez de cerrarse como pagado a medias.
+  if (destino === 'aprobado' && remoto.monto < pedido.total) {
+    return { aplicado: false, estado: 'monto_insuficiente' }
+  }
+
+  // 3. La transicion, atomica. Los estados terminales (`aprobado`, `rechazado`)
+  // no se pueden abandonar: un replay viejo no degrada un pedido ya resuelto.
+  // `expirado` si puede pasar a `aprobado`: es un pago tardio y legitimo.
+  const estadosOrigen: EstadoPago[] = destino === 'pendiente'
+    ? ['no_iniciado', 'pendiente']
+    : ['no_iniciado', 'pendiente', 'expirado']
+
   const transicion = await prisma.order.updateMany({
-    where: { id: pedido.id, pagoEstado: { not: destino } },
+    where: { id: pedido.id, pagoEstado: { in: estadosOrigen } },
     data: { pagoEstado: destino }
   })
 
@@ -278,6 +297,14 @@ export const crearPedido = async (
       precioUnitario: vino.price
     }
   })
+
+  const sinStock = lineas
+    .filter((linea) => (porId.get(linea.vinoId)?.stock ?? 0) < linea.cantidad)
+    .map((linea) => linea.nombre)
+
+  if (sinStock.length > 0) {
+    throw new AppError('INSUFFICIENT_STOCK', 400, `Sin stock suficiente: ${sinStock.join(', ')}`)
+  }
 
   const total = lineas.reduce((suma, linea) => suma + linea.precioUnitario * linea.cantidad, 0)
 
