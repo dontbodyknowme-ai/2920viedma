@@ -1,6 +1,8 @@
 import type { PrismaClient, EstadoPago } from '@prisma/client'
+import { randomUUID } from 'node:crypto'
 import { orderCreateSchema, type OrderCreateInput } from '../../shared/schemas.js'
 import { AppError } from '../../utils/errors.js'
+import { logger } from '../../utils/logger.js'
 import { obtenerProveedor } from '../pagos/proveedor.js'
 import { env } from '../../config/env.js'
 
@@ -18,9 +20,20 @@ const ES_UNIQUE = 'P2002'
 export interface ResultadoCheckout {
   modo?: 'transferencia' | 'mercadopago' | 'nave'
   orderId: string
+  /**
+   * Token publico del pedido (spec 012, FR-009).
+   *
+   * Es lo unico que necesita el comprador para volver a ver su pedido. No es el
+   * `orderId`: ese es el id interno y el panel lo usa para todo.
+   */
+  orderToken: string
   total: number
   preferenceId?: string
   initPoint?: string
+  /** QR del cobro, si el proveedor lo devuelve (spec 012). */
+  qr?: { imagenUrl?: string; payload?: string }
+  /** Vencimiento del link/QR en ISO 8601. */
+  expiraEn?: string | null
   instrucciones?: {
     titular?: string
     alias?: string
@@ -28,9 +41,6 @@ export interface ResultadoCheckout {
     banco?: string
     monto: number
     referencia: string
-    codigo?: string
-    qrUrl?: string
-    linkCobro?: string
   }
 }
 
@@ -149,14 +159,30 @@ export class VinoNoDisponible extends AppError {
  * Cuando el pago vuelve a `pending` despues de `in_process`, que es lo normal,
  * el pedido queda en `pendiente` y el cron lo expira si no se concreta.
  */
-const ESTADO_REMOTO_A_NUESTRO: Record<string, 'aprobado' | 'rechazado' | 'pendiente'> = {
+const ESTADO_REMOTO_A_NUESTRO: Record<string, 'aprobado' | 'rechazado' | 'pendiente' | 'expirado'> = {
   approved: 'aprobado',
   rejected: 'rechazado',
-  cancelled: 'rechazado',
+  /**
+   * `cancelled` **no esta a proposito**, igual que dice el comentario de
+   * arriba: una cancelacion voluntaria del comprador no es un rechazo. Antes
+   * estaba mapeada a `rechazado` y el efecto era que el panel contaba como
+   * intento fallido algo que la persona decidio no terminar, y el pedido quedaba
+   * en un estado terminal que `reintentarPago` igual permite abandonar.
+   *
+   * Sin mapear, `aplicarPago` devuelve `aplicado: false` y el pedido sigue
+   * `pendiente`: el cron lo expira si nadie paga, y si el comprador vuelve a
+   * entrar puede generar un link nuevo.
+   */
   charged_back: 'rechazado',
   pending: 'pendiente',
   in_process: 'pendiente',
-  authorized: 'pendiente'
+  authorized: 'pendiente',
+  /**
+   * Vencido (spec 012). **No** es un rechazo: nadie intento pagar y fallo, el
+   * link se consumio. Marcarlo `rechazado` haria que el panel cuente como
+   * intentos fallidos un monton de pedidos que el comprador nunca pago.
+   */
+  expirado: 'expirado'
 }
 
 /**
@@ -183,7 +209,9 @@ const ESTADO_REMOTO_A_NUESTRO: Record<string, 'aprobado' | 'rechazado' | 'pendie
  */
 export const aplicarPago = async (
   prisma: PrismaClient,
-  pagoId: string
+  pagoId: string,
+  /** Quien confirmo el pago. Aparece en el historial del panel. */
+  origen: string = 'Mercado Pago'
 ): Promise<{ aplicado: boolean; estado: string }> => {
   // 1. El estado real, de la pasarela.
   const remoto = await obtenerProveedor().estadoDe(pagoId)
@@ -239,7 +267,7 @@ export const aplicarPago = async (
   }
 
   await prisma.orderTimeline.create({
-    data: { orderId: pedido.id, pagoEstado: destino, origen: 'Mercado Pago' }
+    data: { orderId: pedido.id, pagoEstado: destino, origen }
   })
 
   // 4. Las metricas del cliente, **solo** al aprobar. Un rechazo no suma
@@ -256,6 +284,390 @@ export const aplicarPago = async (
   }
 
   return { aplicado: true, estado: destino }
+}
+
+/** Los datos del comprador que viajan al proveedor. */
+export interface PagadorDelCobro {
+  nombre: string
+  apellido: string
+  email: string
+  telefono: string
+  direccion: string
+}
+
+interface LineaDelCobro {
+  vinoId: string
+  nombre: string
+  cantidad: number
+  precioUnitario: number
+}
+
+export interface CobroGenerado {
+  preferenceId: string
+  initPoint: string
+  qr?: { imagenUrl?: string; payload?: string }
+  expiraEn: string | null
+}
+
+/**
+ * Pide el cobro al proveedor y deja el intento y el pedido actualizados.
+ *
+ * ## Por que esta separado de `crearPedido`
+ *
+ * Porque el reintento (`POST /api/track/:token/pay`) necesita **exactamente lo
+ * mismo** sobre un pedido que ya existe: crear un intento, llamar al proveedor,
+ * guardar link y QR, y marcar el pedido `pendiente`. Duplicarlo seria dos
+ * lugares que crean cobros, y el dia que uno cambie (un campo nuevo, otra URL de
+ * vuelta) el otro se queda atras sin que nada falle.
+ *
+ * El pedido ya tiene que existir: `referencia` es su id y es lo que cruza el pago
+ * con la orden cuando llega el webhook.
+ */
+const generarCobro = async (
+  prisma: PrismaClient,
+  pedido: { id: string; publicToken: string },
+  pagador: PagadorDelCobro,
+  lineas: LineaDelCobro[],
+  total: number,
+  webhookUrl: string
+): Promise<CobroGenerado> => {
+  const origen = origenPublico()
+
+  /**
+   * Las `back_urls` apuntan a `/pedido/:token`, **no** a `/?pago=aprobado`.
+   *
+   * La pagina del pedido es la que consulta el estado real y muestra el QR o el
+   * boton de reintento. Volver al inicio con un query param obligaba al
+   * comprador a adivinar que paso con su plata.
+   */
+  const urls = {
+    exito: `${origen}/pedido/${pedido.publicToken}`,
+    fallo: `${origen}/pedido/${pedido.publicToken}?pago=fallido`,
+    pendiente: `${origen}/pedido/${pedido.publicToken}?pago=pendiente`,
+    webhook: webhookUrl
+  }
+
+  /**
+   * Un intento por checkout (D5), creado **antes** de llamar al proveedor.
+   *
+   * Si la llamada falla, el intento queda `expirado` y se ve en el panel que
+   * hubo un intento que no llego a tener link. Crearlo despues de la respuesta
+   * dejaria los fallos invisibles: el unico rastro seria un 502 en el log.
+   */
+  const intento = await prisma.paymentAttempt.create({
+    data: { orderId: pedido.id, proveedor: env.PAGO_MODO, estado: 'pendiente' },
+    select: { id: true }
+  })
+
+  try {
+    const cobro = await obtenerProveedor().crearPreference({
+      pagador,
+      lineas,
+      total,
+      urls,
+      referencia: pedido.id
+    })
+
+    await prisma.paymentAttempt.update({
+      where: { id: intento.id },
+      data: {
+        referenciaExterna: cobro.id,
+        checkoutUrl: cobro.initPoint,
+        qrImagenUrl: cobro.qr?.imagenUrl ?? null,
+        qrPayload: cobro.qr?.payload ?? null,
+        expiresAt:
+          cobro.expiraEn === undefined || cobro.expiraEn === null ? null : new Date(cobro.expiraEn)
+      }
+    })
+
+    /**
+     * `pagoEstado = pendiente` en cuanto existe el cobro.
+     *
+     * Antes solo lo movia el webhook, asi que un pedido con link abierto se veia
+     * en el panel igual que uno que nunca salio del formulario. La distincion
+     * importa para liberar stock y para saber a quien llamar.
+     *
+     * ## `updateMany` condicional, no `update`
+     *
+     * Entre el chequeo de `reintentarPago` y esta linea hay una llamada de red
+     * al proveedor. Si el webhook aprueba el pedido en esa ventana, un `update`
+     * incondicional lo devuelve a `pendiente` y le pisa el `pagoId`: cuando
+     * llegue la reentrega del webhook, `aplicarPago` vera `pendiente`, aplicara
+     * la transicion otra vez y **sumara `totalSpent` por segunda vez**. Es
+     * exactamente la carrera que el `updateMany` de `aplicarPago` evita.
+     */
+    const { count } = await prisma.order.updateMany({
+      where: { id: pedido.id, pagoEstado: { not: 'aprobado' } },
+      data: { pagoEstado: 'pendiente', pagoId: cobro.id }
+    })
+
+    if (count === 0) {
+      /**
+       * El pedido se pago mientras creabamos el cobro. No se degrada ni se pisa
+       * `pagoId`: el cobro recien creado queda huerfano en el proveedor (no hay
+       * API de cancelacion confirmada), pero el pedido no se cuenta dos veces.
+       */
+      await prisma.paymentAttempt
+        .update({ where: { id: intento.id }, data: { estado: 'expirado' } })
+        .catch(() => undefined)
+
+      logger.warn(
+        { orderId: pedido.id, cobro: cobro.id },
+        'el pedido ya estaba aprobado al crear el cobro: no se degrada'
+      )
+
+      throw new AppError('ALREADY_PAID', 409, 'Este pedido ya esta pagado')
+    }
+
+    return {
+      preferenceId: cobro.id,
+      initPoint: cobro.initPoint,
+      ...(cobro.qr === undefined ? {} : { qr: cobro.qr }),
+      expiraEn: cobro.expiraEn ?? null
+    }
+  } catch (error: unknown) {
+    // Un `AppError` de esta misma funcion (el pedido ya estaba pagado) se
+    // propaga tal cual: convertirlo en 502 mandaria al comprador a reintentar
+    // un pago que ya existe.
+    if (error instanceof AppError) throw error
+
+    /**
+     * El proveedor no respondio. **No** se borra el pedido: queda en
+     * `no_iniciado`, el cron lo expira y el comprador puede reintentar desde
+     * `/pedido/:token`.
+     *
+     * El intento se marca `expirado`, no `rechazado`: nadie rechazo nada. Un
+     * `rechazado` haria que las metricas contaran como intentos fallidos del
+     * comprador algo que fue una caida del proveedor.
+     */
+    await prisma.paymentAttempt
+      .update({ where: { id: intento.id }, data: { estado: 'expirado' } })
+      .catch(() => undefined)
+
+    logger.error(
+      { err: error, orderId: pedido.id, proveedor: env.PAGO_MODO },
+      'no se pudo crear el cobro'
+    )
+
+    throw new AppError(
+      'PAYMENT_PROVIDER_ERROR',
+      502,
+      'No pudimos generar el link de pago. Proba de nuevo en un momento.'
+    )
+  }
+}
+
+/**
+ * La vista publica de un pedido (spec 012, FR-009).
+ *
+ * ## Que se muestra y que no
+ *
+ * El comprador ve **su** pedido: items, total, estado y el link/QR para pagar.
+ * No ve el `orderId` interno, ni el email, ni el telefono de nadie: el token es
+ * la unica llave y no hace falta exponer mas para contestar "como va mi pago".
+ *
+ * ## Por que el modo sale del intento y no del env
+ *
+ * `env.PAGO_MODO` dice como se cobra **hoy**. Si el comercio cambia de proveedor,
+ * un pedido viejo seguiria mostrando el link del proveedor con el que se creo.
+ * El intento guarda `proveedor`, asi que es el que manda; sin intentos, el
+ * pedido es de transferencia (es el unico modo que no crea intento).
+ */
+export interface PedidoPublico {
+  orderToken: string
+  /** Referencia corta para mostrar y para el comprobante. No es el id interno. */
+  referencia: string
+  modo: 'nave' | 'mercadopago' | 'transferencia'
+  estado: string
+  pagoEstado: EstadoPago
+  total: number
+  creadoEn: string
+  items: { nombre: string; cantidad: number; precio: number }[]
+  pago: {
+    estado: EstadoPago
+    link: string | null
+    qr: { imagenUrl?: string; payload?: string } | null
+    expiraEn: string | null
+  } | null
+  instrucciones: ResultadoCheckout['instrucciones'] | null
+}
+
+export const obtenerPedidoPublico = async (
+  prisma: PrismaClient,
+  token: string
+): Promise<PedidoPublico> => {
+  const pedido = await prisma.order.findUnique({
+    where: { publicToken: token },
+    include: {
+      items: { include: { producto: { select: { name: true } } } },
+      attempts: { orderBy: { createdAt: 'desc' }, take: 1 }
+    }
+  })
+
+  if (pedido === null) {
+    throw new AppError('NOT_FOUND', 404, 'No encontramos ese pedido')
+  }
+
+  const ultimo = pedido.attempts[0]
+
+  const modo: PedidoPublico['modo'] =
+    ultimo === undefined ? 'transferencia' : ultimo.proveedor === 'mercadopago' ? 'mercadopago' : 'nave'
+
+  const instrucciones =
+    modo !== 'transferencia'
+      ? null
+      : {
+          titular: env.TRANSFERENCIA_TITULAR,
+          alias: env.TRANSFERENCIA_ALIAS,
+          cbu: env.TRANSFERENCIA_CBU,
+          banco: env.TRANSFERENCIA_BANCO,
+          monto: pedido.total,
+          referencia: (env.TRANSFERENCIA_CONCEPTO || 'Pedido {orderId}').replace(
+            '{orderId}',
+            pedido.publicToken.slice(0, 8).toUpperCase()
+          )
+        }
+
+  return {
+    orderToken: pedido.publicToken,
+    referencia: pedido.publicToken.slice(0, 8).toUpperCase(),
+    modo,
+    estado: pedido.status,
+    pagoEstado: pedido.pagoEstado,
+    total: pedido.total,
+    creadoEn: pedido.createdAt.toISOString(),
+    items: pedido.items.map((item) => ({
+      nombre: item.producto.name,
+      cantidad: item.quantity,
+      precio: item.price
+    })),
+    pago:
+      ultimo === undefined
+        ? null
+        : {
+            estado: ultimo.estado,
+            link: ultimo.checkoutUrl,
+            qr:
+              ultimo.qrImagenUrl === null && ultimo.qrPayload === null
+                ? null
+                : {
+                    ...(ultimo.qrImagenUrl === null ? {} : { imagenUrl: ultimo.qrImagenUrl }),
+                    ...(ultimo.qrPayload === null ? {} : { payload: ultimo.qrPayload })
+                  },
+            expiraEn: ultimo.expiresAt === null ? null : ultimo.expiresAt.toISOString()
+          },
+    instrucciones
+  }
+}
+
+/** Un pedido viejo que ya no tiene `Customer` no deberia ser reintentable. */
+const direccionDe = (shippingAddress: unknown): string => {
+  if (typeof shippingAddress !== 'object' || shippingAddress === null) return ''
+  const valor = (shippingAddress as Record<string, unknown>).direccion
+  return typeof valor === 'string' ? valor : ''
+}
+
+const partirNombre = (nombreCompleto: string): { nombre: string; apellido: string } => {
+  const partes = nombreCompleto.trim().split(/\s+/).filter((parte) => parte !== '')
+  return { nombre: partes[0] ?? '', apellido: partes.slice(1).join(' ') }
+}
+
+/**
+ * Reintenta el cobro de un pedido que quedo sin pagar (spec 012).
+ *
+ * ## Por que no crea otro pedido
+ *
+ * Crear uno nuevo duplicaria stock reservado y ensuciaria el panel con pedidos
+ * que nadie pago. El pedido es el mismo; lo que cambia es el intento.
+ *
+ * ## Por que reutiliza el link vigente
+ *
+ * Si el comprador recarga la pagina y toca "pagar" dos veces, generar dos cobros
+ * deja dos links vivos para el mismo pedido, y si paga en los dos el segundo
+ * llega como un pago de mas. Con el link vigente se devuelve el mismo.
+ */
+export const reintentarPago = async (
+  prisma: PrismaClient,
+  token: string,
+  webhookUrl: string
+): Promise<ResultadoCheckout> => {
+  const pedido = await prisma.order.findUnique({
+    where: { publicToken: token },
+    include: {
+      customer: true,
+      items: { include: { producto: { select: { name: true } } } },
+      attempts: { orderBy: { createdAt: 'desc' }, take: 1 }
+    }
+  })
+
+  if (pedido === null) {
+    throw new AppError('NOT_FOUND', 404, 'No encontramos ese pedido')
+  }
+
+  if (pedido.pagoEstado === 'aprobado') {
+    throw new AppError('ALREADY_PAID', 409, 'Este pedido ya esta pagado')
+  }
+
+  if (env.PAGO_MODO === 'transferencia') {
+    throw new AppError('NOT_RETRYABLE', 400, 'Este pedido se paga por transferencia')
+  }
+
+  const ultimo = pedido.attempts[0]
+  const vigente =
+    ultimo !== undefined &&
+    ultimo.estado === 'pendiente' &&
+    ultimo.checkoutUrl !== null &&
+    (ultimo.expiresAt === null || ultimo.expiresAt.getTime() > Date.now())
+
+  if (vigente) {
+    return {
+      modo: env.PAGO_MODO === 'nave' ? 'nave' : 'mercadopago',
+      orderId: pedido.id,
+      orderToken: pedido.publicToken,
+      total: pedido.total,
+      preferenceId: ultimo.referenciaExterna ?? ultimo.id,
+      initPoint: ultimo.checkoutUrl ?? '',
+      ...(ultimo.qrImagenUrl === null && ultimo.qrPayload === null
+        ? {}
+        : {
+            qr: {
+              ...(ultimo.qrImagenUrl === null ? {} : { imagenUrl: ultimo.qrImagenUrl }),
+              ...(ultimo.qrPayload === null ? {} : { payload: ultimo.qrPayload })
+            }
+          }),
+      expiraEn: ultimo.expiresAt === null ? null : ultimo.expiresAt.toISOString()
+    }
+  }
+
+  const { nombre, apellido } = partirNombre(pedido.customer.name)
+
+  const cobro = await generarCobro(
+    prisma,
+    { id: pedido.id, publicToken: pedido.publicToken },
+    {
+      nombre,
+      apellido,
+      email: pedido.customer.email ?? '',
+      telefono: pedido.customer.phone ?? '',
+      direccion: direccionDe(pedido.shippingAddress)
+    },
+    pedido.items.map((item) => ({
+      vinoId: item.productoId,
+      nombre: item.producto.name,
+      cantidad: item.quantity,
+      precioUnitario: item.price
+    })),
+    pedido.total,
+    webhookUrl
+  )
+
+  return {
+    modo: env.PAGO_MODO === 'nave' ? 'nave' : 'mercadopago',
+    orderId: pedido.id,
+    orderToken: pedido.publicToken,
+    total: pedido.total,
+    ...cobro
+  }
 }
 
 export const crearPedido = async (
@@ -315,21 +727,24 @@ export const crearPedido = async (
   const cliente = await resolverCustomer(prisma, entrada)
 
   /**
-   * El pedido se crea **antes** de la Preference.
+   * El pedido se crea **antes** de pedirle el cobro al proveedor.
    *
-   * Al reves —Preference y despues pedido— `external_reference` no tendria que
-   * mandar, porque el id del pedido todavia no existe. Y el orden importa por el
-   * fallo: si la Preference falla queda un pedido en `no_iniciado` sin
-   * `pagoId`, que expira a los 10 minutos y el cron lo marca `expirado`. Eso es
-   * correcto, y ademas deja el rastro de que alguien **intento** comprar.
+   * Al reves —cobro primero y despues pedido— el proveedor no tendria a que
+   * referenciar el pago, porque el id del pedido todavia no existe. Y el orden
+   * importa por el fallo: si el proveedor no responde queda un pedido en
+   * `no_iniciado`, que expira a los 10 minutos y el cron lo marca `expirado`.
+   * Eso es correcto, y ademas deja el rastro de que alguien **intento** comprar.
    *
-   * Al reves, si la Preference falla no queda nada, y el comprador solo ve un
-   * error.
+   * Al reves, si el cobro falla no queda nada, y el comprador solo ve un error.
    */
   const pedido = await prisma.order.create({
     data: {
       customerId: cliente.id,
       total,
+      // Se genera **aca** y no se deja al `@default(uuid())` del schema porque
+      // hace falta el valor para armar las `back_urls`, y leerlo despues seria
+      // otra consulta en el camino critico del checkout.
+      publicToken: randomUUID(),
       shippingAddress: { direccion: entrada.direccion },
       items: {
         create: lineas.map((linea) => ({
@@ -341,14 +756,29 @@ export const crearPedido = async (
         }))
       }
     },
-    select: { id: true }
+    select: { id: true, publicToken: true }
   })
 
+  const orderToken = pedido.publicToken
+
   if (env.PAGO_MODO === 'transferencia') {
-    const concepto = (env.TRANSFERENCIA_CONCEPTO || 'Pedido {orderId}').replace('{orderId}', pedido.id)
+    /**
+     * La referencia es la **corta y publica**, no `pedido.id`.
+     *
+     * Es el mismo valor que muestra `/pedido/:token`. Usar el id interno aca
+     * haria que el comprador transfiera con una referencia distinta de la que ve
+     * despues, y ademas filtraria un id que no hace falta exponer.
+     */
+    const referencia = pedido.publicToken.slice(0, 8).toUpperCase()
+    const concepto = (env.TRANSFERENCIA_CONCEPTO || 'Pedido {orderId}').replace(
+      '{orderId}',
+      referencia
+    )
+
     return {
       modo: 'transferencia',
       orderId: pedido.id,
+      orderToken,
       total,
       instrucciones: {
         titular: env.TRANSFERENCIA_TITULAR,
@@ -361,28 +791,10 @@ export const crearPedido = async (
     }
   }
 
-  if (env.PAGO_MODO === 'nave') {
-    const concepto = (env.TRANSFERENCIA_CONCEPTO || 'Pedido {orderId}').replace('{orderId}', pedido.id)
-    const codigo = env.NAVE_CODIGO_COBRO || ''
-    const qrUrl = env.NAVE_QR_URL || ''
-    const linkCobro = env.NAVE_LINK_COBRO || ''
-    return {
-      modo: 'nave',
-      orderId: pedido.id,
-      total,
-      instrucciones: {
-        monto: total,
-        referencia: concepto,
-        codigo,
-        qrUrl,
-        linkCobro
-      }
-    }
-  }
-
-  const origen = origenPublico()
-  const preference = await obtenerProveedor().crearPreference({
-    pagador: {
+  const cobro = await generarCobro(
+    prisma,
+    { id: pedido.id, publicToken: orderToken },
+    {
       nombre: entrada.nombre,
       apellido: entrada.apellido,
       email: entrada.email,
@@ -391,25 +803,14 @@ export const crearPedido = async (
     },
     lineas,
     total,
-    urls: {
-      exito: `${origen}/?pago=aprobado`,
-      fallo: `${origen}/?pago=fallido`,
-      pendiente: `${origen}/?pago=pendiente`,
-      webhook: webhookUrl
-    },
-    referencia: pedido.id
-  })
-
-  await prisma.order.update({
-    where: { id: pedido.id },
-    data: { pagoId: preference.id }
-  })
+    webhookUrl
+  )
 
   return {
-    modo: 'mercadopago',
+    modo: env.PAGO_MODO === 'nave' ? 'nave' : 'mercadopago',
     orderId: pedido.id,
-    preferenceId: preference.id,
-    initPoint: preference.initPoint,
-    total
+    orderToken,
+    total,
+    ...cobro
   }
 }

@@ -109,3 +109,29 @@ export const firmarWebhook = (
   `ts=${datos.ts},v1=${createHmac('sha256', secreto)
     .update(plantillaDelManifest(datos))
     .digest('hex')}`
+
+/**
+ * Compara un secreto compartido en **tiempo constante**.
+ *
+ * ## Por que no `recibido === esperado`
+ *
+ * `===` sobre strings corta en el primer byte distinto, asi que el tiempo de
+ * respuesta depende de cuantos bytes acerto el atacante. Con suficientes
+ * intentos eso permite adivinar el secreto byte por byte, sin fuerza bruta.
+ *
+ * ## Por que el largo se compara antes
+ *
+ * `timingSafeEqual` **tira** si los buffers miden distinto. Comparar el largo
+ * primero no filtra nada util: el largo de un secreto no es el secreto. Lo que
+ * **no** se hace es comparar el contenido fuera de tiempo constante.
+ */
+export const compararSecreto = (recibido: string | undefined, esperado: string): boolean => {
+  if (recibido === undefined || recibido === '') return false
+
+  const a = Buffer.from(recibido, 'utf8')
+  const b = Buffer.from(esperado, 'utf8')
+
+  if (a.length !== b.length) return false
+
+  return timingSafeEqual(a, b)
+}

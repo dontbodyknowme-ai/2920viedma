@@ -223,8 +223,21 @@ model Order {
   /// email ni por nombre, porque dos compradores pueden comprar el mismo día y
   /// el mismo vino.
   pagoId          String?         @unique
+  /// Token publico del pedido (spec 012, FR-009).
+  ///
+  /// Es la unica llave que ve el comprador: `/pedido/:token` y
+  /// `GET /api/track/:token` no aceptan el `id` interno. Un `cuid` no es
+  /// secuencial, pero tampoco es un secreto: el token tiene que ser aleatorio y
+  /// no derivable del id, o adivinarlo es cuestion de tiempo.
+  ///
+  /// `uuid()` lo genera Prisma en el cliente, no Postgres, asi que la migracion
+  /// rellena las filas viejas con `gen_random_uuid()` (PG 13+).
+  publicToken     String          @unique @default(uuid())
   shippingAddress Json
   timeline        OrderTimeline[]
+  /// Un pedido puede tener varios intentos de pago (spec 012, D5): el comprador
+  /// cambia de medio, el link vence, o reintenta despues de un rechazo.
+  attempts        PaymentAttempt[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -291,4 +304,64 @@ model OrderTimeline {
 
   @@index([orderId])
   @@index([pagoEstado])
+}
+
+/// Un intento de cobro (spec 012, D5 y §5).
+///
+/// ## Por que no alcanza `Order.pagoId`
+///
+/// `pagoId` es **un** id y es `@unique`. Con un solo intento por pedido, cuando
+/// el link vence o el pago se rechaza, el comprador no tiene forma de reintentar
+/// sin crear otro pedido: el id viejo ya ocupa el unico lugar. Y crear otro
+/// pedido duplica stock reservado y ensucia el panel con pedidos que nadie pago.
+///
+/// ## `referenciaExterna` es la llave, no `id`
+///
+/// El webhook del proveedor trae **su** id. Buscar el pedido por el nuestro
+/// obligaria a que el proveedor nos devuelva un campo interno; se cruza al reves:
+/// el intento guarda el id del proveedor y el pedido se resuelve por la relacion.
+model PaymentAttempt {
+  id                String     @id @default(cuid())
+  orderId           String
+  order             Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// `nave` | `mercadopago`. Explicito porque el mismo pedido puede tener
+  /// intentos de proveedores distintos durante una migracion.
+  proveedor         String
+  /// Id del cobro en el proveedor. `@unique` porque un mismo cobro no puede
+  /// pertenecer a dos pedidos: si llegara repetido, es un bug, no un caso.
+  referenciaExterna String?    @unique
+  /// A donde se manda al comprador. Lo devuelve el proveedor: no se arma a mano.
+  checkoutUrl       String?
+  /// QR del cobro, si el proveedor lo da. Se guardan las dos formas porque un
+  /// QR como imagen y uno como payload se renderizan distinto.
+  qrImagenUrl       String?
+  qrPayload         String?
+  estado            EstadoPago @default(no_iniciado)
+  expiresAt         DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([orderId])
+  @@index([estado, createdAt])
+}
+
+/// Auditoria de notificaciones (spec 012, FR-011 y FR-020).
+///
+/// Se guarda **antes** de procesar. Si el procesamiento falla, el evento queda
+/// con `processed = false` como rastro de que el proveedor aviso. La
+/// reconciliacion **no relee este evento**: vuelve a preguntar por el
+/// `PaymentAttempt` (que sigue `pendiente` y tiene `referenciaExterna`) y
+/// `aplicarPago` es idempotente. Perder la notificacion igual se recupera
+/// mientras el intento exista.
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  proveedor String
+  /// Id del cobro segun el proveedor, tal como vino en el cuerpo.
+  referencia String?
+  payload   Json
+  processed Boolean  @default(false)
+  receivedAt DateTime @default(now())
+
+  @@index([referencia])
+  @@index([processed, receivedAt])
 }

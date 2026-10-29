@@ -33,6 +33,15 @@ export const router = createBrowserRouter([
     element: <App />
   },
   {
+    /**
+     * La pagina publica del pedido (spec 012). Va antes del admin por el mismo
+     * motivo que `/checkout`: el comprador no tiene sesion. El `:token` es lo
+     * unico que la identifica.
+     */
+    path: '/pedido/:token',
+    element: <App />
+  },
+  {
     path: '/admin',
     element: <AdminLayout />,
     children: [

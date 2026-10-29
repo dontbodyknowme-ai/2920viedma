@@ -20,9 +20,11 @@ import type { FastifyInstance } from 'fastify'
 const prismaFalso = vi.hoisted(() => ({
   product: { findMany: vi.fn() },
   customer: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
-  order: { create: vi.fn(), update: vi.fn() },
+  order: { create: vi.fn(), update: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn() },
   orderTimeline: { create: vi.fn() },
   orderItem: {},
+  paymentAttempt: { create: vi.fn(), update: vi.fn() },
+  webhookEvent: { create: vi.fn(), update: vi.fn() },
   user: { findUnique: vi.fn() },
   $queryRaw: vi.fn(),
   $on: vi.fn(),
@@ -40,6 +42,9 @@ const { ProveedorPagosFalso, configurarProveedor } = await import(
 )
 
 const CUID_VINO = 'clx111111111'
+
+/** Token publico que devuelve el `order.create` falso (spec 012). */
+const TOKEN = '11111111-2222-3333-4444-555555555555'
 
 /** Lo que hay en la tabla de vinos. El precio es de ahi, no del cliente. */
 const PRECIO_EN_BASE = 7500
@@ -82,8 +87,13 @@ beforeEach(() => {
   prismaFalso.customer.findUnique.mockResolvedValue(null)
   prismaFalso.customer.create.mockResolvedValue({ id: 'cus_1' })
   prismaFalso.customer.update.mockResolvedValue({ id: 'cus_1' })
-  prismaFalso.order.create.mockResolvedValue({ id: 'ord_1' })
+  prismaFalso.order.create.mockResolvedValue({ id: 'ord_1', publicToken: TOKEN })
   prismaFalso.order.update.mockResolvedValue({ id: 'ord_1' })
+  // `count: 1` = la transicion condicional de `generarCobro` encontro el pedido
+  // todavia no aprobado. Los tests que quieren simular la carrera devuelven 0.
+  prismaFalso.order.updateMany.mockResolvedValue({ count: 1 })
+  prismaFalso.paymentAttempt.create.mockResolvedValue({ id: 'int_1' })
+  prismaFalso.paymentAttempt.update.mockResolvedValue({ id: 'int_1' })
 })
 
 const comprar = (body: unknown) => app.inject({ method: 'POST', url: '/api/orders', payload: body as never })
@@ -102,6 +112,17 @@ describe('crear el pedido', () => {
     // sin que nada haya cambiado del lado nuestro.
     expect(json.initPoint).toContain('preference-id=pref-falsa-1')
     expect(json.total).toBe(PRECIO_EN_BASE * 2)
+
+    // El token publico (spec 012): es lo que usa `/pedido/:token`. Sin el, el
+    // frontend no tiene a donde mandar al comprador.
+    expect(json.orderToken).toBe(TOKEN)
+    // Y el QR viaja junto con el link: el circuito automatizado no depende de
+    // que el proveedor lo muestre en su propia pagina.
+    expect(json.qr).toEqual({
+      imagenUrl: 'https://checkout.falso/qr-1.svg',
+      payload: 'PREF-FALSA:1'
+    })
+    expect(json.expiraEn).toBeTruthy()
   })
 
   it('no exige sesion: es publico', async () => {
@@ -226,8 +247,10 @@ describe('la Preference que se manda a Mercado Pago', () => {
 
     const urls = pagos.solicitudes[0].urls
 
-    expect(urls.exito).toContain('/?pago=aprobado')
-    expect(urls.fallo).toContain('/?pago=fallido')
+    // Las vueltas van a la pagina del pedido (spec 012), no al inicio con un
+    // query param: esa pagina es la que muestra el estado real y el QR.
+    expect(urls.exito).toContain(`/pedido/${TOKEN}`)
+    expect(urls.fallo).toContain(`/pedido/${TOKEN}?pago=fallido`)
     // La webhook es **del backend**, no del frontend: es la unica que Mercado
     // Pago puede llamar sin sesion de nadie.
     expect(urls.webhook).toContain('/api/orders/webhook')
@@ -252,10 +275,33 @@ describe('la Preference que se manda a Mercado Pago', () => {
   it('guarda el preferenceId en el pedido', async () => {
     await comprar(cuerpo())
 
-    // Es con `pagoId` como la webhook (T4) encuentra el pedido.
-    expect(prismaFalso.order.update).toHaveBeenCalledWith({
-      where: { id: 'ord_1' },
-      data: { pagoId: 'pref-falsa-1' }
+    // Es con `pagoId` como la webhook (T4) encuentra el pedido, y con
+    // `pagoEstado: pendiente` como el panel distingue "abrio el link" de
+    // "nunca salio del formulario" (spec 012).
+    expect(prismaFalso.order.updateMany).toHaveBeenCalledWith({
+      where: { id: 'ord_1', pagoEstado: { not: 'aprobado' } },
+      data: { pagoEstado: 'pendiente', pagoId: 'pref-falsa-1' }
+    })
+  })
+
+  it('si el pedido se pago mientras se creaba el cobro, no lo degrada', async () => {
+    // La carrera que F3 del informe describe: `reintentarPago` chequea que no
+    // este aprobado, llama al proveedor (red de por medio), y en esa ventana
+    // llega la webhook y lo aprueba. El `updateMany` condicional no encuentra
+    // fila que cambiar (`count: 0`), asi que el pedido no vuelve a `pendiente`
+    // ni se le pisa el `pagoId`.
+    prismaFalso.order.updateMany.mockResolvedValue({ count: 0 })
+
+    const res = await comprar(cuerpo())
+
+    expect(res.statusCode).toBe(409)
+    expect(res.json().code).toBe('ALREADY_PAID')
+    expect(prismaFalso.order.update).not.toHaveBeenCalled()
+    // El cobro huerfano si queda en el proveedor, pero el intento no queda
+    // `pendiente` para que la reconciliacion lo vuelva a cobrar.
+    expect(prismaFalso.paymentAttempt.update).toHaveBeenCalledWith({
+      where: { id: 'int_1' },
+      data: { estado: 'expirado' }
     })
   })
 })
@@ -384,17 +430,25 @@ describe('vinos que no existen', () => {
   })
 })
 
-describe('si Mercado Pago falla', () => {
-  it('el 500 dice que fallo la pasarela, no "algo fallo"', async () => {
+describe('si la pasarela falla', () => {
+  it('el 502 dice que fallo la pasarela, no "algo fallo"', async () => {
     pagos.fallaAlCrear = new Error('Mercado Pago respondio 500')
 
     const res = await comprar(cuerpo())
 
-    expect(res.statusCode).toBe(500)
+    // 502 Bad Gateway y no 500: el servidor esta bien, el que no respondio es
+    // el proveedor. El frontend puede distinguirlo y ofrecer reintentar.
+    expect(res.statusCode).toBe(502)
     // El pedido **queda**, en `no_iniciado`, y expira a los 10 minutos. Es lo
     // correcto: queda el rastro del intento. Y el `pagoId` nunca se setea, asi
     // que la webhook no lo va a encontrar ni a tocarlo.
     expect(prismaFalso.order.create).toHaveBeenCalled()
-    expect(prismaFalso.order.update).not.toHaveBeenCalled()
+    expect(prismaFalso.order.updateMany).not.toHaveBeenCalled()
+    // El intento queda `expirado`: visible en el panel, pero no cuenta como
+    // rechazo del comprador.
+    expect(prismaFalso.paymentAttempt.update).toHaveBeenCalledWith({
+      where: { id: 'int_1' },
+      data: { estado: 'expirado' }
+    })
   })
 })

@@ -1,84 +1,45 @@
 ﻿import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, Loader2, XCircle, Copy, ArrowLeft } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, Lock, ShieldCheck } from 'lucide-react'
 import { FormularioCheckout, type DatosDelFormulario } from '../components/checkout/formulario'
 import { crearPedido, mensajeDeErrorDeCheckout } from '../api/checkout'
-import {
-  borrarResumen,
-  guardarResumen,
-  leerResumen,
-  resultadoDeLaUrl,
-  type InstruccionesTransferencia
-} from '../types/checkout'
 import type { CartItem } from '../types/producto'
 
 /**
- * La pagina del checkout (spec 009, T6 y T7).
+ * La pagina del checkout (spec 009 + spec 012).
  *
- * Son **tres estados en la misma pagina**, y por que:
+ * ## Un solo paso, y despues la pagina del pedido
  *
- * - **formulario** â€” el visitante lleno el carrito y pulsa "Finalizar Pedido"
- * - **pagando** â€” se creo el pedido y estamos mandando a Mercado Pago
- * - **confirmacion / error** â€” el comprador volvio de Mercado Pago
+ * Antes esta pantalla creaba el pedido y mandaba al checkout del proveedor con
+ * `window.location.assign`. Con el cobro automatizado eso ya no hace falta: el
+ * backend crea el link **y** el QR en el mismo request, y el comprador se queda
+ * en la tienda viendo `2. Tu pedido`, `3. Pago` y el estado real.
  *
- * Que sea una sola pagina y no tres rutas importa porque **al volver de Mercado
- * Pago el comprador llega por query param** (`?pago=aprobado`) y no tiene el
- * carrito en memoria: si la confirmacion fuera otra ruta, el `sessionStorage`
- * seria lo unico que la sostenga.
+ * Por eso `POST /api/orders` y `navegar('/pedido/:token')`: es una ruta de la
+ * SPA, se puede recargar, y no depende de que el proveedor devuelva a la persona
+ * a una URL con un query param que tenemos que interpretar.
+ *
+ * ## Lo que NO viaja
+ *
+ * Ningun precio. El resumen de aca es **para mirar**: el total que se cobra lo
+ * calcula el backend con `Wine.price` y es el que vuelve en la respuesta.
  */
 interface CheckoutProps {
   /** El carrito, para poder mandarlo. Viene de `App`. */
   items: CartItem[]
-  /** Se llama cuando el pago se aprobo, para vaciar el carrito. */
-  alConfirmar: () => void
 }
 
-export const Checkout = ({ items, alConfirmar }: CheckoutProps) => {
+const pesos = (monto: number): string =>
+  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(monto)
+
+export const Checkout = ({ items }: CheckoutProps) => {
   const navegar = useNavigate()
-  const [parametros] = useSearchParams()
-  const resultado = resultadoDeLaUrl(parametros.toString())
 
   const [enviando, setEnviando] = useState(false)
   const [errorServidor, setErrorServidor] = useState('')
-  const [instrucciones, setInstrucciones] = useState<InstruccionesTransferencia | null>(null)
-  const [orderId, setOrderId] = useState<string>('')
 
-  // Se lee **una vez**, al montar. Y se borra despues: el resumen es de esta
-  // compra, y dejarlo da al siguiente que abra la pestana en el mismo
-  // navegador el numero de pedido de otra persona.
-  const [resumen] = useState(() => leerResumen())
-
-  if (resultado !== null) {
-    return (
-      <ResultadoDelPago
-        resultado={resultado}
-        resumen={resumen}
-        alVolver={() => {
-          borrarResumen()
-          alConfirmar()
-          navegar('/')
-        }}
-        alReintentar={() => {
-          borrarResumen()
-          navegar('/')
-        }}
-      />
-    )
-  }
-
-  if (instrucciones !== null) {
-    return (
-      <InstruccionesTransferenciaPage
-        instrucciones={instrucciones}
-        orderId={orderId}
-        alFinalizar={() => {
-          borrarResumen()
-          alConfirmar()
-          navegar('/')
-        }}
-      />
-    )
-  }
+  const total = items.reduce((suma, item) => suma + item.product.price * item.quantity, 0)
+  const unidades = items.reduce((suma, item) => suma + item.quantity, 0)
 
   const enviar = async (datos: DatosDelFormulario) => {
     setEnviando(true)
@@ -97,23 +58,13 @@ export const Checkout = ({ items, alConfirmar }: CheckoutProps) => {
         items.map((item) => ({ vinoId: item.product.id, cantidad: item.quantity }))
       )
 
-      guardarResumen({ orderId: pedido.orderId, total: pedido.total, items: [] })
-
-      if ((pedido.modo === 'transferencia' || pedido.modo === 'nave' || pedido.modo === 'naranja_x') && pedido.instrucciones) {
-        setOrderId(pedido.orderId)
-        setInstrucciones(pedido.instrucciones)
-        setEnviando(false)
-        return
-      }
-
-      // Se va a Mercado Pago con `location.assign` y **no** con `navigate`: es
-      // una pagina de otro origen, y un router de SPA no puede(topicar)arla.
-      if (pedido.initPoint) {
-        window.location.assign(pedido.initPoint)
-      } else {
-        setErrorServidor('No se pudo obtener el link de pago')
-        setEnviando(false)
-      }
+      /**
+       * El token es la unica llave: `/pedido/:token` vuelve a pedir todo
+       * (`items`, `total`, estado) a `GET /api/track/:token`. No hace falta
+       * guardar nada en el navegador, y no guardarlo evita dejar datos de la
+       * compra en una maquina compartida.
+       */
+      navegar(`/pedido/${pedido.orderToken}`)
     } catch (error: unknown) {
       setErrorServidor(mensajeDeErrorDeCheckout(error))
       setEnviando(false)
@@ -122,298 +73,105 @@ export const Checkout = ({ items, alConfirmar }: CheckoutProps) => {
 
   return (
     <main className='min-h-screen bg-charcoal-950 px-4 py-10 text-cream-100'>
-      <div className='mx-auto max-w-md'>
-        <h1 className='mb-1 text-center font-serif text-3xl font-bold'>Finalizar compra</h1>
-        <p className='mb-8 text-center text-sm text-neutral-400'>
-          No hace falta crear cuenta. Solo necesitamos estos datos para coordinar.
-        </p>
-
-        <FormularioCheckout
-          alEnviar={(datos) => void enviar(datos)}
-          enviando={enviando}
-          errorServidor={errorServidor}
-        />
-      </div>
-    </main>
-  )
-}
-
-interface InstruccionesProps {
-  instrucciones: InstruccionesTransferencia
-  orderId: string
-  alFinalizar: () => void
-}
-
-const copiar = async (texto: string) => {
-  try {
-    await navigator.clipboard.writeText(texto)
-  } catch {
-    // ignorar
-  }
-}
-
-const InstruccionesTransferenciaPage = ({ instrucciones, orderId, alFinalizar }: InstruccionesProps) => {
-  const [copiado, setCopiado] = useState<string | null>(null)
-
-  const copiarDato = async (clave: string, texto?: string) => {
-    if (!texto) return
-    await copiar(texto)
-    setCopiado(clave)
-    setTimeout(() => setCopiado(null), 1500)
-  }
-
-  const esNave = !!(instrucciones.codigo || instrucciones.qrUrl || instrucciones.linkCobro) && !instrucciones.alias && !instrucciones.cbu
-  const esNaranjaX = !!(instrucciones.codigo || instrucciones.qrUrl || instrucciones.linkCobro) && !esNave
-  const esQr = esNave || esNaranjaX
-  void esQr
-
-  return (
-    <main className='min-h-screen bg-charcoal-950 px-4 py-10 text-cream-100'>
-      <div className='mx-auto max-w-lg'>
+      <div className='mx-auto max-w-5xl'>
         <button
-          onClick={alFinalizar}
-          className='mb-6 flex items-center gap-2 text-sm text-neutral-400 hover:text-cream-100'
+          type='button'
+          onClick={() => navegar('/')}
+          className='mb-6 flex items-center gap-2 text-sm text-neutral-400 transition-colors hover:text-cream-100'
         >
           <ArrowLeft className='h-4 w-4' />
           Volver a la tienda
         </button>
 
-        <div className='mb-6 text-center'>
-          <CheckCircle2 className='mx-auto mb-4 h-14 w-14 text-emerald-400' />
-          <h1 className='mb-2 font-serif text-3xl font-bold'>Â¡Pedido generado!</h1>
-          <p className='text-neutral-400'>
-            RealizÃ¡ la transferencia con los datos que te dejamos abajo
+        <div className='mb-8'>
+          <h1 className='font-serif text-3xl font-bold'>Finalizar compra</h1>
+          <p className='mt-2 text-sm text-neutral-400'>
+            No hace falta crear cuenta. Al confirmar te mostramos cómo pagar.
           </p>
         </div>
 
-        <div className='mb-6 rounded-2xl border border-neutral-800 bg-charcoal-900 p-6'>
-          <div className='mb-4 flex items-center justify-between'>
-            <div>
-              <p className='text-xs uppercase tracking-widest text-neutral-500'>Pedido</p>
-              <p className='mt-1 font-mono text-lg text-cream-100'>{orderId}</p>
-            </div>
-            <div className='text-right'>
-              <p className='text-xs uppercase tracking-widest text-neutral-500'>Total a transferir</p>
-              <p className='mt-1 text-2xl font-semibold text-gold-400'>
-                ${instrucciones.monto.toLocaleString('es-AR')}
-              </p>
-            </div>
+        {items.length === 0 ? (
+          <div className='rounded-2xl border border-neutral-800 bg-charcoal-900 p-8 text-center'>
+            <p className='text-lg font-medium'>Tu carrito está vacío</p>
+            <p className='mt-2 text-sm text-neutral-400'>Elegí un vino del catálogo para empezar.</p>
+            <button
+              type='button'
+              onClick={() => navegar('/')}
+              className='mt-6 rounded-xl bg-wine-700 px-6 py-3 text-sm font-semibold uppercase tracking-wider transition-colors hover:bg-wine-500'
+            >
+              Ver el catálogo
+            </button>
           </div>
-
-          <div className='space-y-3'>
-            {instrucciones.titular && (
-              <DatoTransferencia
-                etiqueta='Titular'
-                valor={instrucciones.titular}
-                copiado={copiado === 'titular'}
-                onCopiar={() => copiarDato('titular', instrucciones.titular)}
-              />
-            )}
-            {instrucciones.banco && (
-              <DatoTransferencia
-                etiqueta='Banco'
-                valor={instrucciones.banco}
-                copiado={copiado === 'banco'}
-                onCopiar={() => copiarDato('banco', instrucciones.banco)}
-              />
-            )}
-            {instrucciones.alias && (
-              <DatoTransferencia
-                etiqueta='Alias'
-                valor={instrucciones.alias}
-                copiado={copiado === 'alias'}
-                onCopiar={() => copiarDato('alias', instrucciones.alias)}
-              />
-            )}
-            {instrucciones.cbu && (
-              <DatoTransferencia
-                etiqueta='CBU/CVU'
-                valor={instrucciones.cbu}
-                copiado={copiado === 'cbu'}
-                onCopiar={() => copiarDato('cbu', instrucciones.cbu)}
-              />
-            )}
-            {instrucciones.referencia && (
-              <DatoTransferencia
-                etiqueta='Referencia / Concepto'
-                valor={instrucciones.referencia}
-                copiado={copiado === 'ref'}
-                onCopiar={() => copiarDato('ref', instrucciones.referencia)}
-              />
-            )}
-          </div>
-        </div>
-
-        <div className='mb-6 rounded-xl border border-gold-500/30 bg-gold-900/10 p-4 text-sm text-cream-100'>
-          <p className='font-medium text-gold-400'>Importante</p>
-          <p className='mt-1 text-neutral-300'>
-            Una vez realizada la transferencia, enviÃ¡ el comprobante por WhatsApp o mail con el nÃºmero de pedido{' '}
-            <span className='font-mono'>{orderId}</span>. Cuando confirmemos el pago, tu pedido pasarÃ¡ a preparaciÃ³n.
-          </p>
-        </div>
-
-        <button
-          onClick={alFinalizar}
-          className='w-full rounded-xl bg-wine-700 py-3.5 text-sm font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500'
-        >
-          Entendido, volver a la tienda
-        </button>
-      </div>
-    </main>
-  )
-}
-
-interface DatoProps {
-  etiqueta: string
-  valor: string
-  copiado: boolean
-  onCopiar: () => void
-}
-
-const DatoTransferencia = ({ etiqueta, valor, copiado, onCopiar }: DatoProps) => (
-  <div className='flex items-center justify-between rounded-xl border border-neutral-700/60 bg-charcoal-800 px-4 py-3'>
-    <div>
-      <p className='text-xs uppercase tracking-widest text-neutral-500'>{etiqueta}</p>
-      <p className='mt-1 break-all font-mono text-sm text-cream-100'>{valor}</p>
-    </div>
-    <button
-      onClick={onCopiar}
-      className='ml-4 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-neutral-300 hover:bg-charcoal-700 hover:text-cream-100'
-    >
-      <Copy className='h-3.5 w-3.5' />
-      {copiado ? 'Copiado' : 'Copiar'}
-    </button>
-  </div>
-)
-
-interface ResultadoProps {
-  resultado: 'aprobado' | 'fallido' | 'pendiente'
-  resumen: { orderId: string; total: number; items: { vinoId: string; cantidad: number }[] } | null
-  alVolver: () => void
-  alReintentar: () => void
-}
-
-/**
- * Lo que se ve al volver de Mercado Pago.
- *
- * ## Por que el total sale del `sessionStorage` y no de un endpoint
- *
- * Un `GET /api/orders/:id` publico devolveria nombre, telefono y direccion de un
- * comprador que **no tiene cuenta en el sistema**, con soloKnowing el id. Ese
- * endpoint publico existia en la primera version de la spec y se saco (D-F de
- * `plan.md`).
- *
- * La confirmacion necesita **el numero y el monto**, que son los unicos datos que
- * la persona ya conocio. Esos se guardaron antes de ir a Mercado Pago.
- *
- * ## Y si el resumen no esta
- *
- * Puede pasar: el comprador abrio la tienda en otra pestana, o borro el
- * almacenamiento. La pagina **no inventa un total** â€”un "$0" o un total al
- * azar seria una mentira que el comprador lleva al mostradorâ€”: avisa que no lo
- * encontro y lo manda a la tienda.
- */
-const ResultadoDelPago = ({ resultado, resumen, alVolver, alReintentar }: ResultadoProps) => {
-  const aprobado = resultado === 'aprobado'
-
-  if (resultado === 'pendiente') {
-    return (
-      <Aviso
-        icono={<Loader2 className='h-12 w-12 animate-spin text-gold-400' aria-hidden='true' />}
-        titulo='Tu pago se esta procesando'
-        texto='Mercado Pago nos confirmara en un momento. No hace falta que hagas nada.'
-        accion={{ texto: 'Volver a la tienda', alHacer: alVolver }}
-      />
-    )
-  }
-
-  if (!aprobado) {
-    return (
-      <Aviso
-        icono={<XCircle className='h-12 w-12 text-wine-400' aria-hidden='true' />}
-        titulo='El pago no se completo'
-        texto='Tu carrito sigue intacto. Podes intentarlo de nuevo cuando quieras.'
-        accion={{ texto: 'Intentar de nuevo', alHacer: alReintentar }}
-      />
-    )
-  }
-
-  return (
-    <main className='flex min-h-screen items-center justify-center bg-charcoal-950 px-4 text-cream-100'>
-      <div className='w-full max-w-md rounded-2xl border border-neutral-800 bg-charcoal-900 p-8 text-center'>
-        <CheckCircle2 className='mx-auto h-12 w-12 text-gold-400' aria-hidden='true' />
-
-        <h1 className='mt-4 font-serif text-2xl font-bold'>Pedido confirmado</h1>
-
-        {resumen === null ? (
-          <>
-            <p className='mt-3 text-sm text-neutral-400'>
-              Tu pago se registro. No encontramos el detalle del pedido en esta
-              sesion, asi que te loanamos por email.
-            </p>
-            <p className='mt-3 text-sm text-neutral-300'>
-              Si ya lo habias pagado desde este navegador, recargÃ¡ la pagina y el
-              detalle vuelve a aparecer.
-            </p>
-          </>
         ) : (
-          <>
-            <p className='mt-3 text-sm text-neutral-400'>
-              Guardamos tu pedido y te escribimos con el seguimiento.
-            </p>
+          <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]'>
+            <section className='rounded-2xl border border-neutral-800 bg-charcoal-900 p-6'>
+              <h2 className='mb-5 flex items-center gap-2 font-serif text-xl font-bold'>
+                <span className='flex h-7 w-7 items-center justify-center rounded-full bg-gold-500/15 text-xs text-gold-400'>
+                  1
+                </span>
+                Tus datos
+              </h2>
+              <FormularioCheckout
+                alEnviar={(datos) => void enviar(datos)}
+                enviando={enviando}
+                errorServidor={errorServidor}
+              />
+            </section>
 
-            <dl className='mt-6 space-y-3 rounded-xl border border-neutral-800 bg-charcoal-950 p-4 text-left'>
-              <div className='flex justify-between gap-4'>
-                <dt className='text-xs uppercase tracking-widest text-neutral-500'>Pedido</dt>
-                <dd className='font-mono text-sm text-cream-100'>{resumen.orderId}</dd>
+            <aside className='h-fit rounded-2xl border border-neutral-800 bg-charcoal-900 p-6 lg:sticky lg:top-6'>
+              <h2 className='mb-4 flex items-center gap-2 font-serif text-xl font-bold'>
+                <span className='flex h-7 w-7 items-center justify-center rounded-full bg-gold-500/15 text-xs text-gold-400'>
+                  2
+                </span>
+                Tu pedido
+              </h2>
+
+              <ul className='space-y-3 border-b border-neutral-800 pb-4'>
+                {items.map((item) => (
+                  <li key={item.product.id} className='flex items-start justify-between gap-3 text-sm'>
+                    <div>
+                      <p className='font-medium text-cream-100'>{item.product.name}</p>
+                      <p className='text-xs text-neutral-500'>
+                        {item.quantity} × {pesos(item.product.price)}
+                      </p>
+                    </div>
+                    <span className='whitespace-nowrap font-mono text-cream-200'>
+                      {pesos(item.product.price * item.quantity)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className='flex items-center justify-between py-4'>
+                <span className='text-sm text-neutral-400'>Total ({unidades} {unidades === 1 ? 'unidad' : 'unidades'})</span>
+                <span className='font-mono text-xl font-bold text-gold-400'>{pesos(total)}</span>
               </div>
-              <div className='flex justify-between gap-4'>
-                <dt className='text-xs uppercase tracking-widest text-neutral-500'>Total</dt>
-                <dd className='font-mono text-sm font-bold text-gold-400'>
-                  {new Intl.NumberFormat('es-AR', {
-                    style: 'currency',
-                    currency: 'ARS',
-                    maximumFractionDigits: 0
-                  }).format(resumen.total)}
-                </dd>
+
+              <div className='rounded-xl border border-neutral-800 bg-charcoal-950 p-4'>
+                <h3 className='flex items-center gap-2 text-sm font-semibold text-cream-100'>
+                  <span className='flex h-6 w-6 items-center justify-center rounded-full bg-gold-500/15 text-[10px] text-gold-400'>
+                    3
+                  </span>
+                  Pago
+                </h3>
+                <p className='mt-2 text-xs leading-relaxed text-neutral-400'>
+                  Al confirmar el pedido vas a ver{' '}
+                  <strong className='text-cream-200'>cómo pagar</strong>, con el link y el QR si el
+                  banco los genera. El estado se actualiza solo.
+                </p>
+                <p className='mt-3 flex items-center gap-1.5 text-[11px] text-neutral-500'>
+                  <ShieldCheck className='h-3.5 w-3.5 text-emerald-400' aria-hidden='true' />
+                  Los datos de la tarjeta no pasan por esta tienda.
+                </p>
+                <p className='mt-1 flex items-center gap-1.5 text-[11px] text-neutral-500'>
+                  <Lock className='h-3.5 w-3.5 text-emerald-400' aria-hidden='true' />
+                  Pago procesado por el banco.
+                </p>
               </div>
-            </dl>
-          </>
+            </aside>
+          </div>
         )}
-
-        <button
-          type='button'
-          onClick={alVolver}
-          className='mt-6 w-full rounded-xl bg-wine-700 py-3 text-sm font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500'
-        >
-          Volver a la tienda
-        </button>
       </div>
     </main>
   )
 }
-
-interface AvisoProps {
-  icono: React.ReactNode
-  titulo: string
-  texto: string
-  accion: { texto: string; alHacer: () => void }
-}
-
-const Aviso = ({ icono, titulo, texto, accion }: AvisoProps) => (
-  <main className='flex min-h-screen items-center justify-center bg-charcoal-950 px-4 text-cream-100'>
-    <div className='w-full max-w-md rounded-2xl border border-neutral-800 bg-charcoal-900 p-8 text-center'>
-      {icono}
-      <h1 className='mt-4 font-serif text-2xl font-bold'>{titulo}</h1>
-      <p className='mt-3 text-sm text-neutral-400'>{texto}</p>
-      <button
-        type='button'
-        onClick={accion.alHacer}
-        className='mt-6 w-full rounded-xl bg-wine-700 py-3 text-sm font-semibold uppercase tracking-wider text-cream-100 transition-colors hover:bg-wine-500'
-      >
-        {accion.texto}
-      </button>
-    </div>
-  </main>
-)
-

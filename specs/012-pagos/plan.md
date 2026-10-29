@@ -97,7 +97,7 @@ backend/src/
   modules/orders/
     routes.ts                           # POST /api/orders · /api/track/* · webhook nave
     service.ts                          # crearPedido + aplicarPago (se extienden)
-  config/env.ts                         # NAVE_* + PAYMENTS_ENABLED
+  config/env.ts                         # NAVE_* (el modo de cobro ya es PAGO_MODO)
 
 backend/prisma/schema.prisma            # Order.publicToken + PaymentAttempt + WebhookEvent
 ```
@@ -167,9 +167,9 @@ model WebhookEvent {
 
 ### `POST /api/orders` (existente, público)
 
-- **Entrada:** la actual (`customer`, `items`, `shippingAddress?`) + `method?: "wallet" | "card" | "link"`.
-- **Proceso:** Zod → `crearPedido` (total y stock desde la base) → crear `PaymentAttempt` → crear pago en Nave → guardar `naveRequestId` y `checkoutUrl`.
-- **Salida 201:** `{ orderId, orderToken, checkoutUrl }`. Sin `checkoutUrl` si `PAYMENTS_ENABLED=false` (modo manual actual).
+- **Entrada:** la actual (`customer`, `items`, `shippingAddress?`). **Sin `method`**: el cobro es uno solo (link + QR) y el comprador elige el medio en la pantalla del banco.
+- **Proceso:** Zod → `crearPedido` (total y stock desde la base) → crear `PaymentAttempt` → crear pago en Nave → guardar `referenciaExterna` y `checkoutUrl`.
+- **Salida 201:** `{ orderId, orderToken, total, initPoint, qr?, expiraEn }`. Sin `initPoint` cuando `PAGO_MODO=transferencia` (no hay cobro automatico).
 - **Errores:** `400` datos inválidos · `409` carrito inconsistente (precio o stock cambió) · `429` rate limit · `502` Nave no respondió (la orden queda `pendiente` y se puede reintentar).
 
 ### `GET /api/track/:token` (nueva, pública)
@@ -265,8 +265,8 @@ Las variables del backend van en **dos lugares**: el schema de `backend/src/conf
 | `NAVE_MODE` | `mock` · `sandbox` · `production` | Backend |
 | `NAVE_CLIENT_ID` / `NAVE_CLIENT_SECRET` / `NAVE_POS_ID` | Credenciales entregadas por Nave | Backend (Render) |
 | `NAVE_WEBHOOK_SECRET` | Si Nave ofrece firma `[A CONFIRMAR]` | Backend (Render) |
-| `PAYMENTS_ENABLED` | Feature flag para activar el botón de pago | Backend |
-| `NAVE_CODIGO_COBRO` / `NAVE_QR_URL` / `NAVE_LINK_COBRO` | Modo manual actual (`PAGO_MODO=nave`) | **Ya existen** |
+| `PAGO_MODO` | `nave` · `mercadopago` · `transferencia`. **Es el interruptor del cobro**: no se agrega un `PAYMENTS_ENABLED` que diga lo mismo y pueda contradecirlo. | **Ya existe** |
+| ~~`NAVE_CODIGO_COBRO` / `NAVE_QR_URL` / `NAVE_LINK_COBRO`~~ | Modo manual anterior: **se elimina** en esta spec (un QR estatico no sabe a que pedido pertenece) | **Se borran** |
 | `FRONTEND_ORIGIN` | Base de `callback_url` y de las `back_urls` | **Ya existe** |
 | `PUBLIC_API_URL` | Base pública para la URL del webhook | **Ya existe** |
 | `DATABASE_URL` / `DIRECT_URL` | Base pooled / migraciones | **Ya existen** |
@@ -313,8 +313,8 @@ Los tests usan `NAVE_MODE=mock` (llenan `PaymentAttempt`/`WebhookEvent`), igual 
 
 1. Desarrollo con `NAVE_MODE=mock`.
 2. Sandbox con credenciales de Nave en Render (dominio público de la API).
-3. Producción con `PAYMENTS_ENABLED=false`; activar el flag solo después de la compra real de prueba.
-4. Plan de reversa: desactivar `PAYMENTS_ENABLED` oculta el botón sin tocar el resto de la tienda.
+3. Produccion con `PAGO_MODO=transferencia`; pasar a `nave` solo despues de la compra real de prueba.
+4. Plan de reversa: `PAGO_MODO=transferencia` vuelve al cobro manual sin tocar el resto de la tienda — el catalogo y el panel no dependen del proveedor. No hace falta un flag aparte.
 5. Las migraciones nuevas (`publicToken`, `PaymentAttempt`, `WebhookEvent`) corren solas en el arranque (`prisma migrate deploy`).
 
 ## 15. Riesgos y mitigaciones

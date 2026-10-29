@@ -116,18 +116,69 @@ const esquema = z.object({
    */
   MERCADO_PAGO_ACCESS_TOKEN: z.string().optional(), // desactivado para deploy
 
-  // Modo de pago: 'transferencia' | 'mercadopago' | 'nave'
+  /**
+   * Modo de pago (spec 012).
+   *
+   * - `nave` — automatizado: el checkout crea el cobro y devuelve link + QR.
+   * - `mercadopago` — automatizado con el proveedor de la spec 009.
+   * - `transferencia` — manual, solo como marcha atras del cobro automatico.
+   *
+   * **No hay un cuarto modo "nave manual".** Existia (`NAVE_CODIGO_COBRO`,
+   * `NAVE_QR_URL`, `NAVE_LINK_COBRO` cargados a mano en el panel) y era
+   * exactamente lo que la spec 012 viene a reemplazar: un QR estatico no sabe a
+   * que pedido corresponde ni cuanto se pago. Se elimino en vez de dejarlo
+   * al lado, porque dos caminos con el mismo nombre es la forma de que un dia
+   * el checkout cree un cobro y el comprador vea el QR viejo.
+   *
+   * ## El default es `transferencia`, no `nave`
+   *
+   * Un default de `nave` hace que **mergear el codigo cambie el modo de cobro**
+   * de un deploy que no toco ninguna variable: la tienda pasa sola a crear
+   * cobros, y si `NAVE_MODE` sigue en `mock`, a un simulador. Un modo de cobro
+   * se elige explicitamente o no se elige.
+   */
   PAGO_MODO: z.enum(['transferencia', 'mercadopago', 'nave']).default('transferencia'),
-  // Datos para transferencia bancaria
+  // Datos para transferencia bancaria (solo PAGO_MODO=transferencia)
   TRANSFERENCIA_TITULAR: z.string().default(''),
   TRANSFERENCIA_ALIAS: z.string().default(''),
   TRANSFERENCIA_CBU: z.string().default(''),
   TRANSFERENCIA_BANCO: z.string().default(''),
   TRANSFERENCIA_CONCEPTO: z.string().default('Pedido {orderId}'),
-  // NAVE (Banco Galicia)
-  NAVE_CODIGO_COBRO: z.string().default(''),
-  NAVE_QR_URL: z.string().url().optional().or(z.literal('')),
-  NAVE_LINK_COBRO: z.string().url().optional().or(z.literal('')),
+
+  /**
+   * Nave (spec 012, §10).
+   *
+   * `mock` es el default a proposito: la app arranca y se puede recorrer el
+   * circuito completo **sin credenciales** (FR-018). `sandbox` y `production`
+   * exigen las cinco variables de abajo y fallan cerrado si falta alguna: un
+   * cliente a medio configurar que devuelve ids falsos hace que cada pedido
+   * quede esperando un pago que nunca va a existir.
+   *
+   * Las rutas son variables y no constantes porque la documentacion oficial de
+   * Nave **no esta disponible todavia** (`[A CONFIRMAR]`, T001). Poner un
+   * `/payments` inventado como default seria peor que no tener default: el dia
+   * que Nave use otro path, el sintoma seria un 404 del proveedor en medio de un
+   * checkout, no un error de configuracion al arrancar.
+   *
+   * `mock` es el default **para desarrollo**, y `crearProveedorNave` lo rechaza
+   * con `NODE_ENV=production`: el simulador registra `/pago-simulado/:id`, que
+   * aprueba pedidos sin autenticacion y sin cobrar. Que exista en un deploy es
+   * peor que un checkout que no arranca.
+   */
+  NAVE_MODE: z.enum(['mock', 'sandbox', 'production']).default('mock'),
+  /**
+   * `.or(z.literal(''))` no es decorativo: `backend/.env.example` trae la
+   * variable vacia, y copiar el ejemplo a `.env` no puede romper el arranque.
+   * `leerConfigNave` trata el vacio como faltante, que es lo correcto.
+   */
+  NAVE_API_BASE: z.string().url().optional().or(z.literal('')),
+  NAVE_TOKEN_PATH: z.string().optional(),
+  NAVE_PAYMENT_PATH: z.string().optional(),
+  NAVE_CLIENT_ID: z.string().optional(),
+  NAVE_CLIENT_SECRET: z.string().optional(),
+  NAVE_POS_ID: z.string().optional(),
+  /** Secreto compartido del webhook. `[A CONFIRMAR]` si Nave firma con HMAC. */
+  NAVE_WEBHOOK_SECRET: z.string().optional(),
 
   SEED_CATALOGO: z
     .string()

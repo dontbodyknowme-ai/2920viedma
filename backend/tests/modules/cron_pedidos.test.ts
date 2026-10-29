@@ -15,6 +15,7 @@ const prismaFalso = vi.hoisted(() => ({
   orderTimeline: { create: vi.fn() },
   customer: { update: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
   product: { findMany: vi.fn() },
+  paymentAttempt: { create: vi.fn(), update: vi.fn(), updateMany: vi.fn(), findMany: vi.fn() },
   user: { findUnique: vi.fn() },
   $queryRaw: vi.fn(),
   $on: vi.fn(),
@@ -27,8 +28,10 @@ vi.mock('@prisma/client', () => ({
 }))
 
 const { buildApp } = await import('../../src/app.js')
-const { expirarPedidosSinPagar, arrancarCronPedidos, MINUTOS_PARA_EXPIRAR } = await import(
-  '../../src/modules/orders/cron.js'
+const { expirarPedidosSinPagar, arrancarCronPedidos, reconciliarPagosPendientes, MINUTOS_PARA_EXPIRAR } =
+  await import('../../src/modules/orders/cron.js')
+const { ProveedorPagosFalso, configurarProveedor } = await import(
+  '../../src/modules/pagos/proveedor.js'
 )
 
 let app: FastifyInstance
@@ -207,5 +210,44 @@ describe('el intervalo', () => {
     globalThis.setInterval = originales as unknown as typeof setInterval
 
     expect(fueLiberado).toBe(true)
+  })
+})
+
+describe('la reconciliacion de pagos (FR-020)', () => {
+  it('pregunta al proveedor antes de dar un link por vencido', async () => {
+    // El vencimiento es el ultimo momento en el que se puede recuperar un pago
+    // cuya webhook se perdio. Si el intento pasaba a `expirado` sin preguntar,
+    // el paso siguiente —que solo mira los `pendiente`— no lo consultaba nunca
+    // mas y el dinero cobrado quedaba invisible para siempre.
+    const pagos = new ProveedorPagosFalso()
+    pagos.estados['cobro-1'] = {
+      id: 'cobro-1',
+      estado: 'approved',
+      monto: 15000,
+      externalReference: 'ord_1',
+      fechaAprobacion: null,
+      expiraEn: null
+    }
+    configurarProveedor(pagos)
+
+    prismaFalso.paymentAttempt.findMany
+      .mockResolvedValueOnce([{ id: 'int_1', referenciaExterna: 'cobro-1' }])
+      .mockResolvedValueOnce([])
+    prismaFalso.order.findUnique.mockResolvedValue({
+      id: 'ord_1',
+      customerId: 'cus_1',
+      total: 15000,
+      pagoEstado: 'pendiente'
+    })
+    prismaFalso.order.updateMany.mockResolvedValue({ count: 1 })
+    prismaFalso.paymentAttempt.updateMany.mockResolvedValue({ count: 0 })
+
+    await reconciliarPagosPendientes(prismaFalso as never)
+
+    expect(pagos.consulted).toContain('cobro-1')
+    expect(prismaFalso.paymentAttempt.update).toHaveBeenCalledWith({
+      where: { id: 'int_1' },
+      data: { estado: 'aprobado' }
+    })
   })
 })
