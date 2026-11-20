@@ -13,15 +13,17 @@ import {
   textoDe,
   type Montaje
 } from './andamiaje'
-import { CLAVE_PEDIDO, guardarResumen } from '../src/types/checkout'
+import { type PedidoPublico } from '../src/types/checkout'
+import { INTERVALO_DE_POLLING_MS } from '../src/pages/pedido'
 import type { Producto } from '../src/types/producto'
 
 /**
- * La pagina del checkout, **montada** (spec 009, T6 y T7).
+ * El checkout y la pagina del pedido, **montados** (spec 009 y spec 012).
  *
  * `checkout_reglas.test.ts` prueba las reglas puras. Aca va lo que **solo se ve
  * con el componente en pantalla**: que se llame a la API con lo que tiene que
- * ser, que se vaya a Mercado Pago, y que la confirmacion diga la verdad.
+ * ser, que despues de crear el pedido el comprador caiga en `/pedido/:token`, y
+ * que esa pagina muestre el estado **real** del pago.
  *
  * ## Por que se intercepta `fetch` y no el modulo `api`
  *
@@ -29,10 +31,9 @@ import type { Producto } from '../src/types/producto'
  * que el test quiere. Un `vi.mock` de `api` pasaria igual y dejaria en verde un
  * `crearPedido` roto.
  *
- * Y lo que NO sea `/api/orders` responde **404 a proposito**: si la pagina
- * preguntara otra cosa, el test falla con el error de la API en vez de mostrar
- * una pantalla vacia que el test tomaria por una pantalla correcta. Esa es
- * justamente la afirmacion de D-F: **esta pagina no consulta nada**.
+ * Cualquier ruta que el test no conozca responde **404**: si la pagina
+ * preguntara algo inesperado, el test lo ve como un error en pantalla en vez de
+ * tomar una pantalla vacia por una pantalla correcta.
  */
 
 const VINO: Producto = {
@@ -52,11 +53,56 @@ const VINO: Producto = {
 
 const CARRITO = [{ product: VINO, quantity: 2 }]
 
+/** Token publico que devuelve el checkout y que va en la URL del pedido. */
+const TOKEN = '11111111-2222-3333-4444-555555555555'
+
+const PEDIDO_BASE: PedidoPublico = {
+  orderToken: TOKEN,
+  referencia: '11111111',
+  modo: 'nave',
+  estado: 'pendiente',
+  pagoEstado: 'pendiente',
+  total: 15000,
+  creadoEn: '2026-10-28T12:00:00.000Z',
+  items: [{ nombre: 'Gran Reserva Malbec', cantidad: 2, precio: 7500 }],
+  pago: {
+    estado: 'pendiente',
+    link: 'https://nave.test/pagar/abc',
+    qr: {
+      imagenUrl: 'https://nave.test/pagar/abc/qr.svg',
+      payload: 'NAVE-SIMULADO:abc:15000'
+    },
+    expiraEn: '2026-10-28T13:00:00.000Z'
+  },
+  instrucciones: null
+}
+
+const pedidoPublico = (cambios: Partial<PedidoPublico> = {}): PedidoPublico => ({
+  ...PEDIDO_BASE,
+  ...cambios
+})
+
 let montaje: Montaje | null = null
+
+/** Lo que se mando a `POST /api/orders`, o `null` si no se llamo. */
 let llamado: { url: string; cuerpo: unknown } | null = null
+
+/** Lo que devuelve `POST /api/orders`. Puede ser una promesa (test de espera). */
 let devolver: (url: string) => unknown = () => ({})
-/** El status con el que responde el doble. Cambiarlo es como se prueba el fallo. */
+
+/** El status con el que responde el checkout. Cambiarlo es como se prueba el fallo. */
 let statusRespuesta = 201
+
+/** Lo que devuelve `GET /api/track/:token` y con que status. */
+let pedidoEnLaApi: PedidoPublico = pedidoPublico()
+let statusDelPedido = 200
+let cuerpoDelPedido: unknown = pedidoEnLaApi
+
+/** Cuantas veces se pidio un link nuevo (`POST /api/track/:token/pay`). */
+let reintentos = 0
+/** Se ejecuta antes de responder el reintento, para simular el cambio de estado. */
+let alReintentar: (() => void) | null = null
+
 /**
  * Se guarda la referencia al doble.
  *
@@ -68,10 +114,16 @@ let dobleFetch: ReturnType<typeof vi.fn>
 
 /**
  * jsdom **no** navega: `location.assign` avisa por consola virtual y sigue. Sin
- * este espia, el redirect seria un error rojo en cada test y el aserto de "se
- * fue a Mercado Pago" no tendria nada que mirar.
+ * este espia, el redirect de la tienda al checkout seria un error rojo en cada
+ * test.
  */
 let asignar: ReturnType<typeof vi.fn>
+
+const json = (cuerpo: unknown, status = 200): Response =>
+  new Response(JSON.stringify(cuerpo), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  })
 
 beforeEach(() => {
   localStorage.clear()
@@ -81,34 +133,58 @@ beforeEach(() => {
 
   llamado = null
   devolver = () => ({
+    modo: 'nave',
     orderId: 'ord_1',
+    orderToken: TOKEN,
     preferenceId: 'pref-1',
-    initPoint: 'https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=pref-1',
+    initPoint: 'https://nave.test/pagar/abc',
+    qr: { imagenUrl: 'https://nave.test/pagar/abc/qr.svg', payload: 'NAVE-SIMULADO:abc:15000' },
+    expiraEn: '2026-10-28T13:00:00.000Z',
     total: 15000
   })
   statusRespuesta = 201
 
+  pedidoEnLaApi = pedidoPublico()
+  statusDelPedido = 200
+  cuerpoDelPedido = pedidoEnLaApi
+  reintentos = 0
+  alReintentar = null
+
   dobleFetch = vi.fn(async (url: string, init?: RequestInit) => {
     const ruta = String(url)
+    const metodo = init?.method ?? 'GET'
 
-    if (!ruta.endsWith('/api/orders') || init?.method !== 'POST') {
-      // Cualquier otra consulta es un fallo del test, no un 404 tolerado. El
-      // propio aserto se encarga de detectarlo; el 404 solo evita que un
-      // `await` no manejado tumbe el test con un error que no es el que se
-      // quiere mirar.
-      return new Response(JSON.stringify({ code: 'NOT_FOUND', message: ruta }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      })
+    // --- Reintento del cobro desde la pagina del pedido.
+    if (ruta.includes('/api/track/') && ruta.endsWith('/pay') && metodo === 'POST') {
+      reintentos += 1
+      alReintentar?.()
+      return json(
+        {
+          modo: 'nave',
+          orderId: 'ord_1',
+          orderToken: TOKEN,
+          preferenceId: 'pref-2',
+          initPoint: 'https://nave.test/pagar/nuevo',
+          total: 15000
+        },
+        201
+      )
     }
 
-    llamado = { url: ruta, cuerpo: JSON.parse(String(init.body)) }
-    const respuesta = devolver(ruta)
+    // --- La pagina del pedido consulta su estado.
+    if (ruta.includes('/api/track/') && metodo === 'GET') {
+      return json(cuerpoDelPedido, statusDelPedido)
+    }
 
-    return new Response(JSON.stringify(respuesta), {
-      status: statusRespuesta,
-      headers: { 'Content-Type': 'application/json' }
-    })
+    if (!ruta.endsWith('/api/orders') || metodo !== 'POST') {
+      // Cualquier otra consulta es un fallo del test, no un 404 tolerado.
+      return json({ code: 'NOT_FOUND', message: ruta }, 404)
+    }
+
+    llamado = { url: ruta, cuerpo: JSON.parse(String(init?.body)) }
+    const respuesta = await Promise.resolve(devolver(ruta))
+
+    return json(respuesta, statusRespuesta)
   })
 
   vi.stubGlobal('fetch', dobleFetch)
@@ -133,6 +209,8 @@ afterEach(() => {
   if (montaje !== null) desmontar(montaje)
   montaje = null
 
+  vi.useRealTimers()
+
   Object.defineProperty(window, 'location', {
     configurable: true,
     value: window.location
@@ -147,11 +225,10 @@ const montar = (ruta: string): Montaje => {
   return montaje
 }
 
-/** Espera a que el `fetch` y el `act` se resuelvan. */
+/** Espera a que el `fetch`, el `json()` y los efectos se resuelvan. */
 const resolver = async (): Promise<void> => {
   await act(async () => {
-    await Promise.resolve()
-    await Promise.resolve()
+    for (let i = 0; i < 10; i += 1) await Promise.resolve()
   })
 }
 
@@ -167,6 +244,20 @@ const boton = (m: Montaje): HTMLButtonElement => {
   const encontrado = m.contenedor.querySelector('button[type="submit"]')
   if (!(encontrado instanceof HTMLButtonElement)) throw new Error('No hay boton de envio')
   return encontrado
+}
+
+const buscarBoton = (m: Montaje, texto: string): HTMLButtonElement | null => {
+  const encontrado = [...m.contenedor.querySelectorAll('button')].find(
+    (candidato) => candidato.textContent?.includes(texto) ?? false
+  )
+  return encontrado instanceof HTMLButtonElement ? encontrado : null
+}
+
+const buscarEnlace = (m: Montaje, texto: string): HTMLAnchorElement | null => {
+  const encontrado = [...m.contenedor.querySelectorAll('a')].find(
+    (candidato) => candidato.textContent?.includes(texto) ?? false
+  )
+  return encontrado instanceof HTMLAnchorElement ? encontrado : null
 }
 
 describe('el formulario', () => {
@@ -220,8 +311,8 @@ describe('el formulario', () => {
     const campo = nodo(m, '#checkout-nombre')
     act(() => {
       // `focusout`, no `blur`. Desde React 17 los eventos se enganchan en la raiz
-      // y `onBlur` esta mapeado al `focusout` nativo, que **bu-bblea**; el
-      // `blur` clasico no llega nunca. Despausar `blur` aqui pasaria en verde
+      // y `onBlur` esta mapeado al `focusout` nativo, que **burbujea**; el
+      // `blur` clasico no llega nunca. Despachar `blur` aqui pasaria en verde
       // con un aserto que en el navegador no podria cumplirse.
       campo.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
@@ -231,9 +322,7 @@ describe('el formulario', () => {
     expect(error.textContent).toContain('obligatorio')
     // Esta vez si importa el orden: el mensaje tiene que estar despues del
     // input, porque arriba el usuario tendria que volver a buscar el campo.
-    expect(
-      campo.compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy()
+    expect(campo.compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('un formulario recien abierto no muestra errores', () => {
@@ -290,48 +379,37 @@ describe('lo que se manda', () => {
   })
 })
 
-describe('la ida a Mercado Pago', () => {
-  it('se va a la URL que devuelve la pasarela', async () => {
+describe('despues de crear el pedido', () => {
+  it('navega a /pedido/:token, no a una URL del proveedor', async () => {
     const m = montar('/checkout')
 
     llenar(m)
     pulsarPorTexto(m, 'Finalizar pedido')
     await resolver()
 
-    expect(asignar).toHaveBeenCalledWith(
-      'https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=pref-1'
-    )
-  })
+    // La pagina del pedido es una ruta de la SPA: se puede recargar y no
+    // depende de que el proveedor devuelva a la persona con un query param.
+    const rutas = dobleFetch.mock.calls.map(([url]) => String(url))
+    expect(rutas.some((ruta) => ruta.includes(`/api/track/${TOKEN}`))).toBe(true)
 
-  it('guarda el resumen ANTES de irse', async () => {
-    const m = montar('/checkout')
-
-    llenar(m)
-    pulsarPorTexto(m, 'Finalizar pedido')
-    await resolver()
-
-    // Al volver, esta pagina se recarga desde cero. Sin esto no hay nada que
-    // mostrar y el comprador ve un formulario vacio.
-    const guardado = JSON.parse(sessionStorage.getItem(CLAVE_PEDIDO) ?? '{}')
-
-    expect(guardado.orderId).toBe('ord_1')
-    expect(guardado.total).toBe(15000)
+    // Y el checkout ya no manda a nadie fuera de la tienda.
+    expect(asignar).not.toHaveBeenCalled()
   })
 
   it('el boton dice que esta creando mientras espera', async () => {
     let soltar: (() => void) | null = null
 
-    devolver = () => {
-      return new Promise((resolverPeticion) => {
+    devolver = () =>
+      new Promise((resolverPeticion) => {
         soltar = () =>
           resolverPeticion({
+            modo: 'nave',
             orderId: 'ord_1',
-            preferenceId: 'pref-1',
-            initPoint: 'https://mp.test/x',
+            orderToken: TOKEN,
+            initPoint: 'https://nave.test/pagar/abc',
             total: 15000
           })
-      }) as unknown
-    }
+      })
 
     const m = montar('/checkout')
 
@@ -339,16 +417,17 @@ describe('la ida a Mercado Pago', () => {
     pulsarPorTexto(m, 'Finalizar pedido')
 
     expect(textoDe(m, 'button[type="submit"]')).toContain('Creando')
-    // Y el boton no se puede apretar dos veces: dos pedidos, dos Preferencias,
-    // y solo uno se paga.
+    // Y el boton no se puede apretar dos veces: dos pedidos, dos cobros, y solo
+    // uno se paga.
     expect(boton(m).disabled).toBe(true)
 
     await act(async () => {
       soltar?.()
+      for (let i = 0; i < 10; i += 1) await Promise.resolve()
     })
   })
 
-  it('si la API falla, muestra el error y NO se va a Mercado Pago', async () => {
+  it('si la API falla, muestra el error y NO navega', async () => {
     statusRespuesta = 400
     devolver = () => ({
       code: 'WINE_NOT_AVAILABLE',
@@ -365,12 +444,11 @@ describe('la ida a Mercado Pago', () => {
 
     expect(alertas.length).toBeGreaterThan(0)
     expect(textoDe(m, '[role="alert"]')).toContain('ya no estan disponibles')
-    expect(asignar).not.toHaveBeenCalled()
     // Y el boton vuelve a estar disponible para reintentar.
     expect(boton(m).disabled).toBe(false)
   })
 
-  it('el boton sigue deshabilitado si no se toco un campo', async () => {
+  it('el boton sigue deshabilitado si falta un campo', async () => {
     const m = montar('/checkout')
 
     escribir(m, '#checkout-nombre', 'María')
@@ -381,155 +459,289 @@ describe('la ida a Mercado Pago', () => {
     await resolver()
 
     expect(llamado).toBeNull()
-    expect(asignar).not.toHaveBeenCalled()
   })
 })
 
-describe('al volver con ?pago=aprobado', () => {
-  it('muestra el numero y el total del resumen', () => {
-    guardarResumen({ orderId: 'ord_abc123', total: 15000, items: [] })
-
-    const m = montar('/checkout?pago=aprobado')
+describe('la pagina del pedido', () => {
+  it('muestra el estado real que devuelve la API', async () => {
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
 
     const texto = m.contenedor.textContent ?? ''
 
-    expect(texto).toContain('Pedido confirmado')
-    expect(texto).toContain('ord_abc123')
+    expect(texto).toContain('Tu pedido')
+    expect(texto).toContain('Esperando el pago')
+    expect(texto).toContain('Gran Reserva Malbec')
     expect(texto).toContain('15.000')
+    // La referencia corta, no el id interno (que ni siquiera viaja).
+    expect(texto).toContain('11111111')
   })
 
-  it('NO consulta nada a la API', () => {
-    guardarResumen({ orderId: 'ord_abc123', total: 15000, items: [] })
+  it('con el pago pendiente muestra el QR y el link', async () => {
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
 
-    montar('/checkout?pago=aprobado')
+    const qr = nodo(m, 'img[alt="Código QR para pagar"]') as HTMLImageElement
+    expect(qr.src).toContain('/qr.svg')
 
-    // D-F: un `GET /api/orders/:id` publico devolveria nombre, telefono y
-    // direccion de alguien que no tiene cuenta, con solo conocer el id. La
-    // confirmacion saca el numero y el monto del `sessionStorage`.
-    //
-    // El filtro importa: el `AuthProvider` pide `/api/auth/me` al montar y esa
-    // consulta si ocurre. Afirmar "no se llamo a fetch" seria falso y, peor,
-    // dejaria de comprobar lo unico que esta en juego.
-    const rutas = dobleFetch.mock.calls.map((llamada) => String(llamada[0]))
+    // El payload tambien, para quien paga pegando el codigo en el banco.
+    expect(m.contenedor.textContent ?? '').toContain('NAVE-SIMULADO:abc:15000')
 
-    expect(rutas.filter((ruta) => ruta.includes('/api/orders'))).toEqual([])
+    const enlace = buscarEnlace(m, 'Abrir el link de pago')
+    expect(enlace?.getAttribute('href')).toBe('https://nave.test/pagar/abc')
+    expect(enlace?.getAttribute('target')).toBe('_blank')
   })
 
-  it('sin resumen NO inventa un total', () => {
-    // El comprador abrio la tienda en otra pestana, o borro el almacenamiento.
-    const m = montar('/checkout?pago=aprobado')
+  it('un intento sin link no muestra una tarjeta de pago vacia', async () => {
+    // El proveedor fallo antes de devolver el link: el intento existe pero no
+    // tiene nada que pagar. Mostrar "Escanéalo" sin QR seria una pantalla que
+    // promete algo que no esta; el camino es generar un link nuevo.
+    cuerpoDelPedido = pedidoPublico({
+      pagoEstado: 'no_iniciado',
+      pago: { estado: 'expirado', link: null, qr: null, expiraEn: null }
+    })
 
-    const texto = m.contenedor.textContent ?? ''
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
 
-    expect(texto).toContain('Pedido confirmado')
-    // Lo que no puede es decir "$0" o un numero cualquiera: eso lo lleva al
-    // mostrador.
-    expect(texto).not.toMatch(/\$?\s*0[.,]0{0,2}\b(?!.*No)/)
-    expect(texto).toContain('No encontramos')
+    expect(m.contenedor.textContent ?? '').not.toContain('Pagá ahora')
+    expect(m.contenedor.querySelector('img[alt="Código QR para pagar"]')).toBeNull()
+    expect(buscarBoton(m, 'Generar link nuevo')).not.toBeNull()
   })
 
-  it('no muestra el formulario', () => {
-    guardarResumen({ orderId: 'ord_1', total: 1, items: [] })
+  it('un pago aprobado vacia el carrito', async () => {
+    cuerpoDelPedido = pedidoPublico({
+      pagoEstado: 'aprobado',
+      pago: {
+        estado: 'aprobado',
+        link: null,
+        qr: null,
+        expiraEn: null
+      }
+    })
 
-    const m = montar('/checkout?pago=aprobado')
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
 
-    expect(hay(m, 'form')).toBe(false)
-  })
+    expect(m.contenedor.textContent ?? '').toContain('Pago aprobado')
 
-  it('el boton de volver pide limpiar el almacenamiento', async () => {
-    guardarResumen({ orderId: 'ord_1', total: 15000, items: [] })
-
-    const m = montar('/checkout?pago=aprobado')
-
-    pulsarPorTexto(m, 'Volver a la tienda')
-
-    expect(sessionStorage.getItem(CLAVE_PEDIDO)).toBeNull()
-  })
-
-  it('el carrito SE VACIA cuando el pago se aprueba', () => {
-    // El otro lado del mismo tornillo. El test del caso fallido cubre que el
-    // carrito sobrevive; este cubre que **desaparece** cuando se cobro.
-    //
-    // Sin esto, `alConfirmar` podria dejar de limpiar y pasaria todo: el
-    // comprador paga, vuelve a la tienda con el carrito lleno y puede volver a
-    // pedir lo mismo creyendo que no lo compro. El sandbox de Mercado Pago, que
-    // es donde se hacen las pruebas de verdad, hace volver al mismo pago
-    // varias veces seguidas.
-    guardarResumen({ orderId: 'ord_1', total: 15000, items: [] })
-
-    const m = montar('/checkout?pago=aprobado')
-
-    pulsarPorTexto(m, 'Volver a la tienda')
-
+    // D-D: el carrito se vacia **solo** con el pago aprobado. Si no, el
+    // comprador paga y vuelve a la tienda con el carrito lleno.
     expect(JSON.parse(localStorage.getItem(CLAVE_CARRITO) ?? '[]')).toHaveLength(0)
-  })
-})
 
-describe('al volver con ?pago=fallido', () => {
-  it('avisa y ofrece reintentar', () => {
-    const m = montar('/checkout?pago=fallido')
+    // No se ofrece pagar de nuevo algo que ya se pago.
+    expect(buscarBoton(m, 'Generar link nuevo')).toBeNull()
+    expect(m.contenedor.querySelector('img[alt="Código QR para pagar"]')).toBeNull()
+  })
+
+  it('un pago rechazado avisa y ofrece generar otro link', async () => {
+    cuerpoDelPedido = pedidoPublico({
+      pagoEstado: 'rechazado',
+      pago: {
+        estado: 'rechazado',
+        link: 'https://nave.test/pagar/abc',
+        qr: null,
+        expiraEn: null
+      }
+    })
+
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
 
     const texto = m.contenedor.textContent ?? ''
-
-    expect(texto).toContain('El pago no se completo')
-    expect(hay(m, 'button')).toBe(true)
-  })
-
-  it('NO dice "confirmado"', () => {
-    const m = montar('/checkout?pago=fallido')
-
-    expect(m.contenedor.textContent ?? '').not.toContain('Pedido confirmado')
-  })
-
-  it('no borra el carrito: el comprador puede reintentar', () => {
-    // El carrito se vacia **solo** con el pago aprobado (D-D).
-    guardarResumen({ orderId: 'ord_1', total: 15000, items: [] })
-
-    const m = montar('/checkout?pago=fallido')
-
-    pulsarPorTexto(m, 'Intentar de nuevo')
-
+    expect(texto).toContain('El pago no se completó')
+    expect(buscarBoton(m, 'Generar link nuevo')).not.toBeNull()
+    // El carrito sobrevive: el comprador puede reintentar sin armar el pedido
+    // de nuevo.
     expect(JSON.parse(localStorage.getItem(CLAVE_CARRITO) ?? '[]')).toHaveLength(1)
   })
-})
 
-describe('al volver con ?pago=pendiente', () => {
-  it('dice que se esta procesando, sin numero de pedido', () => {
-    guardarResumen({ orderId: 'ord_1', total: 15000, items: [] })
+  it('un link vencido avisa que vencio, no que fallo el pago', async () => {
+    cuerpoDelPedido = pedidoPublico({
+      pagoEstado: 'expirado',
+      pago: {
+        estado: 'expirado',
+        link: 'https://nave.test/pagar/abc',
+        qr: null,
+        expiraEn: '2020-01-01T00:00:00.000Z'
+      }
+    })
 
-    const m = montar('/checkout?pago=pendiente')
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
+
+    const texto = m.contenedor.textContent ?? ''
+    expect(texto).toContain('El link de pago venció')
+    expect(texto).not.toContain('El pago no se completó')
+    expect(buscarBoton(m, 'Generar link nuevo')).not.toBeNull()
+  })
+
+  it('un intento vencido no deja la pagina diciendo "esperando"', async () => {
+    // El cron de expiracion marca el **intento**, no `Order.pagoEstado`: para el
+    // pedido nadie pago. Si la pagina mirara solo el pedido, mostraria
+    // "Esperando el pago" con un link que ya no sirve.
+    cuerpoDelPedido = pedidoPublico({
+      pagoEstado: 'pendiente',
+      pago: {
+        estado: 'expirado',
+        link: 'https://nave.test/pagar/abc',
+        qr: null,
+        expiraEn: '2020-01-01T00:00:00.000Z'
+      }
+    })
+
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
+
+    const texto = m.contenedor.textContent ?? ''
+    expect(texto).toContain('El link de pago venció')
+    expect(texto).not.toContain('Esperando el pago')
+    expect(buscarBoton(m, 'Generar link nuevo')).not.toBeNull()
+    expect(buscarEnlace(m, 'Abrir el link de pago')).toBeNull()
+  })
+
+  it('el link sigue visible si el pedido expiro pero el link no vencio', async () => {
+    // `expirarPedidosSinPagar` usa la ventana de 10 minutos de Mercado Pago; el
+    // link de Nave vive 30. Entre el minuto 10 y el 30 el pedido esta
+    // `expirado` en el panel pero el comprador todavia puede pagar: ocultarle el
+    // link lo manda a generar otro (o a irse) con uno que funciona.
+    const enUnaHora = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+
+    cuerpoDelPedido = pedidoPublico({
+      pagoEstado: 'expirado',
+      pago: {
+        estado: 'pendiente',
+        link: 'https://nave.test/pagar/vigente',
+        qr: null,
+        expiraEn: enUnaHora
+      }
+    })
+
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
+
+    const texto = m.contenedor.textContent ?? ''
+    expect(texto).toContain('Esperando el pago')
+    expect(texto).not.toContain('El link de pago venció')
+    expect(buscarEnlace(m, 'Abrir el link de pago')?.getAttribute('href')).toBe(
+      'https://nave.test/pagar/vigente'
+    )
+  })
+
+  it('generar un link nuevo pide el cobro y refresca el estado', async () => {
+    cuerpoDelPedido = pedidoPublico({
+      pagoEstado: 'expirado',
+      pago: {
+        estado: 'expirado',
+        link: 'https://nave.test/pagar/viejo',
+        qr: null,
+        expiraEn: null
+      }
+    })
+
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
+
+    alReintentar = () => {
+      cuerpoDelPedido = pedidoPublico({
+        pagoEstado: 'pendiente',
+        pago: {
+          estado: 'pendiente',
+          link: 'https://nave.test/pagar/nuevo',
+          qr: { imagenUrl: 'https://nave.test/pagar/nuevo/qr.svg' },
+          expiraEn: '2026-10-28T14:00:00.000Z'
+        }
+      })
+    }
+
+    pulsarPorTexto(m, 'Generar link nuevo')
+    await resolver()
+
+    expect(reintentos).toBe(1)
+    // El link nuevo sale de la **consulta**, no de la respuesta del reintento:
+    // el estado lo manda la API.
+    expect(buscarEnlace(m, 'Abrir el link de pago')?.getAttribute('href')).toBe(
+      'https://nave.test/pagar/nuevo'
+    )
+    expect(m.contenedor.textContent ?? '').toContain('Esperando el pago')
+  })
+
+  it('un token desconocido no inventa un pedido', async () => {
+    statusDelPedido = 404
+    cuerpoDelPedido = { code: 'NOT_FOUND', message: 'No encontramos ese pedido' }
+
+    const m = montar('/pedido/token-que-no-existe')
+    await resolver()
 
     const texto = m.contenedor.textContent ?? ''
 
-    expect(texto).toContain('procesando')
-    expect(texto).not.toContain('Pedido confirmado')
-  })
-})
-
-describe('una URL sin resultado', () => {
-  it('muestra el formulario, no un estado de pago', () => {
-    const m = montar('/checkout')
-
-    expect(hay(m, 'form')).toBe(true)
+    expect(texto).toContain('No encontramos ese pedido')
+    expect(texto).not.toContain('Pago aprobado')
+    // Sin total inventado: no hay pedido que mostrar.
+    expect(texto).not.toContain('15.000')
   })
 
-  it.each(['?pago=cualquiera', '?otra=cosa'])('%s no inventa un estado', (buscar) => {
-    const m = montar(`/checkout${buscar}`)
+  it('por transferencia muestra los datos y no ofrece link de pago', async () => {
+    cuerpoDelPedido = pedidoPublico({
+      modo: 'transferencia',
+      pagoEstado: 'no_iniciado',
+      pago: null,
+      instrucciones: {
+        titular: 'Vinoteca Cava & Co',
+        alias: 'cava.vinos',
+        cbu: '0000003100010000000001',
+        banco: 'Banco de prueba',
+        monto: 15000,
+        referencia: 'PEDIDO 11111111'
+      }
+    })
+
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
 
     const texto = m.contenedor.textContent ?? ''
 
-    expect(texto).not.toContain('Pedido confirmado')
-    expect(texto).not.toContain('El pago no se completo')
-    expect(texto).not.toContain('se esta procesando')
+    expect(texto).toContain('Pagá por transferencia')
+    expect(texto).toContain('cava.vinos')
+    expect(texto).toContain('0000003100010000000001')
+    expect(texto).toContain('PEDIDO 11111111')
+    // No hay cobro automatico que reintentar.
+    expect(buscarBoton(m, 'Generar link nuevo')).toBeNull()
+    expect(buscarEnlace(m, 'Abrir el link de pago')).toBeNull()
+  })
+
+  it('se actualiza sola cuando el pago se aprueba', async () => {
+    vi.useFakeTimers()
+
+    const m = montar(`/pedido/${TOKEN}`)
+    await resolver()
+
+    expect(m.contenedor.textContent ?? '').toContain('Esperando el pago')
+
+    cuerpoDelPedido = pedidoPublico({
+      pagoEstado: 'aprobado',
+      pago: { estado: 'aprobado', link: null, qr: null, expiraEn: null }
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(INTERVALO_DE_POLLING_MS)
+      for (let i = 0; i < 10; i += 1) await Promise.resolve()
+    })
+
+    expect(m.contenedor.textContent ?? '').toContain('Pago aprobado')
+    // Y ya no sigue preguntando: el estado es terminal.
+    const consultas = dobleFetch.mock.calls.filter(([url]) =>
+      String(url).includes(`/api/track/${TOKEN}`)
+    )
+    expect(consultas).toHaveLength(2)
   })
 })
 
 describe('desde la tienda', () => {
   it('"Finalizar Pedido" NO vacia el carrito', () => {
     // D-D: el carrito se vacia con el pago **aprobado**. Si se vacia aca, el
-    // comprador que cancela en Mercado Pago vuelve a la tienda sin nada y tiene
-    // que armar el pedido de nuevo — y el sandbox de Mercado Pago manda a
-    // "cancelar" seguido muy seguido.
+    // comprador que cancela en la pasarela vuelve a la tienda sin nada y tiene
+    // que armar el pedido de nuevo.
     const m = montar('/')
 
     abrirCarrito(m)

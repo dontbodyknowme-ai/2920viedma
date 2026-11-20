@@ -34,6 +34,7 @@ producción; el estado de arriba se apoya en el código y en la suite de tests,
 no en esos conteos.
 
 La única spec abierta es `010` (stock). La `012` (pagos con Nave) se borró
-por decisión del usuario el 2026-11-20: era borrador y su implementación vive
-en otro clon, no en este repo. `REVISION-CHECKOUT-012.md` y las entradas de
-`MEMORY.md` que la mencionan quedan como registro histórico.
+por decisión del usuario el 2026-11-20: era borrador. Su implementación se
+mergeó después desde `Clon-checkout-mp` (commit `c692977`), pero los docs no
+se restauraron. `REVISION-CHECKOUT-012.md` y las entradas de `MEMORY.md` que la
+mencionan quedan como registro histórico.

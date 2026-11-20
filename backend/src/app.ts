@@ -207,6 +207,71 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     })
   })
 
+  /**
+   * El proveedor de pagos se registra **aca**, y no dentro de `ordersRoutes`.
+   *
+   * La razon es que el modulo de pedidos no sabe nada de Nave ni de Mercado
+   * Pago: recibe un `ProveedorPagos` y trabaja contra esa interfaz. Configurarlo
+   * aca deja la decision de "que usar" en el arranque, donde se pueden ver las
+   * variables, y deja los tests libres de registrar nada (usan el doble).
+   *
+   * Va **antes** de `registerRoutes` porque el simulador de Nave se registra
+   * desde ahi: las rutas de `/pago-simulado/:id` necesitan el mismo objeto que
+   * creo los cobros (`SimuladorNave` es un `Map` en memoria).
+   */
+  const { configurarProveedor, proveedorMercadoPago } = await import('./modules/pagos/proveedor.js')
+
+  if (env.PAGO_MODO === 'nave') {
+    const { crearProveedorNave } = await import('./modules/pagos/nave/index.js')
+
+    const { proveedor, problema } = crearProveedorNave(env.NAVE_MODE, env, {
+      // El link del simulador apunta al **backend**, no al frontend: es la
+      // pagina que sirve este mismo proceso y la que puede cambiar el estado.
+      baseUrl: (env.PUBLIC_API_URL ?? '').replace(/\/+$/, ''),
+      // `mock` en produccion no se registra: el simulador aprueba pedidos sin
+      // cobrar y sin autenticacion (ver `crearProveedorNave`).
+      produccion: env.NODE_ENV === 'production'
+    })
+
+    configurarProveedor(proveedor)
+
+    if (problema !== null) {
+      // No se cae el arranque: se registra el proveedor roto y el checkout
+      // devuelve un 502 con el motivo exacto. Un deploy que no arranca por una
+      // variable que falta es mas dificil de diagnosticar que uno que arranca y
+      // dice cual falta.
+      logger.warn(problema)
+    } else if (env.NAVE_MODE === 'mock') {
+      /**
+       * `mock` fuera de produccion, para poder recorrer el circuito sin
+       * credenciales. En produccion el factory ni siquiera lo registra: si el
+       * aviso llega a verse aca es porque algo cambio y conviene que grite.
+       */
+      logger.warn('Pagos: Nave en modo mock — NO se cobra dinero real')
+    } else {
+      logger.info(`Pagos: Nave (${env.NAVE_MODE})`)
+    }
+  } else if (env.PAGO_MODO === 'mercadopago') {
+    const token = env.MERCADO_PAGO_ACCESS_TOKEN
+
+    if (token !== undefined && token.trim() !== '') {
+      configurarProveedor(proveedorMercadoPago(token.trim()))
+      logger.info('Pagos: Mercado Pago')
+    } else {
+      /**
+       * Sin token **no** se registra nada, y el checkout va a fallar con
+       * "No hay proveedor de pagos configurado". Deliberado: un proveedor mudo
+       * que devuelve un id falso haria que la app pareciera funcionar y que cada
+       * pago quedara colgado esperando una webhook que nunca llega.
+       */
+      logger.warn(
+        'MERCADO_PAGO_ACCESS_TOKEN no esta definido: el checkout va a fallar hasta que se ponga'
+      )
+    }
+  } else {
+    logger.info('Pagos: transferencia (sin cobro automatico)')
+  }
+
   await registerRoutes(fastify)
 
   /**
@@ -225,31 +290,9 @@ export const buildApp = async (): Promise<FastifyInstance> => {
   const detenerCronPedidos = arrancarCronPedidos(fastify.prisma)
 
   /**
-   * El proveedor de pagos se registra **aca**, y no dentro de `ordersRoutes`.
-   *
-   * La razon es que el modulo de pedidos no sabe nada de Mercado Pago: recibe un
-   * `ProveedorPagos` y trabaja contra esa interfaz. Configurarlo aca deja la
-   * decision de "que usar" en el arranque, donde se pueden ver las variables, y
-   * deja los tests libres de registrar nada (usan el doble).
+   * La configuracion del proveedor ya se hizo antes de `registerRoutes`: aca
+   * solo queda el apagado ordenado.
    */
-  const { configurarProveedor, proveedorMercadoPago } = await import('./modules/pagos/proveedor.js')
-
-  const token = env.MERCADO_PAGO_ACCESS_TOKEN
-  if (token !== undefined && token.trim() !== '') {
-    configurarProveedor(proveedorMercadoPago(token.trim()))
-    logger.info('Mercado Pago configurado')
-  } else {
-    /**
-     * Sin token **no** se registra nada, y el checkout va a fallar con
-     * "Mercado Pago no esta configurado". Deliberado: un proveedor mudo que
-     * devuelve un id falso haria que la app pareciera funcionar y que cada pago
-     * quedara colgado esperando una webhook que nunca llega.
-     */
-    logger.warn(
-      'MERCADO_PAGO_ACCESS_TOKEN no esta definido: el checkout va a fallar hasta que se ponga'
-    )
-  }
-
   fastify.addHook('onClose', async () => {
     // El cron se apaga **antes** de desconectar Prisma: si no, el intervalo
     // podria disparar una consulta contra una conexion ya cerrada y dejar un

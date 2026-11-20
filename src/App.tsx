@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { Producto, CartItem } from './types/producto'
 import { Checkout } from './pages/checkout'
+import { Pedido } from './pages/pedido'
 import { PRODUCTOS_INICIALES } from './datos/productos'
 import { Navbar } from './components/barra_de_navegacion'
 import { Hero } from './components/hero'
@@ -63,6 +64,21 @@ function loadCart(): CartItem[] {
 
 function saveCart(cart: CartItem[]) {
   localStorage.setItem(STORAGE_KEY_CART, JSON.stringify(cart))
+}
+
+/**
+ * El token de `/pedido/:token`.
+ *
+ * `decodeURIComponent` **tira** con un `%` mal formado, y una URL la escribe
+ * cualquiera. Un token roto tiene que terminar en la pantalla de "no encontramos
+ * ese pedido", no en un `App` que no renderiza.
+ */
+function tokenDelPedido(pathname: string): string {
+  try {
+    return decodeURIComponent(pathname.slice('/pedido/'.length))
+  } catch {
+    return ''
+  }
 }
 
 export default function App() {
@@ -188,11 +204,22 @@ export default function App() {
   // los salta cambia la cantidad de hooks entre renders y React revienta
   // ("Rendered more hooks than during the previous render").
   if (ubicacion.pathname === '/checkout') {
+    return <Checkout items={cart} />
+  }
+
+  /**
+   * La pagina del pedido (spec 012) tambien vive en `App`.
+   *
+   * El token sale de la URL y se pasa como prop en vez de `useParams`: asi
+   * funciona igual montada por el router que montada directo en un test, y la
+   * URL sigue siendo la unica fuente. `alAprobar` es lo que vacia el carrito:
+   * solo con el pago aprobado (D-D), no al crear el pedido.
+   */
+  if (ubicacion.pathname.startsWith('/pedido/')) {
     return (
-      <Checkout
-        items={cart}
-        alConfirmar={() => {
-          // El carrito se vacia **solo** con el pago aprobado (D-D).
+      <Pedido
+        token={tokenDelPedido(ubicacion.pathname)}
+        alAprobar={() => {
           setCart([])
           setCartOpen(false)
         }}

@@ -214,14 +214,151 @@ export const jsonSchemas = {
           properties: {
             modo: { type: 'string' },
             orderId: { type: 'string' },
+            /**
+             * Token publico (spec 012). Sin el, el frontend no tiene a donde
+             * mandar al comprador despues de crear el pedido: `/pedido/:token`
+             * es la pagina que muestra el link, el QR y el estado real.
+             */
+            orderToken: { type: 'string' },
             preferenceId: { type: 'string' },
             initPoint: { type: 'string' },
+            /**
+             * QR del cobro. Se declara con `additionalProperties: true` porque
+             * el proveedor puede mandar imagen, payload o los dos, y
+             * `fast-json-stringify` recortaria lo que no este declarado.
+             */
+            qr: { type: ['object', 'null'], properties: { imagenUrl: { type: 'string' }, payload: { type: 'string' } }, additionalProperties: true },
+            /** ISO 8601 o `null`: el vencimiento del link. */
+            expiraEn: { type: ['string', 'null'] },
             total: { type: 'number' },
             instrucciones: { type: 'object', additionalProperties: true }
           },
           additionalProperties: true
         },
-        400: errorLibre
+        400: errorLibre,
+        502: errorLibre
+      }
+    },
+    /**
+     * La pagina publica del pedido (spec 012, FR-009).
+     *
+     * Todas las propiedades se declaran —incluidas las anidadas— porque este
+     * schema es lo unico que impide que `fast-json-stringify` devuelva un
+     * pedido vacio. `additionalProperties: true` deja pasar lo que se agregue
+     * despues sin romper la serializacion.
+     */
+    track: {
+      params: {
+        type: 'object',
+        properties: { token: { type: 'string', minLength: 8 } },
+        required: ['token'],
+        additionalProperties: true
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            orderToken: { type: 'string' },
+            referencia: { type: 'string' },
+            modo: { type: 'string' },
+            estado: { type: 'string' },
+            pagoEstado: { type: 'string' },
+            total: { type: 'number' },
+            creadoEn: { type: 'string' },
+            items: { type: 'array' },
+            pago: {
+              type: ['object', 'null'],
+              properties: {
+                estado: { type: 'string' },
+                link: { type: ['string', 'null'] },
+                qr: {
+                  type: ['object', 'null'],
+                  properties: { imagenUrl: { type: 'string' }, payload: { type: 'string' } },
+                  additionalProperties: true
+                },
+                expiraEn: { type: ['string', 'null'] }
+              },
+              additionalProperties: true
+            },
+            instrucciones: { type: ['object', 'null'], additionalProperties: true }
+          },
+          additionalProperties: true
+        },
+        404: errorLibre
+      }
+    },
+    /** El reintento devuelve lo mismo que el 201: link y QR nuevos o vigentes. */
+    trackPay: {
+      params: {
+        type: 'object',
+        properties: { token: { type: 'string', minLength: 8 } },
+        required: ['token'],
+        additionalProperties: true
+      },
+      response: {
+        201: {
+          type: 'object',
+          properties: {
+            modo: { type: 'string' },
+            orderId: { type: 'string' },
+            orderToken: { type: 'string' },
+            preferenceId: { type: 'string' },
+            initPoint: { type: 'string' },
+            qr: {
+              type: ['object', 'null'],
+              properties: { imagenUrl: { type: 'string' }, payload: { type: 'string' } },
+              additionalProperties: true
+            },
+            expiraEn: { type: ['string', 'null'] },
+            total: { type: 'number' },
+            instrucciones: { type: 'object', additionalProperties: true }
+          },
+          additionalProperties: true
+        },
+        400: errorLibre,
+        404: errorLibre,
+        409: errorLibre,
+        502: errorLibre
+      }
+    },
+    /**
+     * La webhook de Nave (spec 012, FR-011).
+     *
+     * `body: objetoLibre()` por la misma razon que la de Mercado Pago: validar
+     * el shape antes de autenticar daria 400 a eventos que no nos interesan y el
+     * proveedor los reintentaria para siempre.
+     */
+    webhookNave: {
+      body: objetoLibre(),
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            received: { type: 'boolean' },
+            applied: { type: 'boolean' },
+            estado: { type: 'string' }
+          },
+          additionalProperties: true
+        },
+        202: objetoLibre(),
+        401: errorLibre,
+        503: errorLibre
+      }
+    },
+    /** Reconciliacion manual (spec 012, FR-020). Solo admin. */
+    reconcile: {
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            vencidos: { type: 'number' },
+            revisados: { type: 'number' },
+            actualizados: { type: 'number' }
+          },
+          additionalProperties: true
+        },
+        401: errorLibre,
+        403: errorLibre
       }
     }
   },

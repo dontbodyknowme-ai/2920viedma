@@ -241,6 +241,18 @@ describe('el estado sale de Mercado Pago, no del cuerpo', () => {
     expect(res.json().applied).toBe(false)
     expect(prismaFalso.order.updateMany).not.toHaveBeenCalled()
   })
+
+  it('`cancelled` no es `rechazado`: el pedido queda donde esta', async () => {
+    // Una cancelacion voluntaria del comprador no es un intento fallido. Antes
+    // se mapeaba a `rechazado`, y el panel contaba como rechazo algo que la
+    // persona decidio no terminar (y el estado quedaba terminal). El comentario
+    // del mapa ya decia que `cancelled` dejaba el pedido quieto; el codigo no.
+    const res = await notificar('cancelled')
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().applied).toBe(false)
+    expect(prismaFalso.order.updateMany).not.toHaveBeenCalled()
+  })
 })
 
 describe('el pago aprobado mueve las metricas del cliente', () => {

@@ -1,11 +1,13 @@
 /**
- * El checkout (spec 009).
+ * El checkout (spec 009 y spec 012).
  *
  * ## Por que vive en `src/pages/` y no dentro de `App.tsx`
  *
  * `App.tsx` tiene el estado del carrito y el drawer. El checkout es un **paso
- * distinto**: tiene URL propia, se puede recargar, y al volver de Mercado Pago
- * el comprador llega por query param (`?pago=aprobado`) sin el carrito en memoria.
+ * distinto**: tiene URL propia y se puede recargar. Despues de crear el pedido,
+ * el comprador pasa a `/pedido/:token` (spec 012), que es la pagina que consulta
+ * el estado real y muestra el link/QR. Ya no hay vuelta por query param: un
+ * `?pago=aprobado` lo escribe cualquiera y no prueba que se haya cobrado.
  *
  * Si viviera en `App.tsx`, recargar en `/checkout` perderia el carrito y el
  * comprador veria un formulario vacio sin saber que paso.
@@ -24,23 +26,55 @@ export interface InstruccionesTransferencia {
   banco?: string
   monto: number
   referencia: string
-  codigo?: string
-  qrUrl?: string
-  linkCobro?: string
 }
 
 /** Lo que el backend devuelve al crear el pedido. */
 export interface PedidoCreado {
-  modo?: 'transferencia' | 'mercadopago' | 'nave' | 'naranja_x'
+  modo?: 'transferencia' | 'mercadopago' | 'nave'
   orderId: string
+  /**
+   * Token publico del pedido (spec 012). Es la llave de `/pedido/:token`: el
+   * `orderId` interno no se usa para armar URLs publicas.
+   */
+  orderToken: string
   /** Solo cuando modo es mercado pago */
   preferenceId?: string
-  /** La URL de Mercado Pago. Se usa tal cual: armarla a mano es fragile. */
+  /** La URL del checkout. Se usa tal cual: armarla a mano es fragile. */
   initPoint?: string
+  /** QR del cobro, si el proveedor lo devuelve (spec 012). */
+  qr?: { imagenUrl?: string; payload?: string }
+  /** Vencimiento del link/QR en ISO 8601, o `null`. */
+  expiraEn?: string | null
   /** Pesos enteros. Es **el** numero, el mismo que guardo el backend. */
   total: number
-  /** Solo cuando modo es transferencia, nave o naranja_x */
+  /** Solo cuando modo es transferencia */
   instrucciones?: InstruccionesTransferencia
+}
+
+/**
+ * La vista publica del pedido (`GET /api/track/:token`).
+ *
+ * Es lo que la pagina del pedido puede mostrar sin sesion: sus items, el total,
+ * el estado del pago y el link/QR. **No** trae el email, el telefono ni la
+ * direccion del comprador, y tampoco el `orderId` interno.
+ */
+export interface PedidoPublico {
+  orderToken: string
+  /** Referencia corta para mostrar en pantalla y en el comprobante. */
+  referencia: string
+  modo: 'nave' | 'mercadopago' | 'transferencia'
+  estado: string
+  pagoEstado: 'no_iniciado' | 'pendiente' | 'aprobado' | 'rechazado' | 'expirado'
+  total: number
+  creadoEn: string
+  items: { nombre: string; cantidad: number; precio: number }[]
+  pago: {
+    estado: string
+    link: string | null
+    qr: { imagenUrl?: string; payload?: string } | null
+    expiraEn: string | null
+  } | null
+  instrucciones: InstruccionesTransferencia | null
 }
 
 /** Lo que pide el backend, sin precios. */
@@ -50,65 +84,4 @@ export interface DatosDelComprador {
   telefono: string
   email: string
   direccion: string
-}
-
-/**
- * La clave de `sessionStorage` donde queda el resumen del pedido.
- *
- * **`sessionStorage` y no `localStorage`** a proposito: esto es de **esta** compra.
- * En un computer compartido, un `localStorage` dejaria el numero de pedido de la
- * compra de otra persona a la vista del siguiente que abre la pestana —con el
- * nombre y el total dentro.
- *
- * Se borra en cuanto la confirmacion se muestra.
- */
-export const CLAVE_PEDIDO = 'vinoteca_pedido'
-
-/** Lo que se guarda mientras el comprador esta en Mercado Pago. */
-export interface ResumenDelPedido {
-  orderId: string
-  total: number
-  items: ItemDelCheckout[]
-}
-
-/**
- * Guarda el resumen para poder mostrar la confirmacion al volver.
- *
- * Se guarda **antes** de redirigir, porque al volver de Mercado Pago esta
- * pagina se recarga desde cero: sin esto, no hay nada que mostrar.
- */
-export const guardarResumen = (resumen: ResumenDelPedido): void => {
-  sessionStorage.setItem(CLAVE_PEDIDO, JSON.stringify(resumen))
-}
-
-export const leerResumen = (): ResumenDelPedido | null => {
-  const crudo = sessionStorage.getItem(CLAVE_PEDIDO)
-  if (crudo === null) return null
-
-  try {
-    const dato = JSON.parse(crudo) as unknown
-    if (typeof dato !== 'object' || dato === null) return null
-
-    const { orderId, total } = dato as Record<string, unknown>
-    if (typeof orderId !== 'string' || typeof total !== 'number') return null
-
-    return { orderId, total, items: [] }
-  } catch {
-    // Un JSON corrupto no puede romper la pagina: sin resumen, la confirmacion
-    // dice que no lo encuentra. Inventarse un total seria peor.
-    return null
-  }
-}
-
-export const borrarResumen = (): void => {
-  sessionStorage.removeItem(CLAVE_PEDIDO)
-}
-
-/** El estado del pago, tal como viene en el query param al volver. */
-export type ResultadoDelPago = 'aprobado' | 'fallido' | 'pendiente' | null
-
-export const resultadoDeLaUrl = (buscar: string): ResultadoDelPago => {
-  const valor = new URLSearchParams(buscar).get('pago')
-  if (valor === 'aprobado' || valor === 'fallido' || valor === 'pendiente') return valor
-  return null
 }

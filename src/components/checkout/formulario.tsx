@@ -191,7 +191,7 @@ export const FormularioCheckout = ({
       </button>
 
       <p className='text-center text-xs text-neutral-500'>
-        Pago por transferencia bancaria. No hace falta crear cuenta ni guardar contrasena.
+        No hace falta crear cuenta ni guardar contraseña. Al confirmar te mostramos cómo pagar.
       </p>
     </form>
   )

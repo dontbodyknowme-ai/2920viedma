@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { DatosDelComprador, ItemDelCheckout, PedidoCreado } from '../types/checkout'
+import type { DatosDelComprador, ItemDelCheckout, PedidoCreado, PedidoPublico } from '../types/checkout'
 
 /**
  * `POST /api/orders` — el checkout.
@@ -26,6 +26,24 @@ export const crearPedido = async (
 
   return res
 }
+
+/**
+ * `GET /api/track/:token` — el estado publico del pedido (spec 012).
+ *
+ * El token viene de la URL. No hay sesion: es lo unico que el comprador
+ * necesita para volver a ver su pedido, incluso desde otro dispositivo.
+ */
+export const consultarPedido = (token: string): Promise<PedidoPublico> =>
+  api.get<PedidoPublico>(`/api/track/${encodeURIComponent(token)}`)
+
+/**
+ * `POST /api/track/:token/pay` — reintenta el cobro.
+ *
+ * Devuelve lo mismo que el checkout: link y QR. Si el link anterior sigue
+ * vigente, el backend devuelve **ese** en vez de crear otro cobro.
+ */
+export const reintentarPago = (token: string): Promise<PedidoCreado> =>
+  api.post<PedidoCreado>(`/api/track/${encodeURIComponent(token)}/pay`, {})
 
 /** El mensaje de un error de la API, o el generico si no se puede leer. */
 export const mensajeDeErrorDeCheckout = (error: unknown): string => {

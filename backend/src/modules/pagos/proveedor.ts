@@ -77,6 +77,16 @@ export interface SolicitudPreference {
 export interface PreferenceCreada {
   id: string
   initPoint: string
+  /**
+   * QR del cobro, si el proveedor lo devuelve (spec 012).
+   *
+   * Opcional a proposito: Mercado Pago no lo manda —su QR vive dentro de su
+   * pagina— y Nave puede mandarlo como imagen, como payload o no mandarlo.
+   * Hacerlo obligatorio obligaria a los dos proveedores a inventar un valor.
+   */
+  qr?: { imagenUrl?: string; payload?: string }
+  /** Vencimiento del link/QR, ISO 8601. `null` si el proveedor no lo informa. */
+  expiraEn?: string | null
 }
 
 /**
@@ -124,7 +134,14 @@ export class ProveedorPagosFalso implements ProveedorPagos {
 
     return {
       id: `pref-falsa-${this.solicitudes.length}`,
-      initPoint: `https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=pref-falsa-${this.solicitudes.length}`
+      initPoint: `https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=pref-falsa-${this.solicitudes.length}`,
+      // El doble tambien devuelve QR: el circuito automatizado (link + QR) se
+      // prueba contra el mismo camino de codigo que en produccion.
+      qr: {
+        imagenUrl: `https://checkout.falso/qr-${this.solicitudes.length}.svg`,
+        payload: `PREF-FALSA:${this.solicitudes.length}`
+      },
+      expiraEn: new Date(Date.now() + 30 * 60 * 1000).toISOString()
     }
   }
 
@@ -146,10 +163,10 @@ export class ProveedorPagosFalso implements ProveedorPagos {
  */
 const SIN_CONFIGURAR: ProveedorPagos = {
   async crearPreference() {
-    throw new Error('Mercado Pago no esta configurado')
+    throw new Error('No hay proveedor de pagos configurado')
   },
   async estadoDe(pagoId: string) {
-    throw new Error(`Mercado Pago no esta configurado (pago ${pagoId})`)
+    throw new Error(`No hay proveedor de pagos configurado (pago ${pagoId})`)
   }
 }
 

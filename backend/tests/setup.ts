@@ -52,8 +52,9 @@ process.env.STORAGE_SECRET_KEY ??= 'test-secret-key'
 process.env.STORAGE_PUBLIC_URL ??= 'http://localhost:9000/wine-images'
 process.env.PUBLIC_API_URL ??= 'http://localhost:3000'
 // El checkout se prueba contra la pasarela (ProveedorPagosFalso), asi que el
-// modo tiene que ser 'mercadopago': en 'transferencia'/'nave' no se crea
-// Preference y los tests de la Preference fallan por el motivo equivocado.
+// modo tiene que ser 'mercadopago': con 'transferencia' no se crea cobro y los
+// tests fallan por el motivo equivocado. `checkout_nave.test.ts` pisa la
+// variable a 'nave' + 'mock' en su propio archivo.
 process.env.PAGO_MODO ??= 'mercadopago'
 
 const hasTestDb = !!process.env.DATABASE_URL_TEST
