@@ -1,13 +1,10 @@
 import { FastifyInstance } from 'fastify'
-import type { Prisma } from '@prisma/client'
 import { jsonSchemas } from '../../shared/json-schemas.js'
 import { requireRole } from '../auth/middleware.js'
 import { orderCreateSchema } from '../../shared/schemas.js'
 import { env } from '../../config/env.js'
 import { crearPedido, aplicarPago, obtenerPedidoPublico, reintentarPago } from './service.js'
-import { verificarFirmaWebhook, compararSecreto } from './firma.js'
-import { reconciliarPagosPendientes } from './cron.js'
-import { logger } from '../../utils/logger.js'
+import { verificarFirmaWebhook } from './firma.js'
 
 /** La URL publica del backend, que es la unica que un proveedor puede llamar. */
 const urlDeWebhook = (ruta: string): string =>
@@ -26,61 +23,6 @@ const urlDeWebhook = (ruta: string): string =>
  * —descartarla es perder un pago— pero tampoco queda sin techo.
  */
 const TRACK_RATE_MAX = 120
-const WEBHOOK_RATE_MAX = 300
-
-/**
- * El id del cobro segun Nave, sin inventar un shape.
- *
- * La documentacion oficial no esta (`[A CONFIRMAR]`, T001), asi que se aceptan
- * los nombres que un proveedor de pagos suele usar. **No** se acepta el estado:
- * el estado se pregunta a la API con ese id, igual que en Mercado Pago. Un
- * cuerpo con `status: approved` adentro no acredita nada.
- */
-const idDeCobro = (cuerpo: unknown): string | null => {
-  if (typeof cuerpo !== 'object' || cuerpo === null) return null
-
-  const raiz = cuerpo as Record<string, unknown>
-  const datos =
-    typeof raiz.data === 'object' && raiz.data !== null ? (raiz.data as Record<string, unknown>) : {}
-
-  const candidatos = [
-    datos.id,
-    datos.payment_id,
-    datos.paymentId,
-    raiz.id,
-    raiz.payment_id,
-    raiz.paymentId,
-    raiz.resource_id
-  ]
-
-  for (const candidato of candidatos) {
-    if (typeof candidato === 'string' && candidato.trim() !== '') return candidato
-    if (typeof candidato === 'number' && Number.isFinite(candidato)) return String(candidato)
-  }
-
-  return null
-}
-
-/**
- * El secreto compartido del webhook, de las cabeceras.
- *
- * ## Por que **no** se acepta `?secret=`
- *
- * Porque la URL queda en el log del request y en el del proxy: el secreto del
- * webhook terminaria escrito en cada linea de log. Si Nave solo soporta query
- * (no esta confirmado), es una decision pendiente de T001, no algo para resolver
- * aceptando el secreto en un lugar del que no se puede borrar.
- */
-const secretoDelWebhook = (cabeceras: Record<string, unknown>): string | undefined => {
-  const directo = cabeceras['x-nave-secret'] ?? cabeceras['x-webhook-secret']
-  if (typeof directo === 'string') return directo
-
-  const autorizacion = cabeceras.authorization
-  if (typeof autorizacion !== 'string') return undefined
-
-  const [esquema, valor] = autorizacion.split(' ')
-  return esquema?.toLowerCase() === 'bearer' ? valor : undefined
-}
 
 export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
   const { prisma } = fastify
@@ -197,111 +139,11 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
       // checkout falla con un error claro en vez de mandar una Preference sin
       // `notification_url`, que es el fallo invisible: el pedido queda esperando
       // pago para siempre sin que nadie sepa por que.
-      const webhookUrl = urlDeWebhook(
-        env.PAGO_MODO === 'nave' ? '/api/orders/webhook/nave' : '/api/orders/webhook'
-      )
+      const webhookUrl = urlDeWebhook('/api/orders/webhook')
 
       const resultado = await crearPedido(prisma, request.body, webhookUrl)
 
       return reply.status(201).send(resultado)
-    }
-  )
-
-  /**
-   * `POST /api/orders/webhook/nave` — la notificacion de Nave (spec 012, FR-011).
-   *
-   * Mismas tres reglas que la de Mercado Pago, por los mismos motivos:
-   *
-   * 1. **Se autentica antes de tocar la base.** El secreto compartido se compara
-   *    en tiempo constante.
-   * 2. **El estado no sale del cuerpo.** Solo se toma el id del cobro y se
-   *    pregunta a la API.
-   * 3. **Se guarda el evento antes de procesarlo.** Si el procesamiento falla,
-   *    queda `processed = false` como rastro de que el proveedor aviso. La
-   *    reconciliacion **no relee este evento**: vuelve a preguntar por el
-   *    `PaymentAttempt`, que sigue `pendiente` con su `referenciaExterna`, y
-   *    `aplicarPago` es idempotente. La fuente de verdad es el intento, no la
-   *    notificacion.
-   *
-   * Sin secreto configurado responde `503`: aceptar notificaciones que no se
-   * pueden validar es peor que rechazarlas.
-   */
-  fastify.post(
-    '/api/orders/webhook/nave',
-    {
-      config: {
-        rateLimit: {
-          max: WEBHOOK_RATE_MAX,
-          timeWindow: env.RATE_LIMIT_WINDOW,
-          keyGenerator: (request) => request.ip
-        }
-      },
-      schema: jsonSchemas.orders.webhookNave
-    },
-    async (request, reply) => {
-      const secreta = env.NAVE_WEBHOOK_SECRET
-
-      if (secreta === undefined || secreta.trim() === '') {
-        return reply.status(503).send({
-          code: 'WEBHOOK_NOT_CONFIGURED',
-          message: 'La webhook de Nave no esta configurada'
-        })
-      }
-
-      const recibida = secretoDelWebhook(request.headers as Record<string, unknown>)
-
-      if (!compararSecreto(recibida, secreta)) {
-        return reply.status(401).send({
-          code: 'INVALID_SIGNATURE',
-          message: 'Firma de la notificacion invalida'
-        })
-      }
-
-      const pagoId = idDeCobro(request.body)
-
-      /**
-       * Un evento sin id no es accionable, pero tampoco es un error del que el
-       * proveedor tenga que enterarse: se acepta y no se toca nada. Devolver
-       * 4xx haria que lo reintente para siempre por algo que nunca vamos a poder
-       * procesar.
-       */
-      if (pagoId === null) {
-        return reply.status(202).send({ received: true, applied: false })
-      }
-
-      const evento = await prisma.webhookEvent.create({
-        data: {
-          proveedor: 'nave',
-          referencia: pagoId,
-          payload: request.body as Prisma.InputJsonValue
-        },
-        select: { id: true }
-      })
-
-      try {
-        const resultado = await aplicarPago(prisma, pagoId, 'Nave')
-
-        await prisma.webhookEvent.update({
-          where: { id: evento.id },
-          data: { processed: true }
-        })
-
-        return reply.status(200).send({
-          received: true,
-          applied: resultado.aplicado,
-          estado: resultado.estado
-        })
-      } catch (error: unknown) {
-        /**
-         * El evento **queda guardado** con `processed = false` a proposito: es
-         * la unica prueba de que el proveedor aviso. No lo relee nadie; lo que
-         * se reintenta es el intento de pago (`reconciliarPagosPendientes`), que
-         * sigue `pendiente` y tiene `referenciaExterna`. Borrar el evento seria
-         * perder el rastro sin ganar nada.
-         */
-        logger.error({ err: error, pagoId }, 'no se pudo procesar la webhook de Nave')
-        throw error
-      }
     }
   )
 
@@ -351,9 +193,7 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
     async (request, reply) => {
       const { token } = request.params as { token: string }
 
-      const webhookUrl = urlDeWebhook(
-        env.PAGO_MODO === 'nave' ? '/api/orders/webhook/nave' : '/api/orders/webhook'
-      )
+      const webhookUrl = urlDeWebhook('/api/orders/webhook')
 
       const resultado = await reintentarPago(prisma, token, webhookUrl)
 
@@ -361,23 +201,7 @@ export const ordersRoutes = async (fastify: FastifyInstance): Promise<void> => {
     }
   )
 
-  /**
-   * `POST /api/orders/reconcile` — reconciliacion manual (spec 012, FR-020).
-   *
-   * Existe ademas del cron para poder destrabar un deploy sin esperar el
-   * intervalo, y para ver el resultado de una pasada. Solo `admin`: recorre
-   * pedidos y llama al proveedor.
-   */
-  fastify.post(
-    '/api/orders/reconcile',
-    {
-      preHandler: requireRole('admin'),
-      schema: jsonSchemas.orders.reconcile
-    },
-    async () => reconciliarPagosPendientes(prisma)
-  )
-
-  fastify.get(
+fastify.get(
     '/api/orders',
     {
       preHandler: requireRole('admin', 'gestor', 'vendedor'),

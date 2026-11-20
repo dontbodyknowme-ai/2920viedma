@@ -321,46 +321,6 @@ export const jsonSchemas = {
         502: errorLibre
       }
     },
-    /**
-     * La webhook de Nave (spec 012, FR-011).
-     *
-     * `body: objetoLibre()` por la misma razon que la de Mercado Pago: validar
-     * el shape antes de autenticar daria 400 a eventos que no nos interesan y el
-     * proveedor los reintentaria para siempre.
-     */
-    webhookNave: {
-      body: objetoLibre(),
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            received: { type: 'boolean' },
-            applied: { type: 'boolean' },
-            estado: { type: 'string' }
-          },
-          additionalProperties: true
-        },
-        202: objetoLibre(),
-        401: errorLibre,
-        503: errorLibre
-      }
-    },
-    /** Reconciliacion manual (spec 012, FR-020). Solo admin. */
-    reconcile: {
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            vencidos: { type: 'number' },
-            revisados: { type: 'number' },
-            actualizados: { type: 'number' }
-          },
-          additionalProperties: true
-        },
-        401: errorLibre,
-        403: errorLibre
-      }
-    }
   },
   customers: {
     list: {

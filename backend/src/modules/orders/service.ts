@@ -18,7 +18,7 @@ import { env } from '../../config/env.js'
 const ES_UNIQUE = 'P2002'
 
 export interface ResultadoCheckout {
-  modo?: 'transferencia' | 'mercadopago' | 'nave'
+  modo?: 'transferencia' | 'mercadopago'
   orderId: string
   /**
    * Token publico del pedido (spec 012, FR-009).
@@ -477,7 +477,7 @@ export interface PedidoPublico {
   orderToken: string
   /** Referencia corta para mostrar y para el comprobante. No es el id interno. */
   referencia: string
-  modo: 'nave' | 'mercadopago' | 'transferencia'
+  modo: 'mercadopago' | 'transferencia'
   estado: string
   pagoEstado: EstadoPago
   total: number
@@ -511,7 +511,7 @@ export const obtenerPedidoPublico = async (
   const ultimo = pedido.attempts[0]
 
   const modo: PedidoPublico['modo'] =
-    ultimo === undefined ? 'transferencia' : ultimo.proveedor === 'mercadopago' ? 'mercadopago' : 'nave'
+    ultimo === undefined ? 'transferencia' : 'mercadopago'
 
   const instrucciones =
     modo !== 'transferencia'
@@ -621,7 +621,7 @@ export const reintentarPago = async (
 
   if (vigente) {
     return {
-      modo: env.PAGO_MODO === 'nave' ? 'nave' : 'mercadopago',
+      modo: 'mercadopago',
       orderId: pedido.id,
       orderToken: pedido.publicToken,
       total: pedido.total,
@@ -662,7 +662,7 @@ export const reintentarPago = async (
   )
 
   return {
-    modo: env.PAGO_MODO === 'nave' ? 'nave' : 'mercadopago',
+    modo: 'mercadopago',
     orderId: pedido.id,
     orderToken: pedido.publicToken,
     total: pedido.total,
@@ -807,7 +807,7 @@ export const crearPedido = async (
   )
 
   return {
-    modo: env.PAGO_MODO === 'nave' ? 'nave' : 'mercadopago',
+    modo: 'mercadopago',
     orderId: pedido.id,
     orderToken,
     total,

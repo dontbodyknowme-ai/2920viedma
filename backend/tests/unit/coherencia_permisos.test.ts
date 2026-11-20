@@ -208,7 +208,6 @@ describe('los roles de cada endpoint son los declarados aca', () => {
      * intento pendiente. Es una operacion de mantenimiento, no de mostrador:
      * solo `admin`, igual que las metricas.
      */
-    'POST /api/orders/reconcile': ['admin'],
     'GET /api/customers': ['admin', 'gestor'],
     'GET /api/customers/:id': ['admin', 'gestor'],
     'PATCH /api/customers/:id': ['admin', 'gestor'],

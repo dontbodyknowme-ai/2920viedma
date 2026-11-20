@@ -30,7 +30,7 @@ export interface InstruccionesTransferencia {
 
 /** Lo que el backend devuelve al crear el pedido. */
 export interface PedidoCreado {
-  modo?: 'transferencia' | 'mercadopago' | 'nave'
+  modo?: 'transferencia' | 'mercadopago'
   orderId: string
   /**
    * Token publico del pedido (spec 012). Es la llave de `/pedido/:token`: el
@@ -62,7 +62,7 @@ export interface PedidoPublico {
   orderToken: string
   /** Referencia corta para mostrar en pantalla y en el comprobante. */
   referencia: string
-  modo: 'nave' | 'mercadopago' | 'transferencia'
+  modo: 'mercadopago' | 'transferencia'
   estado: string
   pagoEstado: 'no_iniciado' | 'pendiente' | 'aprobado' | 'rechazado' | 'expirado'
   total: number

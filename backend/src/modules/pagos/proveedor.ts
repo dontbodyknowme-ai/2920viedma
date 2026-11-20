@@ -81,7 +81,7 @@ export interface PreferenceCreada {
    * QR del cobro, si el proveedor lo devuelve (spec 012).
    *
    * Opcional a proposito: Mercado Pago no lo manda —su QR vive dentro de su
-   * pagina— y Nave puede mandarlo como imagen, como payload o no mandarlo.
+   * pagina— y el proveedor puede mandarlo como imagen, como payload o no mandarlo.
    * Hacerlo obligatorio obligaria a los dos proveedores a inventar un valor.
    */
   qr?: { imagenUrl?: string; payload?: string }

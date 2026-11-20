@@ -82,7 +82,8 @@ const linkVigente = (pago: NonNullable<PedidoPublico['pago']>): boolean => {
  * ## Dos relojes distintos
  *
  * `expirarPedidosSinPagar` marca el **pedido** como `expirado` a los 10 minutos,
- * que es la ventana de Mercado Pago. El link de Nave vive 30. Si la pagina se
+ * que es la ventana de Mercado Pago. El link del cobro puede tener otra
+ * ventana (`expiraEn`). Si la pagina se
  * guiara solo por `Order.pagoEstado`, al minuto 15 diria "el link vencio" y
  * esconderia un link que funciona: el comprador generaria otro (o se iria)
  * mientras el suyo todavia sirve.
@@ -422,23 +423,7 @@ export const Pedido = ({ token, alAprobar }: PedidoProps) => {
               Pagá ahora
             </h2>
 
-            <div className={pedido.modo === 'nave' ? 'mt-5 grid gap-6 sm:grid-cols-[180px_minmax(0,1fr)]' : 'mt-5'}>
-  {pedido.modo === 'nave' && (
-              <div className='flex flex-col items-center gap-2'>
-                {pedido.pago?.qr?.imagenUrl !== undefined ? (
-                  <img
-                    src={pedido.pago.qr.imagenUrl}
-                    alt='Código QR para pagar'
-                    className='h-44 w-44 rounded-xl border border-neutral-700 bg-white p-2'
-                  />
-                ) : (
-                  <div className='flex h-44 w-44 items-center justify-center rounded-xl border border-dashed border-neutral-700 text-center text-xs text-neutral-500'>
-                    El QR se muestra en la app del banco
-                  </div>
-                )}
-                <span className='text-[11px] uppercase tracking-widest text-neutral-500'>Escanéalo</span>
-              </div>
-  )}
+            <div className='mt-5'>
 
 <div className='space-y-4'>
                 {pedido.pago?.link !== null && pedido.pago?.link !== undefined && (

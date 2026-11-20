@@ -81,14 +81,13 @@
 - `DateRangePicker` con react-day-picker v9 (tema oscuro, dos meses)
 - Offline: `src/utils/offline.ts` guarda último response por URL; banner `AvisoOffline` + "Reintentar"
 
-## Checkout — spec 009 (Mercado Pago) y spec 012 (Nave)
+## Checkout (Mercado Pago)
 
-> El checkout nace en la 009 con **Mercado Pago**; la 012 agregó el circuito
-> automático con **Nave (Banco Galicia)** y la página `/pedido/:token`.
-> **`PAGO_MODO` define el proveedor activo**: `transferencia` · `mercadopago` ·
-> `nave`. En este repo el modo elegido es `mercadopago` (sin credenciales
-> todavía: `MERCADO_PAGO_ACCESS_TOKEN` y `MERCADO_PAGO_WEBHOOK_SECRET` se cargan
-> en Render cuando lleguen). El código de Nave queda disponible pero inactivo.
+> El cobro se hace **siempre con la cuenta de Mercado Pago** (`PAGO_MODO=mercadopago`).
+> El circuito es carrito → `/checkout` → `POST /api/orders` (crea el pedido, un
+> `PaymentAttempt` y la Preference) → `/pedido/:token`. La pagina del pedido
+> consulta `GET /api/track/:token` y la webhook `/api/orders/webhook` aplica el
+> pago. No hay Nave ni credenciales de Nave: el proveedor es uno solo.
 
 **El comprador NO tiene cuenta.** No hay login de comprador, ni registro, ni
 contraseña. El formulario pide cinco datos (nombre, apellido, teléfono, email,
@@ -160,44 +159,6 @@ bien: para eso existe el merge.
 
 **Lo que NO se pudo probar:** que Mercado Pago acepte la Preference y que la
 webhook llegue de verdad. Necesita credencial real.
-
-### Nave (spec 012)
-
-**El cobro lo crea el backend, no una persona.** `POST /api/orders` pide el cobro
-al proveedor y devuelve `initPoint` (link) + `qr` + `expiraEn`. No hay datos de
-cobro cargados a mano: el modo "nave manual" (`NAVE_CODIGO_COBRO`, `NAVE_QR_URL`,
-`NAVE_LINK_COBRO`) **se eliminó**, porque un QR estático no sabe a qué pedido
-pertenece ni cuánto se pagó.
-
-- **`Order.publicToken`**: UUID público, `@unique`, separado del `id` interno. Es
-  la llave de `/pedido/:token` (SPA) y de `GET /api/track/:token`. Esa respuesta
-  **no** lleva email, teléfono, dirección ni `orderId`.
-- **`PaymentAttempt`**: un pedido puede tener varios intentos (link vencido,
-  rechazo, reintento). `referenciaExterna` es el id del cobro en el proveedor y
-  es `@unique`.
-- **`POST /api/track/:token/pay`**: si el intento vigente sigue sirviendo
-  devuelve **ese** y no crea otro cobro.
-- **`POST /api/orders/webhook/nave`**: secreto por header, `timingSafeEqual`,
-  `503` si no hay secreto, y el estado se **pregunta** a la API. El evento se
-  guarda en `WebhookEvent` **antes** de procesarlo, pero la fuente de verdad para
-  reintentar es el `PaymentAttempt` (la reconciliación no relee el evento).
-- **`aplicarPago` se reusa tal cual.** El webhook de Nave, la reconciliación y el
-  simulador pasan por la misma transición condicional; no hay una segunda
-  función de confirmación.
-- **`NAVE_MODE=mock`** usa `SimuladorNave` (un `Map` en memoria) y registra
-  `/pago-simulado/:id`, que aprueba pedidos de verdad por `aplicarPago`. **No se
-  registra con `NODE_ENV=production`** (ver gotcha 43).
-- **Dos relojes:** el pedido se expira a los 10 min (ventana de Mercado Pago) y
-  el link de Nave vive 30. La página del pedido manda por el **intento**: si
-  sigue `pendiente` y no pasó su `expiraEn`, muestra el link aunque el pedido
-  figure `expirado` en el panel.
-- **`money.ts` es el único lugar donde se convierte la unidad.** Hoy es la
-  identidad porque no está confirmado que Nave use centavos (T001); el día que
-  se confirme, el cambio es `* 100` / `/ 100` ahí y en ningún otro archivo.
-
-**Lo que NO se pudo probar (012):** que Nave acepte el cobro, la unidad de dinero
-real ni el formato de la respuesta. El cliente HTTP (`nave/http.ts`) está escrito
-contra suposiciones y falla cerrado si falta configuración.
 
 ## Paleta de colores (fuente única: `tailwind.config.js`)
 
@@ -427,5 +388,3 @@ servidor) sino **interceptando `fetch`**, no el módulo `api`:
 40. **`[System.IO.File]::WriteAllText` con `$null` BORRA el archivo** (2026-10-16). El `.NET current directory` de PowerShell **no** sigue al `cd`: un `[System.IO.File]::ReadAllText("src/app.ts")` desde `backend/` busca en la raíz y tira, `$c` queda en `$null`, y la línea siguiente escribe **un archivo vacío**. Pasó dos veces en una tarde: un `src/app.ts` de 0 bytes que rompía el typecheck con `TS1149: differs ... only in casing`, y **`AGENTS.md` de 0 bytes**. **Nunca escribir un archivo con una variable que pueda estar en `$null`, y siempre usar rutas absolutas en `[System.IO.File]`** — o mejor, la herramienta de edición, que no tiene ninguno de los dos problemas.
 41. **El querystring NO lo valida Zod, y un `transform` suyo nunca corre** (2026-10-16, fix del filtro de pedidos). `app.ts` compila `toJsonSchema(schema)` y lo pasa a **AJV**; `request.query` es lo que AJV dejó, no el resultado de `zod.parse`. O sea que poner la lógica en un `.transform()` —partir una cadena, normalizar un enum— es escribir código que **no se ejecuta**, y el síntoma es un 400 o un filtro que no filtra, sin error de compilación que lo delate. Por eso los filtros de lista van como **lista**: `?status=pendiente&status=enviado` con `z.array(z.enum([...]))`, que `zod-to-json-schema` sí expresa, y AJV lo resuelve porque corre con `coerceTypes` (por eso `?page=3` llega como `3` y no como `"3"`). Una cadena con comas **no** se puede expresar en un `enum` de JSON Schema. Regla: **si el valor viene del query string, la lógica va en el handler, no en el schema.**
 42. **Un filtro con dos mecanismos que se contradicen se rompe sin avisar** (2026-10-16). El filtro de estados era multi-select en el panel desde el 004-a y aceptaba **un** estado en el backend desde el 004-b. Una casilla andaba, dos daban 400, y en pantalla **no se veía nada**: el filtro se cerraba solo y la tabla seguía mostrando lo de antes. Un `400` en un fetch del panel es un error que el panel **no muestra**, porque `usePedidos` no distingue un fallo de red de un filtro mal armado. La defensa son los dos lados: un test que mira la **query que se arma** y otro que pide por HTTP y mira el **`where` de Prisma**.
-
-43. **`NAVE_MODE=mock` en produccion es un simulador publico que aprueba pagos** (2026-10-28, spec 012). El simulador existe para recorrer el circuito sin credenciales, y para eso registra `GET/POST /pago-simulado/:id/...`: una ruta **publica, sin autenticacion y sin rate limit** que llama a `aplicarPago`. O sea que con `NAVE_MODE=mock` cualquiera con un link de checkout se aprueba el pedido y suma `totalSpent` al cliente. No es "no cobra plata real": es un pago acreditado que nadie pago. Por eso `crearProveedorNave` **no registra el simulador con `NODE_ENV=production`** y devuelve un proveedor que falla con el motivo exacto. El `logger.warn` solo no alcanza: un aviso en el log no frena un POST. **Regla: un default comodo para desarrollo no puede ser el default de produccion.** Y `PAGO_MODO` tiene que estar explicito en Render: su default es `transferencia` justamente para que mergear no cambie el modo de cobro solo.

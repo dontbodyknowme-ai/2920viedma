@@ -59,7 +59,7 @@ const TOKEN = '11111111-2222-3333-4444-555555555555'
 const PEDIDO_BASE: PedidoPublico = {
   orderToken: TOKEN,
   referencia: '11111111',
-  modo: 'nave',
+  modo: 'mercadopago',
   estado: 'pendiente',
   pagoEstado: 'pendiente',
   total: 15000,
@@ -67,10 +67,10 @@ const PEDIDO_BASE: PedidoPublico = {
   items: [{ nombre: 'Gran Reserva Malbec', cantidad: 2, precio: 7500 }],
   pago: {
     estado: 'pendiente',
-    link: 'https://nave.test/pagar/abc',
+    link: 'https://mercadopago.test/pagar/abc',
     qr: {
-      imagenUrl: 'https://nave.test/pagar/abc/qr.svg',
-      payload: 'NAVE-SIMULADO:abc:15000'
+      imagenUrl: 'https://mercadopago.test/pagar/abc/qr.svg',
+      payload: 'MP-SIMULADO:abc:15000'
     },
     expiraEn: '2026-10-28T13:00:00.000Z'
   },
@@ -133,12 +133,12 @@ beforeEach(() => {
 
   llamado = null
   devolver = () => ({
-    modo: 'nave',
+    modo: 'mercadopago',
     orderId: 'ord_1',
     orderToken: TOKEN,
     preferenceId: 'pref-1',
-    initPoint: 'https://nave.test/pagar/abc',
-    qr: { imagenUrl: 'https://nave.test/pagar/abc/qr.svg', payload: 'NAVE-SIMULADO:abc:15000' },
+    initPoint: 'https://mercadopago.test/pagar/abc',
+    qr: { imagenUrl: 'https://mercadopago.test/pagar/abc/qr.svg', payload: 'MP-SIMULADO:abc:15000' },
     expiraEn: '2026-10-28T13:00:00.000Z',
     total: 15000
   })
@@ -160,11 +160,11 @@ beforeEach(() => {
       alReintentar?.()
       return json(
         {
-          modo: 'nave',
+          modo: 'mercadopago',
           orderId: 'ord_1',
           orderToken: TOKEN,
           preferenceId: 'pref-2',
-          initPoint: 'https://nave.test/pagar/nuevo',
+          initPoint: 'https://mercadopago.test/pagar/nuevo',
           total: 15000
         },
         201
@@ -403,10 +403,10 @@ describe('despues de crear el pedido', () => {
       new Promise((resolverPeticion) => {
         soltar = () =>
           resolverPeticion({
-            modo: 'nave',
+            modo: 'mercadopago',
             orderId: 'ord_1',
             orderToken: TOKEN,
-            initPoint: 'https://nave.test/pagar/abc',
+            initPoint: 'https://mercadopago.test/pagar/abc',
             total: 15000
           })
       })
@@ -477,20 +477,14 @@ describe('la pagina del pedido', () => {
     expect(texto).toContain('11111111')
   })
 
-  it('con el pago pendiente muestra el QR y el link', async () => {
-    const m = montar(`/pedido/${TOKEN}`)
-    await resolver()
+  it('con el pago pendiente muestra el link de Mercado Pago', async () => {
+  const m = montar(`/pedido/${TOKEN}`)
+  await resolver()
 
-    const qr = nodo(m, 'img[alt="Código QR para pagar"]') as HTMLImageElement
-    expect(qr.src).toContain('/qr.svg')
-
-    // El payload tambien, para quien paga pegando el codigo en el banco.
-    expect(m.contenedor.textContent ?? '').toContain('NAVE-SIMULADO:abc:15000')
-
-    const enlace = buscarEnlace(m, 'Abrir el link de pago')
-    expect(enlace?.getAttribute('href')).toBe('https://nave.test/pagar/abc')
-    expect(enlace?.getAttribute('target')).toBe('_blank')
-  })
+  const enlace = buscarEnlace(m, 'Abrir el link de pago')
+  expect(enlace?.getAttribute('href')).toBe('https://mercadopago.test/pagar/abc')
+  expect(enlace?.getAttribute('target')).toBe('_blank')
+})
 
   it('un intento sin link no muestra una tarjeta de pago vacia', async () => {
     // El proveedor fallo antes de devolver el link: el intento existe pero no
@@ -539,7 +533,7 @@ describe('la pagina del pedido', () => {
       pagoEstado: 'rechazado',
       pago: {
         estado: 'rechazado',
-        link: 'https://nave.test/pagar/abc',
+        link: 'https://mercadopago.test/pagar/abc',
         qr: null,
         expiraEn: null
       }
@@ -561,7 +555,7 @@ describe('la pagina del pedido', () => {
       pagoEstado: 'expirado',
       pago: {
         estado: 'expirado',
-        link: 'https://nave.test/pagar/abc',
+        link: 'https://mercadopago.test/pagar/abc',
         qr: null,
         expiraEn: '2020-01-01T00:00:00.000Z'
       }
@@ -584,7 +578,7 @@ describe('la pagina del pedido', () => {
       pagoEstado: 'pendiente',
       pago: {
         estado: 'expirado',
-        link: 'https://nave.test/pagar/abc',
+        link: 'https://mercadopago.test/pagar/abc',
         qr: null,
         expiraEn: '2020-01-01T00:00:00.000Z'
       }
@@ -602,7 +596,7 @@ describe('la pagina del pedido', () => {
 
   it('el link sigue visible si el pedido expiro pero el link no vencio', async () => {
     // `expirarPedidosSinPagar` usa la ventana de 10 minutos de Mercado Pago; el
-    // link de Nave vive 30. Entre el minuto 10 y el 30 el pedido esta
+    // link del cobro puede vivir mas. Entre el minuto 10 y su vencimiento el pedido esta
     // `expirado` en el panel pero el comprador todavia puede pagar: ocultarle el
     // link lo manda a generar otro (o a irse) con uno que funciona.
     const enUnaHora = new Date(Date.now() + 60 * 60 * 1000).toISOString()
@@ -611,7 +605,7 @@ describe('la pagina del pedido', () => {
       pagoEstado: 'expirado',
       pago: {
         estado: 'pendiente',
-        link: 'https://nave.test/pagar/vigente',
+        link: 'https://mercadopago.test/pagar/vigente',
         qr: null,
         expiraEn: enUnaHora
       }
@@ -624,7 +618,7 @@ describe('la pagina del pedido', () => {
     expect(texto).toContain('Esperando el pago')
     expect(texto).not.toContain('El link de pago venció')
     expect(buscarEnlace(m, 'Abrir el link de pago')?.getAttribute('href')).toBe(
-      'https://nave.test/pagar/vigente'
+      'https://mercadopago.test/pagar/vigente'
     )
   })
 
@@ -633,7 +627,7 @@ describe('la pagina del pedido', () => {
       pagoEstado: 'expirado',
       pago: {
         estado: 'expirado',
-        link: 'https://nave.test/pagar/viejo',
+        link: 'https://mercadopago.test/pagar/viejo',
         qr: null,
         expiraEn: null
       }
@@ -647,8 +641,8 @@ describe('la pagina del pedido', () => {
         pagoEstado: 'pendiente',
         pago: {
           estado: 'pendiente',
-          link: 'https://nave.test/pagar/nuevo',
-          qr: { imagenUrl: 'https://nave.test/pagar/nuevo/qr.svg' },
+          link: 'https://mercadopago.test/pagar/nuevo',
+          qr: { imagenUrl: 'https://mercadopago.test/pagar/nuevo/qr.svg' },
           expiraEn: '2026-10-28T14:00:00.000Z'
         }
       })
@@ -661,7 +655,7 @@ describe('la pagina del pedido', () => {
     // El link nuevo sale de la **consulta**, no de la respuesta del reintento:
     // el estado lo manda la API.
     expect(buscarEnlace(m, 'Abrir el link de pago')?.getAttribute('href')).toBe(
-      'https://nave.test/pagar/nuevo'
+      'https://mercadopago.test/pagar/nuevo'
     )
     expect(m.contenedor.textContent ?? '').toContain('Esperando el pago')
   })
