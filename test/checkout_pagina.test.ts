@@ -248,7 +248,7 @@ describe('lo que se manda', () => {
     const m = montar('/checkout')
 
     llenar(m)
-    pulsarPorTexto(m, 'Continuar al pago')
+    pulsarPorTexto(m, 'Finalizar pedido')
     await resolver()
 
     expect(llamado).not.toBeNull()
@@ -264,7 +264,7 @@ describe('lo que se manda', () => {
     const m = montar('/checkout')
 
     llenar(m)
-    pulsarPorTexto(m, 'Continuar al pago')
+    pulsarPorTexto(m, 'Finalizar pedido')
     await resolver()
 
     // El carrito vive en el `localStorage` del navegador: quien quiera puede
@@ -281,7 +281,7 @@ describe('lo que se manda', () => {
     const m = montar('/checkout')
 
     llenar(m)
-    pulsarPorTexto(m, 'Continuar al pago')
+    pulsarPorTexto(m, 'Finalizar pedido')
     await resolver()
 
     const cuerpo = llamado!.cuerpo as { items: unknown }
@@ -295,7 +295,7 @@ describe('la ida a Mercado Pago', () => {
     const m = montar('/checkout')
 
     llenar(m)
-    pulsarPorTexto(m, 'Continuar al pago')
+    pulsarPorTexto(m, 'Finalizar pedido')
     await resolver()
 
     expect(asignar).toHaveBeenCalledWith(
@@ -307,7 +307,7 @@ describe('la ida a Mercado Pago', () => {
     const m = montar('/checkout')
 
     llenar(m)
-    pulsarPorTexto(m, 'Continuar al pago')
+    pulsarPorTexto(m, 'Finalizar pedido')
     await resolver()
 
     // Al volver, esta pagina se recarga desde cero. Sin esto no hay nada que
@@ -336,7 +336,7 @@ describe('la ida a Mercado Pago', () => {
     const m = montar('/checkout')
 
     llenar(m)
-    pulsarPorTexto(m, 'Continuar al pago')
+    pulsarPorTexto(m, 'Finalizar pedido')
 
     expect(textoDe(m, 'button[type="submit"]')).toContain('Creando')
     // Y el boton no se puede apretar dos veces: dos pedidos, dos Preferencias,
@@ -358,7 +358,7 @@ describe('la ida a Mercado Pago', () => {
     const m = montar('/checkout')
 
     llenar(m)
-    pulsarPorTexto(m, 'Continuar al pago')
+    pulsarPorTexto(m, 'Finalizar pedido')
     await resolver()
 
     const alertas = m.contenedor.querySelectorAll('[role="alert"]')
@@ -377,7 +377,7 @@ describe('la ida a Mercado Pago', () => {
     escribir(m, '#checkout-apellido', 'González')
     // faltan telefono, email y direccion
 
-    pulsarPorTexto(m, 'Continuar al pago')
+    pulsarPorTexto(m, 'Finalizar pedido')
     await resolver()
 
     expect(llamado).toBeNull()
