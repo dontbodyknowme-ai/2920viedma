@@ -6,7 +6,8 @@ Una spec por carpeta, con `spec.md` (qué y por qué), `plan.md` (cómo) y
 **Las specs no se borran.** Las cerradas son el registro de las decisiones
 (por qué el webhook busca por `external_reference`, por qué hay dos campos de
 estado, por qué la cookie sale `SameSite=None`). Borrarlas deja colgadas las
-referencias de `AGENTS.md`, `MEMORY.md` y de este índice.
+referencias de `AGENTS.md`, `MEMORY.md` y de este índice. La excepción es una
+spec **borrador** que el usuario pide borrar explícitamente (pasó con la `012`).
 
 ## Índice
 
@@ -21,7 +22,7 @@ referencias de `AGENTS.md`, `MEMORY.md` y de este índice.
 | `006-permisos-rol` | implementada | 54/54 | verificada contra producción (10/10) |
 | `009-ventas-mercadopago` | implementada y mergeada | 5/7 | faltan credenciales reales y probar la webhook en producción |
 | `010-stock-mercadopago` | no iniciada | 0/3 | descontar stock al aprobar y restaurar al fallar |
-| `012-pagos` | borrador | 0/47 | cobros online con Nave |
+
 
 ## Sobre los estados
 
@@ -32,4 +33,7 @@ Los conteos salen de los checkboxes de cada `task.md`. Ojo: en `004-b` y
 producción; el estado de arriba se apoya en el código y en la suite de tests,
 no en esos conteos.
 
-Las dos specs abiertas son `010` (stock) y `012` (pagos con Nave).
+La única spec abierta es `010` (stock). La `012` (pagos con Nave) se borró
+por decisión del usuario el 2026-11-20: era borrador y su implementación vive
+en otro clon, no en este repo. `REVISION-CHECKOUT-012.md` y las entradas de
+`MEMORY.md` que la mencionan quedan como registro histórico.
